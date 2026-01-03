@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import FoxMascot from "./FoxMascot";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface WhaleActivity {
@@ -17,8 +17,10 @@ const DiagnosticsPanel = () => {
   const [whaleActivities, setWhaleActivities] = useState<WhaleActivity[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [newTradeFlash, setNewTradeFlash] = useState(false);
 
-  const fetchWhaleData = async () => {
+  const fetchWhaleData = useCallback(async () => {
     const { data } = await supabase
       .from('whale_transactions')
       .select('wallet_address, market_title, side, total_value')
@@ -34,10 +36,10 @@ const DiagnosticsPanel = () => {
       })));
     } else {
       setWhaleActivities([
-        { wallet: '0x1a2b...3c4d', market: 'Click SYNC to fetch data', side: 'BUY', amount: 0 }
+        { wallet: '0x1a2b...3c4d', market: 'Waiting for data...', side: 'BUY', amount: 0 }
       ]);
     }
-  };
+  }, []);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -66,7 +68,47 @@ const DiagnosticsPanel = () => {
   };
 
   useEffect(() => {
+    // Initial fetch
     fetchWhaleData();
+    
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('whale-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'whale_transactions'
+        },
+        (payload) => {
+          console.log('🐋 New whale transaction:', payload);
+          const newTx = payload.new as any;
+          
+          // Flash effect for new trade
+          setNewTradeFlash(true);
+          setTimeout(() => setNewTradeFlash(false), 1000);
+          
+          // Add to top of list
+          setWhaleActivities(prev => [{
+            wallet: newTx.wallet_address,
+            market: newTx.market_title || 'Unknown',
+            side: newTx.side,
+            amount: newTx.total_value
+          }, ...prev.slice(0, 14)]);
+          
+          // Show toast for large trades
+          if (newTx.total_value >= 5000) {
+            toast.success(`🐋 Whale Alert: $${newTx.total_value.toLocaleString()} ${newTx.side.toUpperCase()}`);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+        setIsConnected(status === 'SUBSCRIBED');
+      });
+
+    // Periodic refresh as backup
     const interval = setInterval(fetchWhaleData, 30000);
 
     const entropyTimer = setInterval(() => {
@@ -79,11 +121,12 @@ const DiagnosticsPanel = () => {
     window.addEventListener("mousemove", handleMouseMove);
 
     return () => {
+      supabase.removeChannel(channel);
       clearInterval(interval);
       clearInterval(entropyTimer);
       window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, []);
+  }, [fetchWhaleData]);
 
   const formatWallet = (address: string) => {
     if (address.length > 10) {
@@ -124,21 +167,26 @@ const DiagnosticsPanel = () => {
               <span className="text-foreground">{entropy.toFixed(3)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">MOUSE_X</span>
-              <span className="text-foreground">{mousePos.x}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">MOUSE_Y</span>
-              <span className="text-foreground">{mousePos.y}</span>
+              <span className="text-muted-foreground">REALTIME</span>
+              <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
+                {isConnected ? 'CONNECTED' : 'OFFLINE'}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Whale Activity */}
-      <div className="terminal-panel flex-1 overflow-hidden">
+      <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
         <div className="terminal-header flex items-center justify-between">
-          <span>🐋 WHALE_ACTIVITY</span>
+          <span className="flex items-center gap-1">
+            🐋 WHALE_LIVE
+            {isConnected ? (
+              <Wifi className="w-3 h-3 text-green-400 animate-pulse" />
+            ) : (
+              <WifiOff className="w-3 h-3 text-red-400" />
+            )}
+          </span>
           <button
             onClick={handleSync}
             disabled={isSyncing}
@@ -151,12 +199,15 @@ const DiagnosticsPanel = () => {
         <div className="p-3 overflow-y-auto h-full max-h-[400px] scrollbar-thin">
           {lastSync && (
             <div className="text-[10px] text-muted-foreground mb-2 border-b border-border/30 pb-1">
-              Last sync: {lastSync}
+              Last sync: {lastSync} | Auto: every 2min
             </div>
           )}
           <div className="space-y-2 text-xs">
             {whaleActivities.map((activity, idx) => (
-              <div key={idx} className="border-b border-border/30 pb-2">
+              <div 
+                key={idx} 
+                className={`border-b border-border/30 pb-2 transition-all ${idx === 0 && newTradeFlash ? 'bg-primary/20 -mx-1 px-1' : ''}`}
+              >
                 <div className="flex justify-between">
                   <span className="text-primary font-mono">{formatWallet(activity.wallet)}</span>
                   <span className={activity.side === 'BUY' || activity.side === 'buy' ? 'text-green-400' : 'text-red-400'}>
