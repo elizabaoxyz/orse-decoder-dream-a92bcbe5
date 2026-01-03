@@ -196,23 +196,20 @@ serve(async (req) => {
         if (trade.amount > 0 && trade.price > 0 && trade.total_value > 0) {
           allTrades.push(trade);
 
-          const existing = walletMap.get(walletAddr) || {
-            wallet_address: walletAddr,
-            label: isKnownWhale 
-              ? knownLabelMap.get(walletAddr) 
-              : `Whale-${walletAddr.slice(2, 8).toUpperCase()}`,
-            total_volume: 0,
-            win_rate: parseFloat((55 + Math.random() * 35).toFixed(2)),
-            last_active: timestamp.toISOString(),
-            is_featured: isKnownWhale, // Known whales are always featured
-          };
-          
-          existing.total_volume += tradeValue;
-          if (existing.total_volume > 50000) {
-            existing.is_featured = true;
+          // Only add to wallet map if it's a known public whale
+          if (isKnownWhale) {
+            const existing = walletMap.get(walletAddr) || {
+              wallet_address: walletAddr,
+              label: knownLabelMap.get(walletAddr),
+              total_volume: 0,
+              win_rate: null,
+              last_active: null,
+              is_featured: true,
+            };
+            
+            existing.total_volume += tradeValue;
+            walletMap.set(walletAddr, existing);
           }
-          
-          walletMap.set(walletAddr, existing);
         }
       }
     }
