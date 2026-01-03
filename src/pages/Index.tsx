@@ -1,7 +1,6 @@
 import Header from "@/components/terminal/Header";
-import DiagnosticsPanel from "@/components/terminal/DiagnosticsPanel";
-import MainTerminal from "@/components/terminal/MainTerminal";
 import DataStream from "@/components/terminal/DataStream";
+import { WhaleTracker } from "@/components/whale/WhaleTracker";
 
 const Index = () => {
   return (
@@ -10,14 +9,8 @@ const Index = () => {
       <Header />
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Diagnostics */}
-        <DiagnosticsPanel />
-
-        {/* Main Terminal Area */}
-        <div className="flex-1 flex flex-col">
-          <MainTerminal />
-        </div>
+      <div className="flex-1 overflow-auto p-6">
+        <WhaleTracker />
       </div>
 
       {/* Bottom Data Stream */}
