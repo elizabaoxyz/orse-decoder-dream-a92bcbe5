@@ -40,12 +40,12 @@ const DiagnosticsPanel = () => {
           <FoxMascot />
           <div className="space-y-2 text-xs mt-4">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">SENSE_LVL</span>
-              <span className="text-foreground">97%</span>
+              <span className="text-muted-foreground">ElizaOS</span>
+              <span className="text-foreground">MCP</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">FORM_STATE</span>
-              <span className="text-foreground">SHIFTING</span>
+              <span className="text-muted-foreground">Plugins</span>
+              <span className="text-foreground">Polymarket</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">FREQ</span>
