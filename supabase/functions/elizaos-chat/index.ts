@@ -31,107 +31,192 @@ serve(async (req) => {
     const { message, conversationHistory } = await req.json();
     console.log('Received message:', message);
 
-    // Build OpenAI-compatible messages (Eliza Cloud is OpenAI chat-completions compatible)
-    const messages = (conversationHistory ?? []).map(
-      (msg: { role: string; content: string }) => ({
-        role: msg.role,
-        content: msg.content,
-      }),
-    );
+    type HistoryMsg = { role: string; content: string };
+    type OpenAIMsg = { role: string; content: string };
+    type PartsMsg = { role: string; parts: { type: "text"; text: string }[] };
 
-    // Add the new user message
-    messages.push({ role: "user", content: message });
+    const history: HistoryMsg[] = Array.isArray(conversationHistory)
+      ? conversationHistory
+      : [];
 
-    // Eliza Cloud /chat endpoint expects `id` + `messages` as a JSON-string
-    const upstreamBody = {
-      id: ELIZAOS_AGENT_ID,
-      messages: JSON.stringify(messages),
-    };
+    const openaiMessages: OpenAIMsg[] = history.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+    openaiMessages.push({ role: "user", content: message });
+
+    const partsMessages: PartsMsg[] = history.map((msg) => ({
+      role: msg.role,
+      parts: [{ type: "text", text: msg.content }],
+    }));
+    partsMessages.push({ role: "user", parts: [{ type: "text", text: message }] });
+
+    const candidates: Array<{
+      name: string;
+      url: string;
+      body: Record<string, unknown>;
+    }> = [
+      {
+        name: "chat_parts_id",
+        url: "https://elizacloud.ai/api/v1/chat",
+        body: { id: ELIZAOS_AGENT_ID, messages: JSON.stringify(partsMessages) },
+      },
+      {
+        name: "chat_openai_id",
+        url: "https://elizacloud.ai/api/v1/chat",
+        body: { id: ELIZAOS_AGENT_ID, messages: JSON.stringify(openaiMessages) },
+      },
+      {
+        name: "chat_parts_agentId",
+        url: "https://elizacloud.ai/api/v1/chat",
+        body: { agentId: ELIZAOS_AGENT_ID, messages: JSON.stringify(partsMessages) },
+      },
+      {
+        name: "chat_openai_agentId",
+        url: "https://elizacloud.ai/api/v1/chat",
+        body: { agentId: ELIZAOS_AGENT_ID, messages: JSON.stringify(openaiMessages) },
+      },
+      {
+        name: "chat_completions_model",
+        url: "https://elizacloud.ai/api/v1/chat/completions",
+        body: { model: ELIZAOS_AGENT_ID, messages: openaiMessages, stream: false },
+      },
+    ];
 
     console.log(
-      "Upstream body (preview):",
-      JSON.stringify({
-        id: upstreamBody.id,
-        messages_preview: messages.map((m: { role: string; content: unknown }) => ({
-          role: m.role,
-          content: String(m.content).slice(0, 120),
-        })),
-      }),
+      "History length:",
+      history.length,
+      "last user message:",
+      String(message).slice(0, 80),
     );
 
-    const response = await fetch("https://elizacloud.ai/api/v1/chat", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(upstreamBody),
-    });
+    let lastErr: { status: number; text: string; attempt: string } | null = null;
 
-    console.log('ElizaOS API response status:', response.status);
+    let data: unknown = null;
+    for (const c of candidates) {
+      console.log("Upstream attempt:", c.name, c.url);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElizaOS API error:", response.status, errorText);
+      const resp = await fetch(c.url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(c.body),
+      });
 
-      // IMPORTANT: return 200 so the client receives a structured payload (Supabase invoke treats non-2xx as transport errors)
-      const friendlyError =
-        response.status === 401
-          ? "Invalid API key - check your ELIZAOS_API_KEY"
-          : response.status === 429
-            ? "Rate limit exceeded"
-            : "ElizaOS API error";
+      const respText = await resp.text();
+      console.log(
+        "Upstream status:",
+        c.name,
+        resp.status,
+        "body preview:",
+        respText.slice(0, 300),
+      );
+
+      if (resp.ok) {
+        try {
+          data = JSON.parse(respText);
+        } catch {
+          data = respText;
+        }
+        break;
+      }
+
+      // Return 200 for these so the client can show a friendly message.
+      if (resp.status === 401) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid API key - check your ELIZAOS_API_KEY",
+            details: respText,
+            status: resp.status,
+            attempt: c.name,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (resp.status === 429) {
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded",
+            details: respText,
+            status: resp.status,
+            attempt: c.name,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      lastErr = { status: resp.status, text: respText, attempt: c.name };
+    }
+
+    if (data === null) {
+      // Extra diagnostics: try to verify the agent exists (best-effort)
+      let agentCheck: { status: number; bodyPreview: string } | null = null;
+      try {
+        const r = await fetch(`https://elizacloud.ai/api/v1/agents/${ELIZAOS_AGENT_ID}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const t = await r.text();
+        agentCheck = { status: r.status, bodyPreview: t.slice(0, 300) };
+        console.log("Agent check status:", r.status, "body preview:", t.slice(0, 300));
+      } catch (e) {
+        console.log("Agent check failed:", e);
+      }
 
       return new Response(
         JSON.stringify({
-          error: friendlyError,
-          details: errorText,
-          status: response.status,
+          error: "ElizaOS API error",
+          details: lastErr?.text ?? "No response body",
+          status: lastErr?.status ?? 500,
+          attempt: lastErr?.attempt ?? "none",
+          agentCheck,
         }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const data = await response.json();
-    console.log('ElizaOS API response:', JSON.stringify(data).slice(0, 500));
+    const extractReply = (payload: unknown): string => {
+      if (typeof payload === "string") return payload;
+      if (payload === null || payload === undefined) return "";
+      if (typeof payload !== "object") return String(payload);
 
-    // Extract the assistant's reply - handle different response formats
-    let reply = '';
-    
-    if (data.choices && data.choices[0]?.message?.content) {
-      // OpenAI-compatible format
-      reply = data.choices[0].message.content;
-    } else if (data.content) {
-      // Direct content format
-      reply = data.content;
-    } else if (data.text) {
-      // Text format
-      reply = data.text;
-    } else if (data.message) {
-      // Message format
-      reply = data.message;
-    } else if (typeof data === 'string') {
-      // Plain string response
-      reply = data;
-    } else {
-      console.log('Unknown response format, full data:', JSON.stringify(data));
-      reply = JSON.stringify(data);
-    }
+      const p = payload as Record<string, any>;
+
+      // OpenAI compatible (non-stream)
+      if (p.choices?.[0]?.message?.content) return String(p.choices[0].message.content);
+      // OpenAI compatible (some gateways)
+      if (p.choices?.[0]?.delta?.content) return String(p.choices[0].delta.content);
+
+      // Common simple formats
+      if (p.reply) return String(p.reply);
+      if (p.content) return String(p.content);
+      if (p.text) return String(p.text);
+      if (p.message) return String(p.message);
+
+      return JSON.stringify(p);
+    };
+
+    const reply = extractReply(data);
 
     return new Response(JSON.stringify({ reply }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     console.error('Error in elizaos-chat function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
