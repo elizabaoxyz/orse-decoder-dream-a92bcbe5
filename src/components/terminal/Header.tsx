@@ -25,7 +25,7 @@ const Header = () => {
   return (
     <header className="border-b border-border bg-card px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
       <div className="flex items-center gap-2">
-        <span className="text-primary text-glow">MORSE_CORE</span>
+        <span className="text-primary text-glow">DORAMOS_CORE</span>
         <span className="text-muted-foreground">//</span>
         <span className="text-muted-foreground">UPLINK_PROTOCOL_V.6</span>
       </div>
