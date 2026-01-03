@@ -207,7 +207,12 @@ serve(async (req) => {
           }
           
           // Extract content from various possible formats
-          if (parsed.choices?.[0]?.delta?.content) {
+          // Vercel AI SDK format (text-delta events)
+          if (parsed.type === "text-delta" && typeof parsed.delta === "string") {
+            fullContent += parsed.delta;
+          }
+          // OpenAI compatible format
+          else if (parsed.choices?.[0]?.delta?.content) {
             fullContent += parsed.choices[0].delta.content;
           } else if (parsed.choices?.[0]?.message?.content) {
             fullContent += parsed.choices[0].message.content;
@@ -217,6 +222,8 @@ serve(async (req) => {
             fullContent += parsed.text;
           } else if (parsed.delta?.content) {
             fullContent += parsed.delta.content;
+          } else if (typeof parsed.delta === "string") {
+            fullContent += parsed.delta;
           }
         } catch {
           // Skip unparseable lines
