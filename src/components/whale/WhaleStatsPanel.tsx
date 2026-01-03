@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, Copy, Check } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WhaleWallet {
@@ -259,9 +259,16 @@ export const WhaleStatsPanel = () => {
                 onClick={() => setSelectedWallet(selectedWallet?.id === wallet.id ? null : wallet)}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-primary text-xs">
+                  <a
+                    href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-mono text-primary text-xs hover:underline flex items-center gap-1"
+                  >
                     {formatAddress(wallet.wallet_address)}
-                  </span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -311,6 +318,15 @@ export const WhaleStatsPanel = () => {
                     <div className="mt-2 p-1 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all">
                       {wallet.wallet_address}
                     </div>
+                    <a
+                      href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 w-full flex items-center justify-center gap-1 p-2 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors"
+                    >
+                      VIEW_ON_POLYMARKET
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
                 )}
               </div>
