@@ -1,7 +1,6 @@
 import Header from "@/components/terminal/Header";
 import DiagnosticsPanel from "@/components/terminal/DiagnosticsPanel";
 import MainTerminal from "@/components/terminal/MainTerminal";
-import DataStream from "@/components/terminal/DataStream";
 import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 
 const Index = () => {
@@ -21,10 +20,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Bottom Data Stream - Whale Transactions */}
-      <DataStream />
-
-      {/* Whale Analytics Dashboard - Below Transaction Feed */}
+      {/* Whale Analytics Dashboard */}
       <div className="terminal-panel border-t border-border">
         <div className="terminal-header">🐋 WHALE_ANALYTICS_DASHBOARD</div>
         <div className="p-4">
