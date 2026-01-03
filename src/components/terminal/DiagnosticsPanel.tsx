@@ -96,11 +96,6 @@ const DiagnosticsPanel = () => {
             side: newTx.side,
             amount: newTx.total_value
           }, ...prev.slice(0, 14)]);
-          
-          // Show toast for large trades
-          if (newTx.total_value >= 5000) {
-            toast.success(`🐋 Whale Alert: $${newTx.total_value.toLocaleString()} ${newTx.side.toUpperCase()}`);
-          }
         }
       )
       .subscribe((status) => {
