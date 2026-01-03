@@ -308,9 +308,20 @@ export const WhaleStatsPanel = () => {
                 </div>
 
                 {/* Wallet Address */}
-                <div className="p-2 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all">
+                <div className="p-2 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all mb-3">
                   {wallet.wallet_address}
                 </div>
+
+                {/* View on Polymarket Button */}
+                <a
+                  href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  VIEW ON POLYMARKET
+                </a>
               </div>
             ))}
           </div>
