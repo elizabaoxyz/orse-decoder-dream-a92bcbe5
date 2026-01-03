@@ -31,9 +31,26 @@ serve(async (req) => {
       ? conversationHistory
       : [];
 
+    const looksLikeSSE = (text: string) => {
+      const t = text.trim();
+      return (
+        t.startsWith("data:") ||
+        t.includes("\ndata:") ||
+        t.includes("data: [DONE]") ||
+        t.includes('"type":"error"')
+      );
+    };
+
     // Build messages in the Eliza Cloud format (Vercel AI SDK style with parts)
+    // NOTE: We must drop any prior assistant messages that accidentally stored raw SSE (e.g. lines starting with "data:")
+    // because sending them back as conversation history can cause upstream 500 errors.
     const partsMessages: PartsMsg[] = history
-      .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+      .filter((m) => {
+        if (!m || typeof m.content !== 'string') return false;
+        if (m.role !== 'user' && m.role !== 'assistant') return false;
+        if (looksLikeSSE(m.content)) return false;
+        return true;
+      })
       .map((msg) => ({
         role: msg.role,
         parts: [{ type: "text", text: msg.content }],
