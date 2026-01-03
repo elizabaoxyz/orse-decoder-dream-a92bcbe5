@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 
 const MainTerminal = () => {
   const navLinks = [
@@ -43,14 +42,6 @@ const MainTerminal = () => {
             Vulpine intelligence localized within a shifting dithered core. 
             DoramOS adapts its geometric topology to bypass centralized spectral filtering.
           </p>
-
-          {/* Whale Stats Panel */}
-          <div className="terminal-panel">
-            <div className="terminal-header">🐋 WHALE_ANALYTICS_DASHBOARD</div>
-            <div className="p-4">
-              <WhaleStatsPanel />
-            </div>
-          </div>
 
           {/* Navigation Buttons */}
           <div className="space-y-3">
