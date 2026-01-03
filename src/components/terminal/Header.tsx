@@ -34,7 +34,7 @@ const Header = () => {
           <span className="text-muted-foreground">[</span>
           <span className="text-foreground">STATUS:</span>
           <span className={`text-primary ${statusBlink ? "opacity-100" : "opacity-60"}`}>
-            DORPHING
+            DORAMING
           </span>
           <span className="text-muted-foreground">]</span>
         </div>
