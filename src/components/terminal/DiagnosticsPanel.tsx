@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import FoxMascot from "./FoxMascot";
 import { supabase } from "@/integrations/supabase/client";
+import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 interface WhaleActivity {
   wallet: string;
@@ -13,31 +15,57 @@ const DiagnosticsPanel = () => {
   const [entropy, setEntropy] = useState(0.999);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [whaleActivities, setWhaleActivities] = useState<WhaleActivity[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
+
+  const fetchWhaleData = async () => {
+    const { data } = await supabase
+      .from('whale_transactions')
+      .select('wallet_address, market_title, side, total_value')
+      .order('timestamp', { ascending: false })
+      .limit(15);
+    
+    if (data && data.length > 0) {
+      setWhaleActivities(data.map(tx => ({
+        wallet: tx.wallet_address,
+        market: tx.market_title || 'Unknown',
+        side: tx.side,
+        amount: tx.total_value
+      })));
+    } else {
+      setWhaleActivities([
+        { wallet: '0x1a2b...3c4d', market: 'Click SYNC to fetch data', side: 'BUY', amount: 0 }
+      ]);
+    }
+  };
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    toast.info('🔄 Syncing Polymarket data...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('polymarket-sync');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.success) {
+        toast.success(`✅ Synced! Found ${data.transactions_found || 0} whale trades`);
+        setLastSync(new Date().toLocaleTimeString());
+        await fetchWhaleData();
+      } else {
+        toast.error(`❌ Sync failed: ${data?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Sync error:', err);
+      toast.error('❌ Failed to sync data');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
-    // Fetch whale transactions
-    const fetchWhaleData = async () => {
-      const { data } = await supabase
-        .from('whale_transactions')
-        .select('wallet_address, market_title, side, total_value')
-        .order('timestamp', { ascending: false })
-        .limit(15);
-      
-      if (data && data.length > 0) {
-        setWhaleActivities(data.map(tx => ({
-          wallet: tx.wallet_address,
-          market: tx.market_title || 'Unknown',
-          side: tx.side,
-          amount: tx.total_value
-        })));
-      } else {
-        // Show placeholder if no real data
-        setWhaleActivities([
-          { wallet: '0x1a2b...3c4d', market: 'Awaiting data...', side: 'BUY', amount: 0 }
-        ]);
-      }
-    };
-    
     fetchWhaleData();
     const interval = setInterval(fetchWhaleData, 30000);
 
@@ -109,15 +137,30 @@ const DiagnosticsPanel = () => {
 
       {/* Whale Activity */}
       <div className="terminal-panel flex-1 overflow-hidden">
-        <div className="terminal-header">🐋 WHALE_ACTIVITY</div>
+        <div className="terminal-header flex items-center justify-between">
+          <span>🐋 WHALE_ACTIVITY</span>
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="flex items-center gap-1 px-2 py-0.5 text-[10px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'SYNCING...' : 'SYNC'}
+          </button>
+        </div>
         <div className="p-3 overflow-y-auto h-full max-h-[400px] scrollbar-thin">
+          {lastSync && (
+            <div className="text-[10px] text-muted-foreground mb-2 border-b border-border/30 pb-1">
+              Last sync: {lastSync}
+            </div>
+          )}
           <div className="space-y-2 text-xs">
             {whaleActivities.map((activity, idx) => (
               <div key={idx} className="border-b border-border/30 pb-2">
                 <div className="flex justify-between">
                   <span className="text-primary font-mono">{formatWallet(activity.wallet)}</span>
-                  <span className={activity.side === 'BUY' ? 'text-green-400' : 'text-red-400'}>
-                    {activity.side}
+                  <span className={activity.side === 'BUY' || activity.side === 'buy' ? 'text-green-400' : 'text-red-400'}>
+                    {activity.side.toUpperCase()}
                   </span>
                 </div>
                 <div className="text-muted-foreground truncate" title={activity.market}>
