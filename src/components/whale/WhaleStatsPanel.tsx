@@ -57,7 +57,11 @@ export const WhaleStatsPanel = () => {
         .order('total_volume', { ascending: false });
 
       if (walletData) {
-        setWallets(walletData);
+        // Filter out "unknown" labels and limit to 15
+        const filteredWallets = walletData
+          .filter(w => w.label && w.label.toLowerCase() !== 'unknown')
+          .slice(0, 15);
+        setWallets(filteredWallets);
       }
 
       if (transactions && transactions.length > 0) {
