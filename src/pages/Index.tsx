@@ -2,7 +2,6 @@ import Header from "@/components/terminal/Header";
 import DiagnosticsPanel from "@/components/terminal/DiagnosticsPanel";
 import MainTerminal from "@/components/terminal/MainTerminal";
 import DataStream from "@/components/terminal/DataStream";
-import { WhaleTracker } from "@/components/whale/WhaleTracker";
 
 const Index = () => {
   return (
@@ -21,12 +20,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Whale Tracker Section */}
-      <div className="border-t border-terminal-border/30 p-6 bg-terminal-surface/10">
-        <WhaleTracker />
-      </div>
-
-      {/* Bottom Data Stream */}
+      {/* Bottom Data Stream - Now shows Whale Transactions */}
       <DataStream />
     </div>
   );

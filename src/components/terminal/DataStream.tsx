@@ -1,67 +1,131 @@
 import { useEffect, useState } from "react";
-
-const DATA_TYPES = ["HUNT_ACK", "EXEC_ACK", "WRITE_ACK", "VULP_ACK", "CRYPT_ACK", "READ_ACK", "SYNC_ACK"];
-
-const generateHexCode = () => {
-  return `0x${Math.floor(Math.random() * 65535).toString(16).toUpperCase().padStart(4, "0")}`;
-};
-
-const generateDataEntry = () => ({
-  hex: generateHexCode(),
-  type: DATA_TYPES[Math.floor(Math.random() * DATA_TYPES.length)],
-});
+import { polymarketApi, WhaleTransaction } from "@/lib/api/polymarket";
+import { formatDistanceToNow } from "date-fns";
 
 const DataStream = () => {
-  const [entries, setEntries] = useState(() =>
-    Array.from({ length: 100 }, () => generateDataEntry())
-  );
-  const [entryCount, setEntryCount] = useState(101);
+  const [transactions, setTransactions] = useState<WhaleTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setEntries((prev) => {
-        const newEntries = [...prev.slice(1), generateDataEntry()];
-        return newEntries;
-      });
-      setEntryCount((c) => c + 1);
-    }, 500);
+    const fetchTransactions = async () => {
+      const data = await polymarketApi.getWhaleTransactions(20);
+      setTransactions(data);
+      setLoading(false);
+    };
 
-    return () => clearInterval(timer);
+    fetchTransactions();
+
+    // Subscribe to realtime updates
+    const unsubscribe = polymarketApi.subscribeToTransactions((newTx) => {
+      setTransactions(prev => [newTx, ...prev.slice(0, 19)]);
+    });
+
+    return unsubscribe;
   }, []);
 
-  // Split entries into columns
-  const columns = 5;
-  const entriesPerColumn = Math.ceil(entries.length / columns);
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await polymarketApi.syncData();
+      const data = await polymarketApi.getWhaleTransactions(20);
+      setTransactions(data);
+    } catch (error) {
+      console.error('Sync error:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const formatValue = (value: number) => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value.toFixed(0)}`;
+  };
+
+  const truncateAddress = (addr: string) => {
+    if (addr.length <= 10) return addr;
+    return `${addr.slice(0, 6)}..${addr.slice(-2)}`;
+  };
+
+  const truncateTitle = (title: string | null, maxLen = 35) => {
+    if (!title) return "Unknown";
+    if (title.length <= maxLen) return title;
+    return title.slice(0, maxLen) + "...";
+  };
 
   return (
     <div className="terminal-panel border-t border-border">
       <div className="terminal-header justify-between">
         <span className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-primary" />
-          CENTRAL_DATA_STREAM
+          <span className="w-2 h-2 bg-primary animate-pulse" />
+          🐋 WHALE_TRANSACTION_FEED
         </span>
-        <span className="text-foreground">{entryCount} ENTRIES</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="text-xs text-terminal-accent hover:text-terminal-foreground transition-colors disabled:opacity-50"
+          >
+            {syncing ? "⟳ SYNCING..." : "⟳ SYNC"}
+          </button>
+          <span className="text-foreground">{transactions.length} TRANSACTIONS</span>
+        </div>
       </div>
       <div className="p-3 overflow-hidden">
-        <div className="grid grid-cols-5 gap-4 text-xs">
-          {Array.from({ length: columns }).map((_, colIdx) => (
-            <div key={colIdx} className="space-y-0.5">
-              {entries
-                .slice(colIdx * entriesPerColumn, (colIdx + 1) * entriesPerColumn)
-                .slice(0, 4)
-                .map((entry, idx) => (
-                  <div
-                    key={`${colIdx}-${idx}`}
-                    className="flex gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <span className="text-terminal-green-dim">{entry.hex}</span>
-                    <span className="text-muted-foreground">//</span>
-                    <span>{entry.type}</span>
+        {loading ? (
+          <div className="text-center text-terminal-muted text-sm py-2">Loading whale data...</div>
+        ) : transactions.length === 0 ? (
+          <div className="text-center text-terminal-muted text-sm py-2">
+            No whale transactions. Click SYNC to fetch data.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+            {transactions.slice(0, 8).map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-center gap-2 p-2 bg-terminal-surface/20 rounded border border-terminal-border/20 hover:border-terminal-accent/30 transition-all"
+              >
+                {/* Side & Outcome */}
+                <div className="flex flex-col gap-0.5">
+                  <span className={`font-mono text-[10px] px-1 rounded ${
+                    tx.side === 'buy' 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {tx.side.toUpperCase()}
+                  </span>
+                  <span className={`font-mono text-[10px] px-1 rounded ${
+                    tx.outcome === 'YES' 
+                      ? 'bg-blue-500/20 text-blue-400' 
+                      : 'bg-orange-500/20 text-orange-400'
+                  }`}>
+                    {tx.outcome}
+                  </span>
+                </div>
+
+                {/* Main Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-terminal-accent font-bold">
+                      {formatValue(tx.total_value)}
+                    </span>
+                    <span className="text-terminal-muted text-[10px]">
+                      {formatDistanceToNow(new Date(tx.timestamp), { addSuffix: true })}
+                    </span>
                   </div>
-                ))}
-            </div>
-          ))}
-        </div>
+                  <div className="text-terminal-foreground/70 truncate text-[10px]">
+                    {truncateTitle(tx.market_title)}
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-terminal-muted">
+                    <span className="font-mono">{truncateAddress(tx.wallet_address)}</span>
+                    <span>@{(tx.price * 100).toFixed(0)}¢</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
