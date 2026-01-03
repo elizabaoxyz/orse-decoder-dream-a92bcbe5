@@ -1,1 +1,7 @@
 project_id = "kxycfrjetdjbwifbqvsu"
+
+[functions.polymarket-sync]
+verify_jwt = false
+
+[functions.elizaos-chat]
+verify_jwt = false
