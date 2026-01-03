@@ -14,6 +14,26 @@ const PNL_SUBGRAPH = 'https://api.goldsky.com/api/public/project_cl6mb8i9h0003e2
 // Whale threshold
 const WHALE_THRESHOLD = 5000;
 
+// Known public profile whale addresses (verified from Polymarket leaderboard)
+const KNOWN_PUBLIC_WHALES: { address: string; label: string }[] = [
+  { address: '0x16b29c50f2439faf627209b2ac0c7bbddaa8a881', label: 'SeriouslySirius' },
+  { address: '0x5350afcd8bd8ceffdf4da32420d6d31be0822fda', label: 'simonbanza' },
+  { address: '0xdb27bf2ac5d428a9c63dbc914611036855a6c56e', label: 'DrPufferfish' },
+  { address: '0x6a72f61820b26b1fe4d956e17b6dc2a1ea3033ee', label: 'kch123' },
+  { address: '0x37e4728b3c4607fb2b3b205386bb1d1fb1a8c991', label: 'SemyonMarmeladov' },
+  { address: '0x204f72f35326db932158cba6adff0b9a1da95e14', label: 'swisstony' },
+  { address: '0x44de2a52d8d2d3ddcf39d58e315a10df53ba9c08', label: 'BlueHorseshoe86' },
+  { address: '0x507e52ef684ca2dd91f90a9d26d149dd3288beae', label: 'GamblingIsAllYouNeed' },
+  { address: '0x0d3b10b8eac8b089c6e4a695e65d8e044167c46b', label: 'bossoskil' },
+  { address: '0x858d551d073e9c647c17079ad9021de830201047', label: 'flipfloppity' },
+  { address: '0xee613b3fc183ee44f9da9c05f53e2da107e3debf', label: 'sovereign2013' },
+  { address: '0x6baf05d193692bb208d616709e27442c910a94c5', label: 'SBet365' },
+  { address: '0x2005d16a84ceefa912d4e380cd32e7ff827875ea', label: 'RN1' },
+  { address: '0x4133bcbad1d9c41de776646696f41c34d0a65e70', label: 'EF203F2IPFC2ICP20W-CP3' },
+  { address: '0x6d7776a0f954be1a7c975a1e8244de6268f7b72c', label: 'humanbeans' },
+  { address: '0x9cb990f1862568a63d8601efeebe0304225c32f2', label: 'jtwyslljy' },
+];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -110,7 +130,23 @@ serve(async (req) => {
 
     console.log(`✅ Found ${activeMarkets.length} active trading markets`);
 
-    // Step 4: Generate whale trades using real or simulated wallets
+    // Step 4: Combine known public whales with real wallets from subgraph
+    // Prioritize known public whales (they have visible profiles)
+    const knownAddresses = KNOWN_PUBLIC_WHALES.map(w => w.address.toLowerCase());
+    const knownLabelMap = new Map(KNOWN_PUBLIC_WHALES.map(w => [w.address.toLowerCase(), w.label]));
+    
+    // Add subgraph wallets that aren't already in known list
+    const allWalletAddresses = [...knownAddresses];
+    for (const addr of realWallets) {
+      const lowerAddr = addr.toLowerCase();
+      if (!allWalletAddresses.includes(lowerAddr)) {
+        allWalletAddresses.push(lowerAddr);
+      }
+    }
+    
+    console.log(`📊 Using ${knownAddresses.length} known public whales + ${realWallets.length} subgraph wallets`);
+
+    // Step 5: Generate whale trades using prioritized wallets
     const allTrades: any[] = [];
     const walletMap = new Map();
 
@@ -136,21 +172,10 @@ serve(async (req) => {
         const price = Math.max(isYes ? yesPrice : noPrice, 0.1);
         const amount = tradeValue / price;
 
-        // Use REAL wallet address if available
-        let walletAddr: string;
-        const realIndex = (i * numTrades + j);
-        
-        if (realWallets.length > 0) {
-          walletAddr = realWallets[realIndex % realWallets.length];
-        } else {
-          // Generate deterministic address as fallback
-          const seed = `${conditionId}${j}${Date.now()}`;
-          walletAddr = '0x';
-          for (let k = 0; k < 40; k++) {
-            const charCode = seed.charCodeAt(k % seed.length) || 48;
-            walletAddr += '0123456789abcdef'[(charCode + k * 7) % 16];
-          }
-        }
+        // Prioritize known public whales first
+        const walletIndex = (i * numTrades + j) % allWalletAddresses.length;
+        const walletAddr = allWalletAddresses[walletIndex];
+        const isKnownWhale = knownLabelMap.has(walletAddr);
 
         const txHash = `whale_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
         const timestamp = new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000);
@@ -173,13 +198,13 @@ serve(async (req) => {
 
           const existing = walletMap.get(walletAddr) || {
             wallet_address: walletAddr,
-            label: realWallets.includes(walletAddr) 
-              ? `Whale-${walletAddr.slice(2, 8).toUpperCase()}` 
-              : null,
+            label: isKnownWhale 
+              ? knownLabelMap.get(walletAddr) 
+              : `Whale-${walletAddr.slice(2, 8).toUpperCase()}`,
             total_volume: 0,
             win_rate: parseFloat((55 + Math.random() * 35).toFixed(2)),
             last_active: timestamp.toISOString(),
-            is_featured: false,
+            is_featured: isKnownWhale, // Known whales are always featured
           };
           
           existing.total_volume += tradeValue;
