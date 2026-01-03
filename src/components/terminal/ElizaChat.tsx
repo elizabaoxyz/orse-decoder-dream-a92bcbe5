@@ -47,11 +47,12 @@ const ElizaChat = () => {
         return;
       }
 
-      if (data?.error) {
-        console.error("ElizaOS API error:", data.error);
-        toast.error(data.error);
-        return;
-      }
+       if (data?.error) {
+         console.error("ElizaOS API error:", data);
+         const msg = data?.status ? `${data.error} (${data.status})` : data.error;
+         toast.error(msg);
+         return;
+       }
 
       // Add assistant response
       setMessages([...newMessages, { role: "assistant", content: data.reply }]);
