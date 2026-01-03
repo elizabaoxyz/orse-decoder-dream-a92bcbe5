@@ -25,9 +25,11 @@ serve(async (req) => {
       throw new Error('ELIZAOS_AGENT_ID is not configured');
     }
 
+    console.log('API Key prefix:', ELIZAOS_API_KEY.substring(0, 10) + '...');
+    console.log('Agent ID:', ELIZAOS_AGENT_ID);
+
     const { message, conversationHistory } = await req.json();
     console.log('Received message:', message);
-    console.log('Conversation history length:', conversationHistory?.length || 0);
 
     // Build messages array in Vercel AI SDK UIMessage format
     const messages = conversationHistory?.map((msg: { role: string; content: string }) => ({
@@ -41,18 +43,24 @@ serve(async (req) => {
       parts: [{ type: 'text', text: message }]
     });
 
-    console.log('Sending to ElizaOS API with', messages.length, 'messages');
+    // Stringify the messages array as required by the API
+    const messagesString = JSON.stringify(messages);
+    
+    const requestBody = {
+      messages: messagesString,
+      id: ELIZAOS_AGENT_ID,
+    };
 
-    const response = await fetch('https://elizacloud.ai/api/v1/chat', {
+    console.log('Request body:', JSON.stringify(requestBody));
+
+    // Try with www subdomain as shown in user's curl example
+    const response = await fetch('https://www.elizacloud.ai/api/v1/chat', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ELIZAOS_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        messages: JSON.stringify(messages),
-        id: ELIZAOS_AGENT_ID,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log('ElizaOS API response status:', response.status);
@@ -62,7 +70,7 @@ serve(async (req) => {
       console.error('ElizaOS API error:', response.status, errorText);
       
       if (response.status === 401) {
-        return new Response(JSON.stringify({ error: 'Invalid API key' }), {
+        return new Response(JSON.stringify({ error: 'Invalid API key - check your ELIZAOS_API_KEY' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -75,14 +83,18 @@ serve(async (req) => {
         });
       }
 
-      return new Response(JSON.stringify({ error: 'ElizaOS API error', details: errorText }), {
+      return new Response(JSON.stringify({ 
+        error: 'ElizaOS API error', 
+        details: errorText,
+        status: response.status 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    console.log('ElizaOS API response:', JSON.stringify(data).slice(0, 200));
+    console.log('ElizaOS API response:', JSON.stringify(data).slice(0, 500));
 
     // Extract the assistant's reply - handle different response formats
     let reply = '';
@@ -96,12 +108,15 @@ serve(async (req) => {
     } else if (data.text) {
       // Text format
       reply = data.text;
+    } else if (data.message) {
+      // Message format
+      reply = data.message;
     } else if (typeof data === 'string') {
       // Plain string response
       reply = data;
     } else {
-      console.log('Unknown response format:', JSON.stringify(data));
-      reply = 'I received your message but could not parse the response.';
+      console.log('Unknown response format, full data:', JSON.stringify(data));
+      reply = JSON.stringify(data);
     }
 
     return new Response(JSON.stringify({ reply }), {
