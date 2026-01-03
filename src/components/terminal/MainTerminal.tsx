@@ -39,8 +39,7 @@ const MainTerminal = () => {
 
           {/* Description */}
           <p className="text-muted-foreground text-sm max-w-xl leading-relaxed uppercase tracking-wide">
-            Vulpine intelligence localized within a shifting dithered core. 
-            DoramOS adapts its geometric topology to bypass centralized spectral filtering.
+            Official Polymarket Partner | Powered by ElizaOS
           </p>
 
           {/* Navigation Buttons */}
