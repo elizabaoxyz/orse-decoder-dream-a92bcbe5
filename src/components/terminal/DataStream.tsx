@@ -68,15 +68,6 @@ const DataStream = () => {
 
   return (
     <div className="terminal-panel border-t border-border">
-      {/* Whale Analytics Dashboard Link */}
-      <div className="terminal-header border-b border-border/50 bg-terminal-surface/30">
-        <button className="flex items-center gap-2 text-terminal-accent hover:text-primary transition-colors group">
-          <span className="w-2 h-2 bg-terminal-accent group-hover:bg-primary animate-pulse" />
-          🐋 WHALE_ANALYTICS_DASHBOARD
-          <span className="text-[10px] text-terminal-muted">↑ SCROLL UP</span>
-        </button>
-      </div>
-      
       <div className="terminal-header justify-between">
         <span className="flex items-center gap-2">
           <span className="w-2 h-2 bg-primary animate-pulse" />
