@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface WhaleWallet {
   id: string;
@@ -10,16 +11,6 @@ interface WhaleWallet {
   win_rate: number | null;
   last_active: string | null;
   is_featured: boolean | null;
-}
-
-interface WhaleTransaction {
-  wallet_address: string;
-  market_title: string | null;
-  side: string;
-  outcome: string;
-  total_value: number;
-  timestamp: string;
-  market_id: string;
 }
 
 interface WhaleStatsData {
@@ -49,17 +40,17 @@ export const WhaleStatsPanel = () => {
     avgTradeSize: 0,
   });
   const [wallets, setWallets] = useState<WhaleWallet[]>([]);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<WhaleWallet | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch transactions
       const { data: transactions } = await supabase
         .from('whale_transactions')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(100);
 
-      // Fetch wallets
       const { data: walletData } = await supabase
         .from('whale_wallets')
         .select('*')
@@ -111,8 +102,11 @@ export const WhaleStatsPanel = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const getPolygonScanUrl = (address: string) => {
-    return `https://polygonscan.com/address/${address}`;
+  const copyAddress = async (address: string) => {
+    await navigator.clipboard.writeText(address);
+    setCopiedAddress(address);
+    toast.success('Address copied!');
+    setTimeout(() => setCopiedAddress(null), 2000);
   };
 
   const totalBuySell = stats.buyVolume + stats.sellVolume;
@@ -168,7 +162,6 @@ export const WhaleStatsPanel = () => {
 
       {/* Buy/Sell & Yes/No Sentiment Bars */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Buy vs Sell */}
         <div className="p-3 bg-card/50 border border-border/50 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
@@ -196,7 +189,6 @@ export const WhaleStatsPanel = () => {
           </div>
         </div>
 
-        {/* Yes vs No Outcome */}
         <div className="p-3 bg-card/50 border border-border/50 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
@@ -257,23 +249,71 @@ export const WhaleStatsPanel = () => {
         {wallets.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[200px] overflow-y-auto scrollbar-thin">
             {wallets.map((wallet) => (
-              <a
+              <div
                 key={wallet.id}
-                href={getPolygonScanUrl(wallet.wallet_address)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-2 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors"
+                className={`p-2 bg-background/50 border transition-colors cursor-pointer ${
+                  selectedWallet?.id === wallet.id 
+                    ? 'border-primary' 
+                    : 'border-border/30 hover:border-primary/50'
+                }`}
+                onClick={() => setSelectedWallet(selectedWallet?.id === wallet.id ? null : wallet)}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between">
                   <span className="font-mono text-primary text-xs">
                     {formatAddress(wallet.wallet_address)}
                   </span>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyAddress(wallet.wallet_address);
+                    }}
+                    className="p-1 hover:bg-muted rounded"
+                  >
+                    {copiedAddress === wallet.wallet_address ? (
+                      <Check className="w-3 h-3 text-green-500" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </button>
                 </div>
-                <span className="font-mono text-xs text-foreground">
-                  {formatValue(wallet.total_volume || 0)}
-                </span>
-              </a>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted-foreground">VOLUME:</span>
+                  <span className="font-mono text-xs text-foreground">
+                    {formatValue(wallet.total_volume || 0)}
+                  </span>
+                </div>
+                
+                {/* Expanded Details */}
+                {selectedWallet?.id === wallet.id && (
+                  <div className="mt-2 pt-2 border-t border-border/30 space-y-1 text-xs">
+                    {wallet.label && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">LABEL:</span>
+                        <span className="text-foreground">{wallet.label}</span>
+                      </div>
+                    )}
+                    {wallet.win_rate !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">WIN_RATE:</span>
+                        <span className={wallet.win_rate >= 50 ? 'text-green-500' : 'text-red-500'}>
+                          {wallet.win_rate.toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                    {wallet.last_active && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">LAST_ACTIVE:</span>
+                        <span className="text-foreground">
+                          {new Date(wallet.last_active).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="mt-2 p-1 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all">
+                      {wallet.wallet_address}
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         ) : (
