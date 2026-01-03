@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import ElizaChat from "./ElizaChat";
 
 const MainTerminal = () => {
   const navLinks = [
@@ -44,8 +43,6 @@ const MainTerminal = () => {
             DoramOS adapts its geometric topology to bypass centralized spectral filtering.
           </p>
 
-          {/* ElizaOS Agent Chat Interface */}
-          <ElizaChat />
           {/* Navigation Buttons */}
           <div className="space-y-3">
             <div className="flex flex-wrap gap-3">
