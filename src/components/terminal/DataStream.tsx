@@ -8,13 +8,25 @@ const DataStream = () => {
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      const data = await polymarketApi.getWhaleTransactions(20);
-      setTransactions(data);
-      setLoading(false);
+    const initData = async () => {
+      // Auto-sync on mount to get real Polymarket data
+      setSyncing(true);
+      try {
+        await polymarketApi.syncData();
+        const data = await polymarketApi.getWhaleTransactions(20);
+        setTransactions(data);
+      } catch (error) {
+        console.error('Auto-sync error:', error);
+        // Fallback to existing data if sync fails
+        const data = await polymarketApi.getWhaleTransactions(20);
+        setTransactions(data);
+      } finally {
+        setSyncing(false);
+        setLoading(false);
+      }
     };
 
-    fetchTransactions();
+    initData();
 
     // Subscribe to realtime updates
     const unsubscribe = polymarketApi.subscribeToTransactions((newTx) => {
