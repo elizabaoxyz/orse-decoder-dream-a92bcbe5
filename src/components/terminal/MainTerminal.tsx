@@ -86,11 +86,11 @@ const MainTerminal = () => {
           <div className="pt-8 flex items-center justify-between text-xs">
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground">AGENT_ID:</span>
-              <span className="text-foreground">DORAMOS-00</span>
+              <span className="text-foreground">6328b8c7-3add-4fef-a0c5-9f74adacdb43</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">UPLINK:</span>
-              <span className="text-primary">STABLE_100%</span>
+              <span className="text-muted-foreground">NAME :</span>
+              <span className="text-primary">AI16ZDORAM</span>
             </div>
           </div>
 
