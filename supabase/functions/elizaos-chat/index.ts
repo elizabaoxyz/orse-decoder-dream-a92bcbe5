@@ -61,66 +61,128 @@ serve(async (req) => {
 
     const url = "https://www.elizacloud.ai/api/v1/chat";
 
-    // Use gpt-4o model with stringified messages as per Eliza Cloud API format
-    const requestBody = {
-      messages: JSON.stringify(partsMessages),
-      id: "gpt-4o"
+    // Safety: keep only recent context to avoid upstream processing failures
+    const recentPartsMessages = partsMessages.slice(-12);
+
+    // Also prepare an OpenAI-style messages format (some gateways prefer this)
+    const openaiMessages = recentPartsMessages.map((m) => ({
+      role: m.role,
+      content: m.parts?.[0]?.text ?? "",
+    }));
+
+    const candidates: Array<{ name: string; body: Record<string, unknown> }> = [
+      // Vercel AI SDK "parts" format (stringified)
+      { name: "gpt-4o_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o" } },
+      { name: "gpt-4o_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o" } },
+      // OpenAI-style format
+      { name: "gpt-4o_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o" } },
+      { name: "gpt-4o_openai_array", body: { messages: openaiMessages, id: "gpt-4o" } },
+      // Fallback to a cheaper/commonly-available model
+      { name: "gpt-4o-mini_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o-mini" } },
+      { name: "gpt-4o-mini_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o-mini" } },
+      { name: "gpt-4o-mini_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o-mini" } },
+      { name: "gpt-4o-mini_openai_array", body: { messages: openaiMessages, id: "gpt-4o-mini" } },
+    ];
+
+    const extractSseErrorText = (text: string): string | null => {
+      for (const line of text.split("\n")) {
+        if (!line.startsWith("data: ")) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr || jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed?.type === "error" && typeof parsed?.errorText === "string") return parsed.errorText;
+        } catch {
+          // ignore
+        }
+      }
+      return null;
     };
 
-    console.log("Request URL:", url);
-    console.log("Request body:", JSON.stringify(requestBody));
+    let chosen: { name: string; respText: string } | null = null;
+    let lastErr: { status: number; text: string; attempt: string } | null = null;
 
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    for (const c of candidates) {
+      console.log("Upstream attempt:", c.name);
+      console.log("Request body:", JSON.stringify(c.body).slice(0, 800));
 
-    console.log("Response status:", resp.status);
-    console.log("Content-Type:", resp.headers.get("content-type"));
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(c.body),
+      });
 
-    if (!resp.ok) {
-      const errorText = await resp.text();
-      console.log("Error response:", errorText);
+      const respText = await resp.text();
+      console.log("Response status:", c.name, resp.status);
+      console.log("Response body preview:", respText.slice(0, 500));
 
-      if (resp.status === 401) {
+      if (!resp.ok) {
+        if (resp.status === 401) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid API key - check your ELIZAOS_API_KEY",
+              details: respText,
+              status: resp.status,
+              attempt: c.name,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        if (resp.status === 429) {
+          return new Response(
+            JSON.stringify({
+              error: "Rate limit exceeded",
+              details: respText,
+              status: resp.status,
+              attempt: c.name,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        lastErr = { status: resp.status, text: respText, attempt: c.name };
+        continue;
+      }
+
+      // Some successful (200) responses are SSE with an error event
+      const sseError = extractSseErrorText(respText);
+      if (sseError) {
+        console.log("SSE error from upstream:", sseError);
+
+        // Try the next candidate for common "not found" / processing errors
+        if (/not found/i.test(sseError) || /failed to process chat/i.test(sseError)) {
+          lastErr = { status: 200, text: sseError, attempt: c.name };
+          continue;
+        }
+
         return new Response(
-          JSON.stringify({
-            error: "Invalid API key - check your ELIZAOS_API_KEY",
-            details: errorText,
-            status: resp.status,
-          }),
+          JSON.stringify({ error: "Eliza Cloud API error", details: sseError, status: 200, attempt: c.name }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (resp.status === 429) {
-        return new Response(
-          JSON.stringify({
-            error: "Rate limit exceeded",
-            details: errorText,
-            status: resp.status,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
 
+      chosen = { name: c.name, respText };
+      break;
+    }
+
+    if (!chosen) {
       return new Response(
         JSON.stringify({
           error: "Eliza Cloud API error",
-          details: errorText,
-          status: resp.status,
+          details: lastErr?.text ?? "No response body",
+          status: lastErr?.status ?? 500,
+          attempt: lastErr?.attempt ?? "none",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Handle streaming response (SSE format)
-    const respText = await resp.text();
+    const respText = chosen.respText;
+    console.log("Chosen attempt:", chosen.name);
     console.log("Raw response preview:", respText.slice(0, 500));
-
     // Parse SSE stream to extract content
     let fullContent = "";
     const lines = respText.split("\n");
