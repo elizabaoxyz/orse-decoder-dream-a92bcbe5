@@ -31,66 +31,68 @@ serve(async (req) => {
     const { message, conversationHistory } = await req.json();
     console.log('Received message:', message);
 
-    // Build messages array in Vercel AI SDK UIMessage format
-    const messages = conversationHistory?.map((msg: { role: string; content: string }) => ({
-      role: msg.role,
-      parts: [{ type: 'text', text: msg.content }]
-    })) || [];
+    // Build OpenAI-compatible messages (Eliza Cloud is OpenAI chat-completions compatible)
+    const messages = (conversationHistory ?? []).map(
+      (msg: { role: string; content: string }) => ({
+        role: msg.role,
+        content: msg.content,
+      }),
+    );
 
     // Add the new user message
-    messages.push({
-      role: 'user',
-      parts: [{ type: 'text', text: message }]
-    });
+    messages.push({ role: "user", content: message });
 
-    // Stringify the messages array as required by the API
-    const messagesString = JSON.stringify(messages);
-    
-    const requestBody = {
-      messages: messagesString,
+    // Eliza Cloud /chat endpoint expects `id` + `messages` as a JSON-string
+    const upstreamBody = {
       id: ELIZAOS_AGENT_ID,
+      messages: JSON.stringify(messages),
     };
 
-    console.log('Request body:', JSON.stringify(requestBody));
+    console.log(
+      "Upstream body (preview):",
+      JSON.stringify({
+        id: upstreamBody.id,
+        messages_preview: messages.map((m: { role: string; content: unknown }) => ({
+          role: m.role,
+          content: String(m.content).slice(0, 120),
+        })),
+      }),
+    );
 
-    // Try with www subdomain as shown in user's curl example
-    const response = await fetch('https://www.elizacloud.ai/api/v1/chat', {
-      method: 'POST',
+    const response = await fetch("https://elizacloud.ai/api/v1/chat", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${ELIZAOS_API_KEY}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(upstreamBody),
     });
 
     console.log('ElizaOS API response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElizaOS API error:', response.status, errorText);
-      
-      if (response.status === 401) {
-        return new Response(JSON.stringify({ error: 'Invalid API key - check your ELIZAOS_API_KEY' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      console.error("ElizaOS API error:", response.status, errorText);
 
-      return new Response(JSON.stringify({ 
-        error: 'ElizaOS API error', 
-        details: errorText,
-        status: response.status 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // IMPORTANT: return 200 so the client receives a structured payload (Supabase invoke treats non-2xx as transport errors)
+      const friendlyError =
+        response.status === 401
+          ? "Invalid API key - check your ELIZAOS_API_KEY"
+          : response.status === 429
+            ? "Rate limit exceeded"
+            : "ElizaOS API error";
+
+      return new Response(
+        JSON.stringify({
+          error: friendlyError,
+          details: errorText,
+          status: response.status,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const data = await response.json();
