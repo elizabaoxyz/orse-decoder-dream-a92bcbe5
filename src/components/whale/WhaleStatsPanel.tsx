@@ -241,100 +241,89 @@ export const WhaleStatsPanel = () => {
       </div>
 
       {/* Whale Wallets List */}
-      <div className="p-3 bg-card/50 border border-border/50 space-y-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Users className="w-3 h-3" />
+      <div className="p-4 bg-card/50 border border-border/50 space-y-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+          <Users className="w-4 h-4" />
           TRACKED_WHALE_WALLETS ({wallets.length})
         </div>
         {wallets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[200px] overflow-y-auto scrollbar-thin">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {wallets.map((wallet) => (
               <div
                 key={wallet.id}
-                className={`p-2 bg-background/50 border transition-colors cursor-pointer ${
-                  selectedWallet?.id === wallet.id 
-                    ? 'border-primary' 
-                    : 'border-border/30 hover:border-primary/50'
-                }`}
-                onClick={() => setSelectedWallet(selectedWallet?.id === wallet.id ? null : wallet)}
+                className="p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors"
               >
-                <div className="flex items-center justify-between">
-                  <a
-                    href={`https://polymarket.com/profile/${wallet.wallet_address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-mono text-primary text-xs hover:underline flex items-center gap-1"
-                  >
-                    {formatAddress(wallet.wallet_address)}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                {/* Header with label and featured badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {wallet.is_featured && <span className="text-lg">🐋</span>}
+                    <span className="font-bold text-foreground text-sm">
+                      {wallet.label || 'Unknown'}
+                    </span>
+                  </div>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyAddress(wallet.wallet_address);
-                    }}
-                    className="p-1 hover:bg-muted rounded"
+                    onClick={() => copyAddress(wallet.wallet_address)}
+                    className="p-1.5 hover:bg-muted rounded transition-colors"
+                    title="Copy address"
                   >
                     {copiedAddress === wallet.wallet_address ? (
-                      <Check className="w-3 h-3 text-green-500" />
+                      <Check className="w-4 h-4 text-green-500" />
                     ) : (
-                      <Copy className="w-3 h-3 text-muted-foreground" />
+                      <Copy className="w-4 h-4 text-muted-foreground" />
                     )}
                   </button>
                 </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-muted-foreground">VOLUME:</span>
-                  <span className="font-mono text-xs text-foreground">
-                    {formatValue(wallet.total_volume || 0)}
-                  </span>
-                </div>
-                
-                {/* Expanded Details */}
-                {selectedWallet?.id === wallet.id && (
-                  <div className="mt-2 pt-2 border-t border-border/30 space-y-1 text-xs">
-                    {wallet.label && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">LABEL:</span>
-                        <span className="text-foreground">{wallet.label}</span>
-                      </div>
-                    )}
-                    {wallet.win_rate !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">WIN_RATE:</span>
-                        <span className={wallet.win_rate >= 50 ? 'text-green-500' : 'text-red-500'}>
-                          {wallet.win_rate.toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                    {wallet.last_active && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">LAST_ACTIVE:</span>
-                        <span className="text-foreground">
-                          {new Date(wallet.last_active).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="mt-2 p-1 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all">
-                      {wallet.wallet_address}
-                    </div>
-                    <a
-                      href={`https://polymarket.com/profile/${wallet.wallet_address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 w-full flex items-center justify-center gap-1 p-2 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors"
-                    >
-                      VIEW_ON_POLYMARKET
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+
+                {/* Stats Grid */}
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">VOLUME:</span>
+                    <span className="font-mono text-sm font-bold text-primary">
+                      {formatValue(wallet.total_volume || 0)}
+                    </span>
                   </div>
-                )}
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">WIN_RATE:</span>
+                    <span className={`font-mono text-sm font-bold ${
+                      (wallet.win_rate || 0) >= 60 ? 'text-green-500' : 
+                      (wallet.win_rate || 0) >= 50 ? 'text-yellow-500' : 'text-red-500'
+                    }`}>
+                      {wallet.win_rate?.toFixed(1) || '0.0'}%
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">LAST_ACTIVE:</span>
+                    <span className="font-mono text-xs text-foreground">
+                      {wallet.last_active 
+                        ? new Date(wallet.last_active).toLocaleDateString() 
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Wallet Address */}
+                <div className="p-2 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all mb-3">
+                  {wallet.wallet_address}
+                </div>
+
+                {/* View on Polymarket Button */}
+                <a
+                  href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  VIEW ON POLYMARKET
+                </a>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-xs text-muted-foreground text-center py-4">
-            No whale wallets tracked yet. Whales appear when trades &gt;$5000 are detected.
+          <div className="text-sm text-muted-foreground text-center py-8">
+            No whale wallets tracked yet. Click SYNC to fetch data.
           </div>
         )}
       </div>
