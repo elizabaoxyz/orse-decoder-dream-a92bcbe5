@@ -286,25 +286,6 @@ export const WhaleStatsPanel = () => {
                       {formatValue(wallet.total_volume || 0)}
                     </span>
                   </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">WIN_RATE:</span>
-                    <span className={`font-mono text-sm font-bold ${
-                      (wallet.win_rate || 0) >= 60 ? 'text-green-500' : 
-                      (wallet.win_rate || 0) >= 50 ? 'text-yellow-500' : 'text-red-500'
-                    }`}>
-                      {wallet.win_rate?.toFixed(1) || '0.0'}%
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">LAST_ACTIVE:</span>
-                    <span className="font-mono text-xs text-foreground">
-                      {wallet.last_active 
-                        ? new Date(wallet.last_active).toLocaleDateString() 
-                        : 'N/A'}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Wallet Address */}
