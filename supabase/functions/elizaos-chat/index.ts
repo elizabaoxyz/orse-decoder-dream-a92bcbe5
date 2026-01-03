@@ -13,6 +13,7 @@ serve(async (req) => {
 
   try {
     const ELIZAOS_API_KEY = Deno.env.get('ELIZAOS_API_KEY');
+    const ELIZAOS_AGENT_ID = Deno.env.get('ELIZAOS_AGENT_ID');
 
     if (!ELIZAOS_API_KEY) {
       console.error('ELIZAOS_API_KEY is not configured');
@@ -20,6 +21,7 @@ serve(async (req) => {
     }
 
     console.log('API Key prefix:', ELIZAOS_API_KEY.substring(0, 10) + '...');
+    console.log('Agent ID (if set):', ELIZAOS_AGENT_ID ?? '(not set)');
 
     const { message, conversationHistory } = await req.json();
     console.log('Received message:', message);
@@ -32,44 +34,78 @@ serve(async (req) => {
       : [];
 
     // Build messages in the Eliza Cloud format (Vercel AI SDK style)
-    const partsMessages: PartsMsg[] = history.map((msg) => ({
-      role: msg.role,
-      parts: [{ type: "text", text: msg.content }],
-    }));
+    const partsMessages: PartsMsg[] = history
+      .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+      .map((msg) => ({
+        role: msg.role,
+        parts: [{ type: "text", text: msg.content }],
+      }));
     partsMessages.push({ role: "user", parts: [{ type: "text", text: message }] });
 
     console.log("History length:", history.length, "last user message:", String(message).slice(0, 80));
-    console.log("Formatted messages:", JSON.stringify(partsMessages).slice(0, 500));
+    console.log("Formatted messages preview:", JSON.stringify(partsMessages).slice(0, 500));
 
-    // Use the correct Eliza Cloud Chat API format
-    const requestBody = {
-      messages: JSON.stringify(partsMessages),
-      id: "gpt-4o" // Model ID as shown in their API docs
-    };
+    const url = "https://www.elizacloud.ai/api/v1/chat";
 
-    console.log("Request URL: https://www.elizacloud.ai/api/v1/chat");
-    console.log("Request body:", JSON.stringify(requestBody));
+    const messagesStr = JSON.stringify(partsMessages);
 
-    const resp = await fetch("https://www.elizacloud.ai/api/v1/chat", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const candidates: Array<{ name: string; body: Record<string, unknown> }> = [];
 
-    const respText = await resp.text();
-    console.log("Response status:", resp.status);
-    console.log("Response body:", respText.slice(0, 500));
+    // 1) Try agent-style (older ElizaOS integration patterns)
+    if (ELIZAOS_AGENT_ID) {
+      candidates.push(
+        { name: "agent_id_messages_string", body: { messages: messagesStr, id: ELIZAOS_AGENT_ID } },
+        { name: "agent_id_messages_array", body: { messages: partsMessages, id: ELIZAOS_AGENT_ID } },
+        { name: "agentId_field_messages_string", body: { messages: messagesStr, agentId: ELIZAOS_AGENT_ID } },
+        { name: "agentId_field_messages_array", body: { messages: partsMessages, agentId: ELIZAOS_AGENT_ID } },
+      );
+    }
 
-    if (!resp.ok) {
+    // 2) Try model-style (as shown in API Explorer examples)
+    candidates.push(
+      { name: "model_id_messages_string", body: { messages: messagesStr, id: "gpt-4o" } },
+      { name: "model_id_messages_array", body: { messages: partsMessages, id: "gpt-4o" } },
+      { name: "model_field_messages_string", body: { messages: messagesStr, model: "gpt-4o" } },
+      { name: "model_field_messages_array", body: { messages: partsMessages, model: "gpt-4o" } },
+    );
+
+    let lastErr: { status: number; text: string; attempt: string } | null = null;
+    let data: unknown = null;
+
+    for (const c of candidates) {
+      console.log("Upstream attempt:", c.name);
+      console.log("Request URL:", url);
+      console.log("Request body preview:", JSON.stringify(c.body).slice(0, 700));
+
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(c.body),
+      });
+
+      const respText = await resp.text();
+      console.log("Response status:", c.name, resp.status);
+      console.log("Response body preview:", respText.slice(0, 500));
+
+      if (resp.ok) {
+        try {
+          data = JSON.parse(respText);
+        } catch {
+          data = respText;
+        }
+        break;
+      }
+
       if (resp.status === 401) {
         return new Response(
           JSON.stringify({
             error: "Invalid API key - check your ELIZAOS_API_KEY",
             details: respText,
             status: resp.status,
+            attempt: c.name,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
@@ -80,27 +116,25 @@ serve(async (req) => {
             error: "Rate limit exceeded",
             details: respText,
             status: resp.status,
+            attempt: c.name,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
+      lastErr = { status: resp.status, text: respText, attempt: c.name };
+    }
+
+    if (data === null) {
       return new Response(
         JSON.stringify({
           error: "Eliza Cloud API error",
-          details: respText,
-          status: resp.status,
+          details: lastErr?.text ?? "No response body",
+          status: lastErr?.status ?? 500,
+          attempt: lastErr?.attempt ?? "none",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
-    }
-
-    // Parse response
-    let data: unknown;
-    try {
-      data = JSON.parse(respText);
-    } catch {
-      data = respText;
     }
 
     const extractReply = (payload: unknown): string => {
