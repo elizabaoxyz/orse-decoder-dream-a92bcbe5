@@ -9,7 +9,11 @@ export const WhaleWalletList = () => {
   useEffect(() => {
     const fetchWallets = async () => {
       const data = await polymarketApi.getWhaleWallets();
-      setWallets(data);
+      // Filter out "unknown" labels and limit to 15
+      const filteredWallets = data
+        .filter(w => !w.label || w.label.toLowerCase() !== 'unknown')
+        .slice(0, 15);
+      setWallets(filteredWallets);
       setLoading(false);
     };
 
