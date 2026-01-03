@@ -1,14 +1,13 @@
+import elizaMascot from "@/assets/eliza-mascot.png";
+
 const FoxMascot = () => {
   return (
-    <div className="font-mono text-primary text-glow text-xs leading-tight whitespace-pre select-none">
-{`    /\\___/\\
-   (  o o  )
-   (  =^=  )
-    )     (
-   (       )
-  ( (  )  ) )
- (__(__)__(__)
-`}
+    <div className="flex justify-center">
+      <img 
+        src={elizaMascot} 
+        alt="Eliza Mascot" 
+        className="w-32 h-32 object-contain"
+      />
     </div>
   );
 };
