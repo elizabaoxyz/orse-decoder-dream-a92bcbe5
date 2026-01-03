@@ -27,13 +27,13 @@ const MainTerminal = () => {
     <main className="flex-1 flex flex-col">
       {/* Terminal Primary */}
       <div className="terminal-panel flex-1">
-        <div className="terminal-header">MORSE_TERMINAL_PRIMARY</div>
+        <div className="terminal-header">DORAMOS_TERMINAL_PRIMARY</div>
         
         <div className="p-8 lg:p-12 space-y-8">
           {/* Main Title */}
           <div>
             <h1 className="text-6xl lg:text-7xl font-bold text-foreground tracking-tight glitch">
-              MORSE<span className="text-primary">_</span>
+              DoramOS<span className="text-primary">_</span>
             </h1>
             <div className="w-24 h-1 bg-primary mt-2 pulse-glow" />
           </div>
@@ -41,7 +41,7 @@ const MainTerminal = () => {
           {/* Description */}
           <p className="text-muted-foreground text-sm max-w-xl leading-relaxed uppercase tracking-wide">
             Vulpine intelligence localized within a shifting dithered core. 
-            Morse adapts its geometric topology to bypass centralized spectral filtering.
+            DoramOS adapts its geometric topology to bypass centralized spectral filtering.
           </p>
 
           {/* ElizaOS Agent Chat Interface */}
@@ -93,7 +93,7 @@ const MainTerminal = () => {
           <div className="pt-16 flex items-center justify-between text-xs">
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground">AGENT_ID:</span>
-              <span className="text-foreground">MORSE-00</span>
+              <span className="text-foreground">DORAMOS-00</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">UPLINK:</span>

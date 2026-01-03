@@ -73,7 +73,7 @@ const ElizaChat = () => {
 
   return (
     <div className="terminal-panel mt-4">
-      <div className="terminal-header">MORSE_AGENT_INTERFACE</div>
+      <div className="terminal-header">DORAMOS_AGENT_INTERFACE</div>
       
       <div className="p-4 space-y-4">
         {/* Chat Messages */}
@@ -88,7 +88,7 @@ const ElizaChat = () => {
             <div key={idx} className="space-y-1">
               <div className={`flex items-start gap-2 ${msg.role === "user" ? "text-primary" : "text-foreground"}`}>
                 <span className="shrink-0">
-                  {msg.role === "user" ? "[USER]:" : "[MORSE]:"}
+                  {msg.role === "user" ? "[USER]:" : "[DORAMOS]:"}
                 </span>
                 <span className="whitespace-pre-wrap break-words">{msg.content}</span>
               </div>
@@ -97,7 +97,7 @@ const ElizaChat = () => {
           
           {isLoading && (
             <div className="text-muted-foreground animate-pulse">
-              <span className="text-primary">[MORSE]:</span> PROCESSING_QUERY
+              <span className="text-primary">[DORAMOS]:</span> PROCESSING_QUERY
               <span className="inline-block w-2 h-4 bg-primary ml-1 animate-pulse" />
             </div>
           )}
