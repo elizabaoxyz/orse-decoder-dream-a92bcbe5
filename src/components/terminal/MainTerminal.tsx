@@ -1,5 +1,5 @@
 import PluginCard from "./PluginCard";
-
+import AsciiMouseEffect from "./AsciiMouseEffect";
 const MainTerminal = () => {
   const plugins = [
     {
@@ -43,7 +43,8 @@ const MainTerminal = () => {
   return (
     <main className="flex-1 flex flex-col overflow-y-auto">
       {/* Terminal Primary */}
-      <div className="terminal-panel flex-1">
+      <div className="terminal-panel flex-1 relative">
+        <AsciiMouseEffect />
         <div className="terminal-header">DORAMOS_TERMINAL_PRIMARY</div>
         
         <div className="p-8 lg:p-12 space-y-8">
