@@ -42,14 +42,14 @@ const PluginCard = ({
 
   return (
     <>
-      {/* Main Card - Compact */}
+      {/* Main Card - Compact with more info */}
       <div
-        className="border border-border bg-card/50 p-2.5 space-y-1.5 hover:border-primary/50 transition-colors cursor-pointer rounded-lg"
+        className="border border-border bg-card/50 p-3 space-y-2 hover:border-primary/50 transition-all cursor-pointer rounded-lg hover:bg-card/80"
         onClick={() => setIsOpen(true)}
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-foreground font-medium text-xs truncate">{title}</h3>
+          <h3 className="text-foreground font-medium text-sm truncate">{title}</h3>
           {enabled && (
             <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0">
               ON
@@ -57,10 +57,33 @@ const PluginCard = ({
           )}
         </div>
 
-        {/* Version & Tools */}
-        <p className="text-[10px] text-muted-foreground">
-          {version} • {toolCount} tools
+        {/* Description - truncated */}
+        <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+          {description}
         </p>
+
+        {/* Tools Preview */}
+        <div className="flex flex-wrap gap-1">
+          {displayTools.map((tool) => (
+            <span
+              key={tool}
+              className="text-[9px] text-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded border border-border/50"
+            >
+              {tool}
+            </span>
+          ))}
+          {remainingTools > 0 && (
+            <span className="text-[9px] text-muted-foreground px-1">
+              +{remainingTools}
+            </span>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between text-[9px] text-muted-foreground/70 pt-1 border-t border-border/30">
+          <span>{version}</span>
+          <span>{toolCount} tools</span>
+        </div>
       </div>
 
       {/* Modal Overlay */}
