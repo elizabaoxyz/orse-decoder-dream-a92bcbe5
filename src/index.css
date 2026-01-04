@@ -104,6 +104,11 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Kode Mono', 'Kode Mono Fallback', monospace;
+    cursor: url('/cursors/cat-hand.png') 16 16, auto;
+  }
+
+  a, button, [role="button"], input[type="submit"], input[type="button"] {
+    cursor: url('/cursors/cat-hand.png') 16 16, pointer;
   }
 
   ::selection {
