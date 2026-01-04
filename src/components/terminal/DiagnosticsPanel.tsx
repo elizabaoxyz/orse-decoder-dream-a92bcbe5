@@ -180,9 +180,8 @@ const DiagnosticsPanel = () => {
 
       {/* Whale Activity */}
       <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
-        <div className="text-xs uppercase tracking-widest text-muted-foreground px-3 py-1.5 border-b border-border flex items-center justify-between bg-card">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-primary" />
+        <div className="terminal-header flex items-center justify-between">
+          <span className="flex items-center gap-1">
             🐋 WHALE_LIVE
             {isConnected ? (
               <Wifi className="w-3 h-3 text-green-400 animate-pulse" />
@@ -193,7 +192,7 @@ const DiagnosticsPanel = () => {
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-2.5 h-2.5 ${isSyncing ? 'animate-spin' : ''}`} />
             SYNC
