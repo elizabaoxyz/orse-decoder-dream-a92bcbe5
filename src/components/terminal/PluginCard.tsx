@@ -42,50 +42,25 @@ const PluginCard = ({
 
   return (
     <>
-      {/* Main Card */}
+      {/* Main Card - Compact */}
       <div
-        className="border border-border bg-card/50 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer"
+        className="border border-border bg-card/50 p-2.5 space-y-1.5 hover:border-primary/50 transition-colors cursor-pointer rounded-lg"
         onClick={() => setIsOpen(true)}
       >
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-foreground font-medium">{title}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {version} • {toolCount} tools
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-foreground font-medium text-xs truncate">{title}</h3>
           {enabled && (
-            <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
-              Enabled
+            <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0">
+              ON
             </span>
           )}
         </div>
 
-        {/* Description */}
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {description}
+        {/* Version & Tools */}
+        <p className="text-[10px] text-muted-foreground">
+          {version} • {toolCount} tools
         </p>
-
-        {/* Tools Preview */}
-        <div className="flex flex-wrap gap-1.5">
-          {displayTools.map((tool) => (
-            <span
-              key={tool}
-              className="text-xs text-foreground/80 bg-muted/50 px-2 py-0.5 border border-border"
-            >
-              {tool}
-            </span>
-          ))}
-          {remainingTools > 0 && (
-            <span className="text-xs text-muted-foreground px-2 py-0.5">
-              +{remainingTools} more
-            </span>
-          )}
-        </div>
-
-        {/* Pricing */}
-        <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
       </div>
 
       {/* Modal Overlay */}
