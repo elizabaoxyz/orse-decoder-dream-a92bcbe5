@@ -2,14 +2,11 @@ import { useEffect, useState } from "react";
 
 const Header = () => {
   const [time, setTime] = useState(new Date());
-  const [statusBlink, setStatusBlink] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
-    const blinker = setInterval(() => setStatusBlink((b) => !b), 500);
     return () => {
       clearInterval(timer);
-      clearInterval(blinker);
     };
   }, []);
 
@@ -30,20 +27,6 @@ const Header = () => {
         <span className="text-muted-foreground">MARKET_INTEL</span>
       </div>
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">[</span>
-          <span className="text-foreground">STATUS:</span>
-          <span className={`text-primary ${statusBlink ? "opacity-100" : "opacity-60"}`}>
-            DORAMING
-          </span>
-          <span className="text-muted-foreground">]</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">[</span>
-          <span className="text-foreground">DITHER:</span>
-          <span className="text-primary">ACTIVE</span>
-          <span className="text-muted-foreground">]</span>
-        </div>
         <span className="text-foreground font-medium tabular-nums">
           {formatTime(time)}
         </span>
