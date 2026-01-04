@@ -180,25 +180,24 @@ const DiagnosticsPanel = () => {
 
       {/* Whale Activity */}
       <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
-        <div className="terminal-header">
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1">
-              🐋 WHALE_LIVE
-              {isConnected ? (
-                <Wifi className="w-3 h-3 text-green-400 animate-pulse" />
-              ) : (
-                <WifiOff className="w-3 h-3 text-red-400" />
-              )}
-            </span>
-            <button
-              onClick={handleSync}
-              disabled={isSyncing}
-              className="flex items-center gap-1 px-2 py-0.5 text-[10px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'SYNC' : 'SYNC'}
-            </button>
-          </div>
+        <div className="text-xs uppercase tracking-widest text-muted-foreground px-3 py-1.5 border-b border-border flex items-center justify-between bg-card">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-primary" />
+            🐋 WHALE_LIVE
+            {isConnected ? (
+              <Wifi className="w-3 h-3 text-green-400 animate-pulse" />
+            ) : (
+              <WifiOff className="w-3 h-3 text-red-400" />
+            )}
+          </span>
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-2.5 h-2.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            SYNC
+          </button>
         </div>
         <div className="p-3 overflow-y-auto h-full max-h-[400px] scrollbar-thin">
           {lastSync && (
