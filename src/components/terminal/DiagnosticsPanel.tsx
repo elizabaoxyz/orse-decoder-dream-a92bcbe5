@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import FoxMascot from "./FoxMascot";
+import AsciiMouseEffect from "./AsciiMouseEffect";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
@@ -170,7 +171,8 @@ const DiagnosticsPanel = () => {
   return (
     <aside className="w-56 border-r border-border bg-card flex flex-col">
       {/* ElizaOSCloud Deploy */}
-      <div className="terminal-panel flex-shrink-0">
+      <div className="terminal-panel flex-shrink-0 relative">
+        <AsciiMouseEffect />
         <div className="terminal-header">ElizaOSCloud Deploy</div>
         <div className="p-4">
           <a 
@@ -209,7 +211,8 @@ const DiagnosticsPanel = () => {
       </div>
 
       {/* Whale Activity */}
-      <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
+      <div className={`terminal-panel flex-1 overflow-hidden transition-colors relative ${newTradeFlash ? 'bg-primary/10' : ''}`}>
+        <AsciiMouseEffect />
         <div className="terminal-header flex items-center justify-between gap-1">
           <span className="flex items-center gap-1">
             WHALE_LIVE
