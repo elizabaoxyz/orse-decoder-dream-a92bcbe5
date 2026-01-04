@@ -139,9 +139,9 @@ const DiagnosticsPanel = () => {
 
   return (
     <aside className="w-56 border-r border-border bg-card flex flex-col">
-      {/* elizaOS Deploy */}
+      {/* ElizaOSCloud Deploy */}
       <div className="terminal-panel flex-shrink-0">
-        <div className="terminal-header">elizaOS Deploy</div>
+        <div className="terminal-header">ElizaOSCloud Deploy</div>
         <div className="p-4">
           <FoxMascot />
           <div className="space-y-2 text-xs mt-4">
