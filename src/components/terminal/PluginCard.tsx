@@ -44,7 +44,7 @@ const PluginCard = ({
     <>
       {/* Main Card - Compact with more info */}
       <div
-        className="border border-border bg-card/50 p-3 space-y-2 hover:border-primary/50 transition-all cursor-pointer rounded-lg hover:bg-card/80"
+        className="border border-border bg-card/50 p-3 space-y-2 hover:border-primary/50 transition-all cursor-pointer rounded-2xl hover:bg-card/80"
         onClick={() => setIsOpen(true)}
       >
         {/* Header */}
