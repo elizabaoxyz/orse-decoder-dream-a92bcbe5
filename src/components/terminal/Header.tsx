@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Twitter } from "lucide-react";
 
 const Header = () => {
   const [time, setTime] = useState(new Date());
@@ -47,6 +48,14 @@ const Header = () => {
         <span className="text-foreground font-medium tabular-nums">
           {formatTime(time)}
         </span>
+        <a
+          href="https://twitter.com/ai16zdoram"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Twitter size={16} />
+        </a>
       </div>
     </header>
   );
