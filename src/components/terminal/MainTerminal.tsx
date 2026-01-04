@@ -58,6 +58,18 @@ const MainTerminal = () => {
       serverKey: "eliza-platform",
       serverType: "http",
     },
+    {
+      title: "Polymarket",
+      version: "v1.0.0",
+      toolCount: 8,
+      description: "Full Polymarket prediction market integration. Access markets, order books, price history, trade events, and place orders via CLOB API.",
+      tools: ["GET_ALL_MARKETS", "GET_CLOB_MARKETS", "GET_ORDER_BOOK", "GET_PRICE_HISTORY", "GET_TRADE_EVENTS", "GET_LAST_TRADE_PRICE", "PLACE_ORDER", "CANCEL_ORDER"],
+      pricing: "Requires CLOB_API_URL environment variable",
+      enabled: true,
+      endpoint: "https://clob.polymarket.com",
+      serverKey: "polymarket",
+      serverType: "http",
+    },
   ];
 
   return (
