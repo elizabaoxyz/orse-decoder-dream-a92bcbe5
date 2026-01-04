@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { WhaleDetailModal } from './WhaleDetailModal';
 interface WhaleWallet {
   id: string;
   wallet_address: string;
@@ -255,7 +255,8 @@ export const WhaleStatsPanel = () => {
             {wallets.map((wallet) => (
               <div
                 key={wallet.id}
-                className="p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors"
+                onClick={() => setSelectedWallet(wallet)}
+                className="p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
               >
                 {/* Header with label and featured badge */}
                 <div className="flex items-center justify-between mb-3">
@@ -266,7 +267,7 @@ export const WhaleStatsPanel = () => {
                     </span>
                   </div>
                   <button
-                    onClick={() => copyAddress(wallet.wallet_address)}
+                    onClick={(e) => { e.stopPropagation(); copyAddress(wallet.wallet_address); }}
                     className="p-1.5 hover:bg-muted rounded transition-colors"
                     title="Copy address"
                   >
@@ -298,6 +299,7 @@ export const WhaleStatsPanel = () => {
                   href={`https://polymarket.com/profile/${wallet.wallet_address}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="w-full flex items-center justify-center gap-2 p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -312,6 +314,11 @@ export const WhaleStatsPanel = () => {
           </div>
         )}
       </div>
+      {/* Whale Detail Modal */}
+      <WhaleDetailModal 
+        walletAddress={selectedWallet?.wallet_address || null} 
+        onClose={() => setSelectedWallet(null)} 
+      />
     </div>
   );
 };
