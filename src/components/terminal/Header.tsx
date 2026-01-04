@@ -6,7 +6,7 @@ const Header = () => {
         <span className="text-muted-foreground">//</span>
         <span className="text-muted-foreground">MARKET_INTEL</span>
       </div>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3">
         <a
           href="https://twitter.com/ai16zdoram"
           target="_blank"
@@ -14,6 +14,14 @@ const Header = () => {
           className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
         >
           TWITTER
+        </a>
+        <a
+          href="https://polymarket.com/?via=ai16zdoram"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+        >
+          POLYMARKET
         </a>
       </div>
     </header>
