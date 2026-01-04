@@ -163,10 +163,10 @@ serve(async (req) => {
       const numTrades = volume24h > 50000 ? 2 : 1;
       
       for (let j = 0; j < numTrades; j++) {
-        const tradeValue = Math.max(
-          WHALE_THRESHOLD,
-          Math.floor(volume24h * (0.02 + Math.random() * 0.03))
-        );
+        // Generate realistic whale trade values (varying amounts above threshold)
+        const baseValue = WHALE_THRESHOLD + Math.random() * 95000; // $5K - $100K range
+        const volumeBoost = volume24h > 100000 ? Math.random() * 50000 : 0; // Extra for high-volume markets
+        const tradeValue = Math.floor(baseValue + volumeBoost);
         
         const isYes = Math.random() > 0.5;
         const price = Math.max(isYes ? yesPrice : noPrice, 0.1);
