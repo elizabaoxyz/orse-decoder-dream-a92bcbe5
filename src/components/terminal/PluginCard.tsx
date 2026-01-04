@@ -41,44 +41,44 @@ const PluginCard = ({
   };
 
   return (
-    <div
-      className={`border bg-card/50 transition-all cursor-pointer ${
-        isExpanded ? "border-primary/50" : "border-border hover:border-primary/30"
-      }`}
-      onClick={() => setIsExpanded(!isExpanded)}
-    >
-      {/* Main Card Content */}
-      <div className="p-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-foreground font-medium">{title}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {version} • {toolCount} tools
-            </p>
+    <div className="relative">
+      {/* Main Card */}
+      <div
+        className={`relative z-10 border bg-card transition-all cursor-pointer ${
+          isExpanded ? "border-primary" : "border-border hover:border-primary/30"
+        }`}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-foreground font-medium">{title}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {version} • {toolCount} tools
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {enabled && (
+                <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
+                  Enabled
+                </span>
+              )}
+              <ChevronDown
+                size={16}
+                className={`text-muted-foreground transition-transform duration-300 ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {enabled && (
-              <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
-                Enabled
-              </span>
-            )}
-            <ChevronDown
-              size={16}
-              className={`text-muted-foreground transition-transform ${
-                isExpanded ? "rotate-180" : ""
-              }`}
-            />
-          </div>
-        </div>
 
-        {/* Description */}
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {description}
-        </p>
+          {/* Description */}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {description}
+          </p>
 
-        {/* Tools Preview (when collapsed) */}
-        {!isExpanded && (
+          {/* Tools Preview */}
           <div className="flex flex-wrap gap-1.5">
             {displayTools.map((tool) => (
               <span
@@ -94,21 +94,21 @@ const PluginCard = ({
               </span>
             )}
           </div>
-        )}
 
-        {/* Pricing (when collapsed) */}
-        {!isExpanded && (
+          {/* Pricing */}
           <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
-        )}
+        </div>
       </div>
 
-      {/* Expanded Content */}
+      {/* Expanded Panel - slides out from behind */}
       <div
-        className={`border-t border-border overflow-hidden transition-all duration-300 ease-out ${
-          isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 border-t-0"
+        className={`relative -mt-1 border border-t-0 border-border bg-background/95 transition-all duration-300 ease-out origin-top ${
+          isExpanded
+            ? "opacity-100 translate-y-0 scale-y-100"
+            : "opacity-0 -translate-y-4 scale-y-0 pointer-events-none h-0"
         }`}
       >
-        <div className="p-4 space-y-4 bg-background/30 animate-fade-in">
+        <div className="p-4 space-y-4">
           {/* MCP Endpoint */}
           {endpoint && (
             <div className="space-y-2">
@@ -149,9 +149,6 @@ const PluginCard = ({
               ))}
             </div>
           </div>
-
-          {/* Pricing */}
-          <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
         </div>
       </div>
     </div>
