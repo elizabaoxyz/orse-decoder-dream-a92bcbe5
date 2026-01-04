@@ -180,9 +180,9 @@ const DiagnosticsPanel = () => {
 
       {/* Whale Activity */}
       <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
-        <div className="terminal-header flex items-center justify-between gap-2 whitespace-nowrap">
-          <span className="flex items-center gap-1 min-w-0">
-            <span className="truncate">🐋 WHALE_LIVE</span>
+        <div className="terminal-header flex items-center justify-between gap-1">
+          <span className="flex items-center gap-1">
+            🐋 WHALE_LIVE
             {isConnected ? (
               <Wifi className="w-3 h-3 text-green-400 animate-pulse shrink-0" />
             ) : (
