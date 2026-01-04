@@ -1,5 +1,4 @@
-import { Home, BarChart3, Wallet, Bot } from "lucide-react";
-import { useState } from "react";
+import { Home, BarChart3, Wallet } from "lucide-react";
 
 interface MobileNavProps {
   activeTab: string;
@@ -9,9 +8,8 @@ interface MobileNavProps {
 const MobileNav = ({ activeTab, onTabChange }: MobileNavProps) => {
   const tabs = [
     { id: "home", icon: Home, label: "HOME" },
-    { id: "whale", icon: BarChart3, label: "WHALE" },
+    { id: "whale", icon: BarChart3, label: "ANALYTICS" },
     { id: "wallets", icon: Wallet, label: "WALLETS" },
-    { id: "agent", icon: Bot, label: "AGENT" },
   ];
 
   return (
@@ -24,7 +22,7 @@ const MobileNav = ({ activeTab, onTabChange }: MobileNavProps) => {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -35,7 +33,7 @@ const MobileNav = ({ activeTab, onTabChange }: MobileNavProps) => {
                 {tab.label}
               </span>
               {isActive && (
-                <div className="absolute bottom-0 w-8 h-0.5 bg-primary" />
+                <div className="absolute bottom-0 w-12 h-0.5 bg-primary" />
               )}
             </button>
           );
