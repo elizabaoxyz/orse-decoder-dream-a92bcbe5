@@ -41,6 +41,10 @@ const MainTerminal = () => {
           <p className="text-muted-foreground text-sm max-w-xl leading-relaxed uppercase tracking-wide">
             Official Polymarket Partner | Powered by ElizaOS
           </p>
+          <div className="text-xs text-muted-foreground/70 mt-2 space-y-0.5 font-mono">
+            <p>AGENT_ID:6328b8c7-3add-4fef-a0c5-9f74adacdb43</p>
+            <p>NAME:AI16ZDORAM</p>
+          </div>
 
           {/* Navigation Buttons */}
           <div className="space-y-3">
