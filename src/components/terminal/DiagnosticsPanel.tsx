@@ -182,7 +182,7 @@ const DiagnosticsPanel = () => {
       <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
         <div className="terminal-header flex items-center justify-between gap-1">
           <span className="flex items-center gap-1">
-            🐋 WHALE_LIVE
+            WHALE_LIVE
             {isConnected ? (
               <Wifi className="w-3 h-3 text-green-400 animate-pulse shrink-0" />
             ) : (
