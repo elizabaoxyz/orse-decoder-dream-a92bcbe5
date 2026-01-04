@@ -19,6 +19,8 @@ export interface WhaleWallet {
   id: string;
   wallet_address: string;
   label: string | null;
+  username: string | null;      // @username for URL (e.g., "Martiini")
+  display_name: string | null;  // Display name shown on profile (e.g., "Rotating-Mint")
   total_volume: number | null;
   win_rate: number | null;
   last_active: string | null;
