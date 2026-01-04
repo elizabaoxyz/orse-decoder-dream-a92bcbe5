@@ -9,9 +9,30 @@ const corsHeaders = {
 // Polymarket APIs
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 const DATA_API = 'https://data-api.polymarket.com';
+const PROFILE_API = 'https://polymarket.com/api';
 
 // Whale threshold - minimum trade value in USD
 const WHALE_THRESHOLD = 5000;
+
+// Fetch user profile to get real username
+async function fetchUserProfile(walletAddress: string): Promise<{ username: string | null, displayName: string | null }> {
+  try {
+    const response = await fetch(`${PROFILE_API}/profile/${walletAddress}`);
+    if (!response.ok) {
+      return { username: null, displayName: null };
+    }
+    const profile = await response.json();
+    // userName is the URL username (like "Martiini")
+    // pseudonym/name is the display name (like "Rotating-Mint")
+    return {
+      username: profile.userName || null,
+      displayName: profile.pseudonym || profile.name || null
+    };
+  } catch (error) {
+    console.log(`Failed to fetch profile for ${walletAddress}:`, error);
+    return { username: null, displayName: null };
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,7 +48,6 @@ serve(async (req) => {
     console.log('🔄 Starting Polymarket whale data sync (REAL DATA)...');
 
     // Step 1: Fetch REAL trades from Polymarket Data API
-    // Filter by CASH >= $5000 to get whale trades only
     console.log('📊 Fetching real whale trades from Data API...');
     
     const tradesUrl = `${DATA_API}/trades?limit=100&takerOnly=true&filterType=CASH&filterAmount=${WHALE_THRESHOLD}`;
@@ -52,12 +72,10 @@ serve(async (req) => {
     const walletMap = new Map();
 
     for (const trade of realTrades) {
-      // Calculate total value (size * price)
       const size = parseFloat(trade.size || '0');
       const price = parseFloat(trade.price || '0');
       const totalValue = size * price;
       
-      // Skip if below threshold (extra safety check)
       if (totalValue < WHALE_THRESHOLD) {
         continue;
       }
@@ -67,7 +85,6 @@ serve(async (req) => {
         continue;
       }
 
-      // Use transaction hash if available, or generate unique ID
       const txHash = trade.transactionHash || `real_${trade.timestamp}_${walletAddr.slice(2, 10)}`;
       
       const transformedTrade = {
@@ -85,26 +102,47 @@ serve(async (req) => {
 
       allTrades.push(transformedTrade);
 
-      // Track wallet info
-      const label = trade.pseudonym || trade.name || null;
+      // Track wallet info - use trade data initially
+      const displayName = trade.pseudonym || trade.name || null;
       const existing = walletMap.get(walletAddr) || {
         wallet_address: walletAddr,
-        label: label,
+        label: displayName, // This will be updated with real username later
         total_volume: 0,
         win_rate: null,
         last_active: null,
-        is_featured: !!label,
+        is_featured: !!displayName,
       };
       
       existing.total_volume += totalValue;
-      if (label && !existing.label) {
-        existing.label = label;
+      if (displayName && !existing.label) {
+        existing.label = displayName;
         existing.is_featured = true;
       }
       walletMap.set(walletAddr, existing);
     }
 
     console.log(`🐋 Processed ${allTrades.length} valid whale trades`);
+
+    // Step 3: Fetch real usernames from Profile API for top wallets
+    console.log('👤 Fetching real usernames from Profile API...');
+    const walletArray = Array.from(walletMap.values())
+      .sort((a, b) => b.total_volume - a.total_volume)
+      .slice(0, 30); // Fetch profiles for top 30 wallets
+    
+    let profilesFetched = 0;
+    for (const wallet of walletArray) {
+      const profile = await fetchUserProfile(wallet.wallet_address);
+      if (profile.username) {
+        // Use the real username for URL linking
+        wallet.label = profile.username;
+        wallet.is_featured = true;
+        profilesFetched++;
+        console.log(`✓ ${wallet.wallet_address.slice(0, 10)}... → @${profile.username}`);
+      }
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    console.log(`👤 Fetched ${profilesFetched} real usernames`);
 
     // Insert transactions
     let insertedCount = 0;
@@ -122,7 +160,7 @@ serve(async (req) => {
     
     console.log(`💾 Inserted ${insertedCount} transactions`);
 
-    // Update wallet profiles
+    // Update wallet profiles with real usernames
     let walletsUpdated = 0;
     for (const wallet of walletMap.values()) {
       const { error } = await supabase
@@ -133,7 +171,7 @@ serve(async (req) => {
     
     console.log(`👛 Updated ${walletsUpdated} wallet profiles`);
 
-    // Step 3: Fetch market data from Gamma API for snapshots
+    // Step 4: Fetch market data from Gamma API for snapshots
     console.log('📊 Fetching market data from Gamma API...');
     const marketsResponse = await fetch(`${GAMMA_API}/markets?active=true&closed=false&limit=50`);
     const markets = await marketsResponse.json();
@@ -171,6 +209,7 @@ serve(async (req) => {
       whale_trades_fetched: realTrades.length,
       trades_inserted: insertedCount,
       wallets_tracked: walletMap.size,
+      profiles_fetched: profilesFetched,
       snapshots_stored: snapshotsStored,
     };
     

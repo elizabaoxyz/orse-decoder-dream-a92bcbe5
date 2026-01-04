@@ -170,7 +170,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                         )}
                       </button>
                       <a
-                        href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                        href={wallet.label ? `https://polymarket.com/@${wallet.label}` : `https://polymarket.com/profile/${wallet.wallet_address}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -368,7 +368,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                     {wallet.wallet_address}
                   </div>
                   <a
-                    href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                    href={wallet.label ? `https://polymarket.com/@${wallet.label}` : `https://polymarket.com/profile/${wallet.wallet_address}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
