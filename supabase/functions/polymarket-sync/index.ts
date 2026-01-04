@@ -14,19 +14,20 @@ const PROFILE_API = 'https://polymarket.com/api';
 // Whale threshold - minimum trade value in USD
 const WHALE_THRESHOLD = 5000;
 
-// Fetch user profile to get real username
+// Fetch user profile to get real username and display name
 async function fetchUserProfile(walletAddress: string): Promise<{ username: string | null, displayName: string | null }> {
   try {
-    const response = await fetch(`${PROFILE_API}/profile/${walletAddress}`);
+    // Use the official Gamma API public-profile endpoint with query param
+    const response = await fetch(`${GAMMA_API}/public-profile?address=${walletAddress}`);
     if (!response.ok) {
       return { username: null, displayName: null };
     }
     const profile = await response.json();
-    // userName is the URL username (like "Martiini")
-    // pseudonym/name is the display name (like "Rotating-Mint")
+    // "name" is the @username for URL (e.g., "Martiini" -> polymarket.com/@Martiini)
+    // "pseudonym" is the display name shown on the profile (e.g., "Rotating-Mint")
     return {
-      username: profile.userName || null,
-      displayName: profile.pseudonym || profile.name || null
+      username: profile.name || null,
+      displayName: profile.pseudonym || null
     };
   } catch (error) {
     console.log(`Failed to fetch profile for ${walletAddress}:`, error);
@@ -106,7 +107,9 @@ serve(async (req) => {
       const displayName = trade.pseudonym || trade.name || null;
       const existing = walletMap.get(walletAddr) || {
         wallet_address: walletAddr,
-        label: displayName, // This will be updated with real username later
+        label: displayName, // legacy field, keep for backward compatibility
+        username: null,     // will be populated from profile API
+        display_name: displayName, // display pseudonym
         total_volume: 0,
         win_rate: null,
         last_active: null,
@@ -114,7 +117,8 @@ serve(async (req) => {
       };
       
       existing.total_volume += totalValue;
-      if (displayName && !existing.label) {
+      if (displayName && !existing.display_name) {
+        existing.display_name = displayName;
         existing.label = displayName;
         existing.is_featured = true;
       }
@@ -124,25 +128,29 @@ serve(async (req) => {
     console.log(`🐋 Processed ${allTrades.length} valid whale trades`);
 
     // Step 3: Fetch real usernames from Profile API for top wallets
-    console.log('👤 Fetching real usernames from Profile API...');
+    console.log('👤 Fetching real usernames from Gamma Profile API...');
     const walletArray = Array.from(walletMap.values())
       .sort((a, b) => b.total_volume - a.total_volume)
-      .slice(0, 30); // Fetch profiles for top 30 wallets
+      .slice(0, 50); // Fetch profiles for top 50 wallets
     
     let profilesFetched = 0;
     for (const wallet of walletArray) {
       const profile = await fetchUserProfile(wallet.wallet_address);
       if (profile.username) {
-        // Use the real username for URL linking
-        wallet.label = profile.username;
+        // Store the real username for @username URL linking
+        wallet.username = profile.username;
         wallet.is_featured = true;
         profilesFetched++;
-        console.log(`✓ ${wallet.wallet_address.slice(0, 10)}... → @${profile.username}`);
+        console.log(`✓ ${wallet.wallet_address.slice(0, 10)}... → @${profile.username} (${profile.displayName || 'no display name'})`);
+      }
+      if (profile.displayName && !wallet.display_name) {
+        wallet.display_name = profile.displayName;
+        wallet.label = profile.displayName;
       }
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 80));
     }
-    console.log(`👤 Fetched ${profilesFetched} real usernames`);
+    console.log(`👤 Fetched ${profilesFetched} real usernames from Gamma API`);
 
     // Insert transactions
     let insertedCount = 0;

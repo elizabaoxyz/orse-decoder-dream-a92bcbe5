@@ -12,6 +12,8 @@ interface WhaleWallet {
   id: string;
   wallet_address: string;
   label: string | null;
+  username: string | null;      // @username for URL linking
+  display_name: string | null;  // Display name shown on profile
   total_volume: number | null;
   win_rate: number | null;
   last_active: string | null;
@@ -147,9 +149,20 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       {wallet.is_featured && <span className="text-base">🐋</span>}
                       <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-primary text-xs truncate">
-                          @{wallet.label || 'unknown'}
-                        </span>
+                        {wallet.username ? (
+                          <span className="font-bold text-primary text-xs truncate">
+                            @{wallet.username}
+                          </span>
+                        ) : (
+                          <span className="font-bold text-foreground text-xs truncate">
+                            {formatAddress(wallet.wallet_address)}
+                          </span>
+                        )}
+                        {wallet.display_name && wallet.username && (
+                          <span className="text-[9px] text-muted-foreground truncate">
+                            {wallet.display_name}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="font-mono text-xs font-bold text-primary flex-shrink-0">
@@ -172,7 +185,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                         )}
                       </button>
                       <a
-                        href={wallet.label ? `https://polymarket.com/@${wallet.label}` : `https://polymarket.com/profile/${wallet.wallet_address}`}
+                        href={wallet.username ? `https://polymarket.com/@${wallet.username}` : `https://polymarket.com/profile/${wallet.wallet_address}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -343,9 +356,20 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       {wallet.is_featured && <span className="text-base md:text-lg">🐋</span>}
                       <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-primary text-xs md:text-sm truncate">
-                          @{wallet.label || 'unknown'}
-                        </span>
+                        {wallet.username ? (
+                          <span className="font-bold text-primary text-xs md:text-sm truncate">
+                            @{wallet.username}
+                          </span>
+                        ) : (
+                          <span className="font-bold text-foreground text-xs md:text-sm truncate">
+                            {formatAddress(wallet.wallet_address)}
+                          </span>
+                        )}
+                        {wallet.display_name && wallet.username && (
+                          <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">
+                            {wallet.display_name}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <button
@@ -372,7 +396,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                     {wallet.wallet_address}
                   </div>
                   <a
-                    href={wallet.label ? `https://polymarket.com/@${wallet.label}` : `https://polymarket.com/profile/${wallet.wallet_address}`}
+                    href={wallet.username ? `https://polymarket.com/@${wallet.username}` : `https://polymarket.com/profile/${wallet.wallet_address}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
