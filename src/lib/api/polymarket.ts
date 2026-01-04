@@ -25,6 +25,11 @@ export interface WhaleWallet {
   win_rate: number | null;
   last_active: string | null;
   is_featured: boolean | null;
+  positions_value: number | null;
+  total_pnl: number | null;
+  percent_pnl: number | null;
+  active_positions: number | null;
+  profile_image: string | null;
   created_at: string;
 }
 

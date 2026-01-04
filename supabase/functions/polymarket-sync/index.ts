@@ -14,24 +14,72 @@ const PROFILE_API = 'https://polymarket.com/api';
 // Whale threshold - minimum trade value in USD
 const WHALE_THRESHOLD = 5000;
 
-// Fetch user profile to get real username and display name
-async function fetchUserProfile(walletAddress: string): Promise<{ username: string | null, displayName: string | null }> {
+// Fetch user profile to get real username, display name, and profile image
+async function fetchUserProfile(walletAddress: string): Promise<{ 
+  username: string | null, 
+  displayName: string | null,
+  profileImage: string | null 
+}> {
   try {
     // Use the official Gamma API public-profile endpoint with query param
     const response = await fetch(`${GAMMA_API}/public-profile?address=${walletAddress}`);
     if (!response.ok) {
-      return { username: null, displayName: null };
+      return { username: null, displayName: null, profileImage: null };
     }
     const profile = await response.json();
     // "name" is the @username for URL (e.g., "Martiini" -> polymarket.com/@Martiini)
     // "pseudonym" is the display name shown on the profile (e.g., "Rotating-Mint")
     return {
       username: profile.name || null,
-      displayName: profile.pseudonym || null
+      displayName: profile.pseudonym || null,
+      profileImage: profile.profileImage || null
     };
   } catch (error) {
     console.log(`Failed to fetch profile for ${walletAddress}:`, error);
-    return { username: null, displayName: null };
+    return { username: null, displayName: null, profileImage: null };
+  }
+}
+
+// Fetch user positions to calculate P&L
+async function fetchUserPositions(walletAddress: string): Promise<{
+  positionsValue: number,
+  totalPnl: number,
+  percentPnl: number,
+  activePositions: number
+}> {
+  try {
+    const response = await fetch(`${DATA_API}/positions?user=${walletAddress}`);
+    if (!response.ok) {
+      return { positionsValue: 0, totalPnl: 0, percentPnl: 0, activePositions: 0 };
+    }
+    const positions = await response.json();
+    
+    if (!Array.isArray(positions) || positions.length === 0) {
+      return { positionsValue: 0, totalPnl: 0, percentPnl: 0, activePositions: 0 };
+    }
+    
+    // Calculate totals from all positions
+    let totalCurrentValue = 0;
+    let totalInitialValue = 0;
+    let totalCashPnl = 0;
+    
+    for (const pos of positions) {
+      totalCurrentValue += parseFloat(pos.currentValue || 0);
+      totalInitialValue += parseFloat(pos.initialValue || 0);
+      totalCashPnl += parseFloat(pos.cashPnl || 0);
+    }
+    
+    const percentPnl = totalInitialValue > 0 ? (totalCashPnl / totalInitialValue) * 100 : 0;
+    
+    return {
+      positionsValue: totalCurrentValue,
+      totalPnl: totalCashPnl,
+      percentPnl: percentPnl,
+      activePositions: positions.length
+    };
+  } catch (error) {
+    console.log(`Failed to fetch positions for ${walletAddress}:`, error);
+    return { positionsValue: 0, totalPnl: 0, percentPnl: 0, activePositions: 0 };
   }
 }
 
@@ -114,6 +162,11 @@ serve(async (req) => {
         win_rate: null,
         last_active: null,
         is_featured: !!displayName,
+        positions_value: 0,
+        total_pnl: 0,
+        percent_pnl: 0,
+        active_positions: 0,
+        profile_image: null,
       };
       
       existing.total_volume += totalValue;
@@ -127,30 +180,49 @@ serve(async (req) => {
 
     console.log(`🐋 Processed ${allTrades.length} valid whale trades`);
 
-    // Step 3: Fetch real usernames from Profile API for top wallets
-    console.log('👤 Fetching real usernames from Gamma Profile API...');
+    // Step 3: Fetch real usernames and P&L data from APIs for top wallets
+    console.log('👤 Fetching profiles and P&L data from Polymarket APIs...');
     const walletArray = Array.from(walletMap.values())
       .sort((a, b) => b.total_volume - a.total_volume)
-      .slice(0, 50); // Fetch profiles for top 50 wallets
+      .slice(0, 30); // Fetch profiles for top 30 wallets (to stay within time limits)
     
     let profilesFetched = 0;
+    let pnlFetched = 0;
+    
     for (const wallet of walletArray) {
+      // Fetch profile data
       const profile = await fetchUserProfile(wallet.wallet_address);
       if (profile.username) {
-        // Store the real username for @username URL linking
         wallet.username = profile.username;
         wallet.is_featured = true;
         profilesFetched++;
-        console.log(`✓ ${wallet.wallet_address.slice(0, 10)}... → @${profile.username} (${profile.displayName || 'no display name'})`);
       }
       if (profile.displayName && !wallet.display_name) {
         wallet.display_name = profile.displayName;
         wallet.label = profile.displayName;
       }
+      if (profile.profileImage) {
+        wallet.profile_image = profile.profileImage;
+      }
+      
+      // Fetch P&L data
+      const pnlData = await fetchUserPositions(wallet.wallet_address);
+      if (pnlData.activePositions > 0) {
+        wallet.positions_value = pnlData.positionsValue;
+        wallet.total_pnl = pnlData.totalPnl;
+        wallet.percent_pnl = pnlData.percentPnl;
+        wallet.active_positions = pnlData.activePositions;
+        pnlFetched++;
+        
+        const pnlSign = pnlData.totalPnl >= 0 ? '+' : '';
+        console.log(`📊 ${wallet.username || wallet.wallet_address.slice(0, 10)}... → P&L: ${pnlSign}$${pnlData.totalPnl.toFixed(0)} (${pnlData.percentPnl.toFixed(1)}%)`);
+      }
+      
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 80));
+      await new Promise(resolve => setTimeout(resolve, 60));
     }
-    console.log(`👤 Fetched ${profilesFetched} real usernames from Gamma API`);
+    
+    console.log(`👤 Fetched ${profilesFetched} profiles, ${pnlFetched} P&L records`);
 
     // Insert transactions
     let insertedCount = 0;
