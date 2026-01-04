@@ -61,25 +61,25 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <StatCard
                 icon={<BarChart3 className="w-4 h-4" />}
-                label="总交易量"
+                label="TOTAL_VOLUME"
                 value={formatValue(analytics.total_volume)}
                 color="text-terminal-accent"
               />
               <StatCard
                 icon={<Activity className="w-4 h-4" />}
-                label="交易次数"
+                label="TRADE_COUNT"
                 value={analytics.total_trades.toString()}
                 color="text-blue-400"
               />
               <StatCard
                 icon={<TrendingUp className="w-4 h-4" />}
-                label="平均交易额"
+                label="AVG_TRADE"
                 value={formatValue(analytics.avg_trade_size)}
                 color="text-purple-400"
               />
               <StatCard
                 icon={<Clock className="w-4 h-4" />}
-                label="胜率"
+                label="WIN_RATE"
                 value={analytics.win_rate ? `${analytics.win_rate.toFixed(1)}%` : 'N/A'}
                 color={analytics.win_rate && analytics.win_rate >= 50 ? 'text-green-400' : 'text-red-400'}
               />
@@ -87,11 +87,11 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
 
             {/* Trading Behavior */}
             <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-terminal-foreground mb-3">交易行为分析</h3>
+              <h3 className="text-sm font-semibold text-terminal-foreground mb-3">TRADING_BEHAVIOR_ANALYSIS</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="flex justify-between text-xs text-terminal-muted mb-1">
-                    <span>买入 vs 卖出</span>
+                    <span>Buy vs Sell</span>
                     <span>{analytics.buy_count} / {analytics.sell_count}</span>
                   </div>
                   <div className="h-2 bg-terminal-surface rounded-full overflow-hidden">
@@ -105,8 +105,8 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                     />
                   </div>
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-green-400">买入</span>
-                    <span className="text-red-400">卖出</span>
+                    <span className="text-green-400">BUY</span>
+                    <span className="text-red-400">SELL</span>
                   </div>
                 </div>
                 <div>
@@ -131,8 +131,8 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                 </div>
               </div>
               <div className="flex justify-between text-xs text-terminal-muted mt-4 pt-3 border-t border-terminal-border/30">
-                <span>首次活动: {formatDistanceToNow(new Date(analytics.first_seen), { addSuffix: true })}</span>
-                <span>最后活动: {formatDistanceToNow(new Date(analytics.last_active), { addSuffix: true })}</span>
+                <span>First Active: {formatDistanceToNow(new Date(analytics.first_seen), { addSuffix: true })}</span>
+                <span>Last Active: {formatDistanceToNow(new Date(analytics.last_active), { addSuffix: true })}</span>
               </div>
             </div>
 
@@ -140,7 +140,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
               <h3 className="text-sm font-semibold text-terminal-foreground mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-terminal-accent" />
-                偏好市场 (Top {analytics.preferred_markets.length})
+                PREFERRED_MARKETS (Top {analytics.preferred_markets.length})
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {analytics.preferred_markets.map((market, idx) => (
@@ -157,12 +157,12 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-terminal-muted">
-                      <span>{market.trade_count} 笔交易</span>
+                      <span>{market.trade_count} trades</span>
                       <span>•</span>
-                      <span>平均 {formatValue(market.avg_trade_size)}</span>
+                      <span>Avg {formatValue(market.avg_trade_size)}</span>
                       <span>•</span>
                       <span className={market.dominant_side === 'buy' ? 'text-green-400' : 'text-red-400'}>
-                        偏好{market.dominant_side === 'buy' ? '买入' : '卖出'}
+                        {market.dominant_side === 'buy' ? 'BUY' : 'SELL'}
                       </span>
                       <span className={market.dominant_outcome === 'YES' ? 'text-blue-400' : 'text-orange-400'}>
                         {market.dominant_outcome}
@@ -171,7 +171,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                   </div>
                 ))}
                 {analytics.preferred_markets.length === 0 && (
-                  <p className="text-center text-terminal-muted py-4">暂无交易记录</p>
+                  <p className="text-center text-terminal-muted py-4">No trading records</p>
                 )}
               </div>
             </div>
@@ -180,7 +180,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
               <h3 className="text-sm font-semibold text-terminal-foreground mb-3 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-blue-400" />
-                最近交易
+                RECENT_TRANSACTIONS
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {analytics.recent_transactions.map((tx) => (
@@ -220,7 +220,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
           </div>
         ) : (
           <div className="text-center py-8 text-terminal-muted">
-            无法加载数据
+            Unable to load data
           </div>
         )}
       </DialogContent>
