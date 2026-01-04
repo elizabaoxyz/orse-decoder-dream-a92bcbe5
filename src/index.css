@@ -295,4 +295,28 @@
       min-height: -webkit-fill-available;
     }
   }
+
+  /* Hide scrollbar on mobile */
+  .mobile-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide all scrollbars on mobile devices */
+  @media (max-width: 767px) {
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }
