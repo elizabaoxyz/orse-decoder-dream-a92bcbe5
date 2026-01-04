@@ -51,7 +51,7 @@ const Header = () => {
           href="https://twitter.com/ai16zdoram"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-muted-foreground hover:text-primary transition-colors"
+          className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
         >
           TWITTER
         </a>
