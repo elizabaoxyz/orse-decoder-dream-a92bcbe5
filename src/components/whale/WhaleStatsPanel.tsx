@@ -45,11 +45,15 @@ export const WhaleStatsPanel = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: transactions } = await supabase
+      const now = new Date();
+      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: transactions, count } = await supabase
         .from('whale_transactions')
-        .select('*')
+        .select('wallet_address, side, total_value, outcome, timestamp', { count: 'exact' })
+        .gte('timestamp', dayAgo)
         .order('timestamp', { ascending: false })
-        .limit(100);
+        .limit(1000);
 
       const { data: walletData } = await supabase
         .from('whale_wallets')
@@ -64,11 +68,9 @@ export const WhaleStatsPanel = () => {
         setWallets(filteredWallets);
       }
 
-      if (transactions && transactions.length > 0) {
-        const now = new Date();
-        const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        
-        const recent = transactions.filter(tx => new Date(tx.timestamp) > dayAgo);
+      const recent = transactions || [];
+
+      if (recent.length > 0) {
         const buys = recent.filter(tx => tx.side === 'buy');
         const sells = recent.filter(tx => tx.side === 'sell');
         const yesOutcomes = recent.filter(tx => tx.outcome === 'YES');
@@ -76,7 +78,7 @@ export const WhaleStatsPanel = () => {
 
         setStats({
           totalVolume24h: recent.reduce((sum, tx) => sum + tx.total_value, 0),
-          totalTransactions: recent.length,
+          totalTransactions: count ?? recent.length,
           activeWhales: new Set(recent.map(tx => tx.wallet_address)).size,
           topBuy: buys.length > 0 ? Math.max(...buys.map(tx => tx.total_value)) : 0,
           topSell: sells.length > 0 ? Math.max(...sells.map(tx => tx.total_value)) : 0,
@@ -84,8 +86,8 @@ export const WhaleStatsPanel = () => {
           sellVolume: sells.reduce((sum, tx) => sum + tx.total_value, 0),
           yesVolume: yesOutcomes.reduce((sum, tx) => sum + tx.total_value, 0),
           noVolume: noOutcomes.reduce((sum, tx) => sum + tx.total_value, 0),
-          avgTradeSize: recent.length > 0 
-            ? recent.reduce((sum, tx) => sum + tx.total_value, 0) / recent.length 
+          avgTradeSize: recent.length > 0
+            ? recent.reduce((sum, tx) => sum + tx.total_value, 0) / recent.length
             : 0,
         });
       }
