@@ -178,19 +178,9 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end flex-shrink-0">
-                      <span className="font-mono text-xs font-bold text-primary">
-                        {formatValue(wallet.total_volume || 0)}
-                      </span>
-                      {(wallet.total_pnl !== null && wallet.total_pnl !== 0) && (
-                        <span className={`text-[10px] font-mono font-bold ${(wallet.total_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {(wallet.total_pnl || 0) >= 0 ? '+' : ''}{formatValue(wallet.total_pnl || 0)}
-                          <span className="text-[8px] ml-0.5">
-                            ({(wallet.percent_pnl || 0) >= 0 ? '+' : ''}{(wallet.percent_pnl || 0).toFixed(1)}%)
-                          </span>
-                        </span>
-                      )}
-                    </div>
+                    <span className="font-mono text-xs font-bold text-primary flex-shrink-0">
+                      {formatValue(wallet.total_volume || 0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono text-muted-foreground">
@@ -415,32 +405,11 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                       )}
                     </button>
                   </div>
-                  <div className="space-y-1.5 mb-2 md:mb-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
-                      <span className="font-mono text-xs md:text-sm font-bold text-primary">
-                        {formatValue(wallet.total_volume || 0)}
-                      </span>
-                    </div>
-                    {(wallet.total_pnl !== null && wallet.total_pnl !== 0) && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] md:text-xs text-muted-foreground">P&L:</span>
-                        <span className={`font-mono text-xs md:text-sm font-bold ${(wallet.total_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {(wallet.total_pnl || 0) >= 0 ? '+' : ''}{formatValue(wallet.total_pnl || 0)}
-                          <span className="text-[9px] ml-1">
-                            ({(wallet.percent_pnl || 0) >= 0 ? '+' : ''}{(wallet.percent_pnl || 0).toFixed(1)}%)
-                          </span>
-                        </span>
-                      </div>
-                    )}
-                    {(wallet.active_positions !== null && wallet.active_positions > 0) && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] md:text-xs text-muted-foreground">POSITIONS:</span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {wallet.active_positions} active
-                        </span>
-                      </div>
-                    )}
+                  <div className="flex justify-between items-center mb-2 md:mb-3">
+                    <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
+                    <span className="font-mono text-xs md:text-sm font-bold text-primary">
+                      {formatValue(wallet.total_volume || 0)}
+                    </span>
                   </div>
                   <div className="p-1.5 md:p-2 bg-muted/20 rounded text-[8px] md:text-[10px] font-mono text-muted-foreground break-all mb-2 md:mb-3">
                     {wallet.wallet_address}
