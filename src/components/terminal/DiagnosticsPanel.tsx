@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import FoxMascot from "./FoxMascot";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
@@ -19,6 +19,12 @@ const DiagnosticsPanel = () => {
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [newTradeFlash, setNewTradeFlash] = useState(false);
+  
+  // Drag scroll state
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
 
   const fetchWhaleData = useCallback(async () => {
     const { data } = await supabase
@@ -137,6 +143,30 @@ const DiagnosticsPanel = () => {
     return title;
   };
 
+  // Drag scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartY(e.pageY - scrollRef.current.offsetTop);
+    setScrollTop(scrollRef.current.scrollTop);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const y = e.pageY - scrollRef.current.offsetTop;
+    const walk = (y - startY) * 1.5;
+    scrollRef.current.scrollTop = scrollTop - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
   return (
     <aside className="w-56 border-r border-border bg-card flex flex-col">
       {/* ElizaOSCloud Deploy */}
@@ -198,7 +228,14 @@ const DiagnosticsPanel = () => {
             SYNC
           </button>
         </div>
-        <div className="p-3 overflow-y-auto h-full max-h-[400px] custom-scrollbar">
+        <div 
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          className={`p-3 overflow-y-auto h-full max-h-[400px] drag-scroll ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        >
           {lastSync && (
             <div className="text-[10px] text-muted-foreground mb-2 border-b border-border/30 pb-1">
               Last sync: {lastSync} | Auto: every 2min

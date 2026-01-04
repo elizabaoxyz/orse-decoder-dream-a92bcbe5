@@ -257,4 +257,25 @@
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary) / 0.4) hsl(var(--muted) / 0.3);
   }
+
+  /* Hidden scrollbar with drag support */
+  .drag-scroll {
+    overflow-y: auto;
+    cursor: grab;
+    user-select: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .drag-scroll:active {
+    cursor: grabbing;
+  }
+
+  .drag-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .drag-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
