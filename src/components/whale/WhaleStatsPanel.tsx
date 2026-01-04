@@ -124,7 +124,7 @@ export const WhaleStatsPanel = () => {
   return (
     <div className="space-y-4">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         <div className="p-3 bg-card/50 border border-border/50 space-y-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <DollarSign className="w-3 h-3" />
@@ -135,39 +135,39 @@ export const WhaleStatsPanel = () => {
           </div>
         </div>
 
-        <div className="p-3 bg-card/50 border border-border/50 space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
+          <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Activity className="w-3 h-3" />
-            TRANSACTIONS
+            TXS
           </div>
-          <div className="text-xl font-bold font-mono text-blue-400">
+          <div className="text-lg md:text-xl font-bold font-mono text-blue-400">
             {stats.totalTransactions}
           </div>
         </div>
 
-        <div className="p-3 bg-card/50 border border-border/50 space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
+          <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Users className="w-3 h-3" />
-            ACTIVE_WHALES
+            WHALES
           </div>
-          <div className="text-xl font-bold font-mono text-purple-400">
+          <div className="text-lg md:text-xl font-bold font-mono text-purple-400">
             {stats.activeWhales}
           </div>
         </div>
 
-        <div className="p-3 bg-card/50 border border-border/50 space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
+          <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Zap className="w-3 h-3" />
-            AVG_TRADE
+            AVG
           </div>
-          <div className="text-xl font-bold font-mono text-yellow-400">
+          <div className="text-lg md:text-xl font-bold font-mono text-yellow-400">
             {formatValue(stats.avgTradeSize)}
           </div>
         </div>
       </div>
 
       {/* Buy/Sell & Yes/No Sentiment Bars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
         <div className="p-3 bg-card/50 border border-border/50 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
@@ -224,7 +224,7 @@ export const WhaleStatsPanel = () => {
       </div>
 
       {/* Top Buy/Sell */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 md:gap-3">
         <div className="p-3 bg-green-500/10 border border-green-500/30 space-y-1">
           <div className="flex items-center gap-2 text-xs text-green-400">
             <TrendingUp className="w-3 h-3" />
@@ -247,24 +247,24 @@ export const WhaleStatsPanel = () => {
       </div>
 
       {/* Whale Wallets List */}
-      <div className="p-4 bg-card/50 border border-border/50 space-y-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+      <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
+        <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
           <Users className="w-4 h-4" />
-          TRACKED_WHALE_WALLETS ({wallets.length})
+          WHALE_WALLETS ({wallets.length})
         </div>
         {wallets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
             {wallets.map((wallet) => (
               <div
                 key={wallet.id}
                 onClick={() => setSelectedWallet(wallet)}
-                className="p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
+                className="p-3 md:p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
               >
                 {/* Header with label and featured badge */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2 md:mb-3">
                   <div className="flex items-center gap-2">
-                    {wallet.is_featured && <span className="text-lg">🐋</span>}
-                    <span className="font-bold text-foreground text-sm">
+                    {wallet.is_featured && <span className="text-base md:text-lg">🐋</span>}
+                    <span className="font-bold text-foreground text-xs md:text-sm">
                       {wallet.label || 'Unknown'}
                     </span>
                   </div>
@@ -282,17 +282,17 @@ export const WhaleStatsPanel = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="space-y-2 mb-3">
+                <div className="space-y-2 mb-2 md:mb-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">VOLUME:</span>
-                    <span className="font-mono text-sm font-bold text-primary">
+                    <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
+                    <span className="font-mono text-xs md:text-sm font-bold text-primary">
                       {formatValue(wallet.total_volume || 0)}
                     </span>
                   </div>
                 </div>
 
                 {/* Wallet Address */}
-                <div className="p-2 bg-muted/20 rounded text-[10px] font-mono text-muted-foreground break-all mb-3">
+                <div className="p-1.5 md:p-2 bg-muted/20 rounded text-[8px] md:text-[10px] font-mono text-muted-foreground break-all mb-2 md:mb-3">
                   {wallet.wallet_address}
                 </div>
 
@@ -302,10 +302,10 @@ export const WhaleStatsPanel = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full flex items-center justify-center gap-2 p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
+                  className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-xs md:text-sm font-medium"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  VIEW ON POLYMARKET
+                  <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">VIEW ON </span>POLYMARKET
                 </a>
               </div>
             ))}

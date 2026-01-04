@@ -47,10 +47,10 @@ const MainTerminal = () => {
         <AsciiMouseEffect />
         <div className="terminal-header">DORAMOS_TERMINAL_PRIMARY</div>
         
-        <div className="p-8 lg:p-12 space-y-8">
+        <div className="p-4 md:p-8 lg:p-12 space-y-6 md:space-y-8">
           {/* Main Title */}
           <div>
-            <h1 className="text-6xl lg:text-7xl font-bold text-foreground tracking-tight glitch">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight glitch">
               DoramOS<span className="text-primary">_</span>
             </h1>
             <div className="w-24 h-1 bg-primary mt-2 pulse-glow" />

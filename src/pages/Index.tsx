@@ -11,9 +11,11 @@ const Index = () => {
       <Header />
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Diagnostics */}
-        <DiagnosticsPanel />
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Sidebar - Diagnostics (hidden on mobile) */}
+        <div className="hidden lg:block">
+          <DiagnosticsPanel />
+        </div>
 
         {/* Main Terminal Area */}
         <div className="flex-1 flex flex-col">
@@ -25,7 +27,7 @@ const Index = () => {
       <div className="terminal-panel border-t border-border relative">
         <AsciiMouseEffect />
         <div className="terminal-header">🐋 WHALE_ANALYTICS_DASHBOARD</div>
-        <div className="p-4">
+        <div className="p-2 md:p-4">
           <WhaleStatsPanel />
         </div>
       </div>
