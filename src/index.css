@@ -283,4 +283,16 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Safe area for mobile bottom nav */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Mobile app-like feel */
+  @supports (-webkit-touch-callout: none) {
+    .min-h-screen {
+      min-height: -webkit-fill-available;
+    }
+  }
 }

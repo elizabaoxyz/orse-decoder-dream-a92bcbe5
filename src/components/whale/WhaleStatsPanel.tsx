@@ -3,6 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhaleDetailModal } from './WhaleDetailModal';
+interface WhaleStatsPanelProps {
+  showStatsOnly?: boolean;
+  showWalletsOnly?: boolean;
+}
+
 interface WhaleWallet {
   id: string;
   wallet_address: string;
@@ -26,7 +31,7 @@ interface WhaleStatsData {
   avgTradeSize: number;
 }
 
-export const WhaleStatsPanel = () => {
+export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false }: WhaleStatsPanelProps) => {
   const [stats, setStats] = useState<WhaleStatsData>({
     totalVolume24h: 0,
     totalTransactions: 0,
@@ -120,6 +125,77 @@ export const WhaleStatsPanel = () => {
   
   const totalYesNo = stats.yesVolume + stats.noVolume;
   const yesPercent = totalYesNo > 0 ? (stats.yesVolume / totalYesNo) * 100 : 50;
+
+  // Show only wallets
+  if (showWalletsOnly) {
+    return (
+      <div className="space-y-4">
+        <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
+          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
+            <Users className="w-4 h-4" />
+            WHALE_WALLETS ({wallets.length})
+          </div>
+          {wallets.length > 0 ? (
+            <div className="grid grid-cols-1 gap-2">
+              {wallets.map((wallet) => (
+                <div
+                  key={wallet.id}
+                  onClick={() => setSelectedWallet(wallet)}
+                  className="p-3 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {wallet.is_featured && <span className="text-base">🐋</span>}
+                      <span className="font-bold text-foreground text-xs">
+                        {wallet.label || 'Unknown'}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-primary">
+                      {formatValue(wallet.total_volume || 0)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono text-muted-foreground">
+                      {formatAddress(wallet.wallet_address)}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); copyAddress(wallet.wallet_address); }}
+                        className="p-1 hover:bg-muted rounded transition-colors"
+                      >
+                        {copiedAddress === wallet.wallet_address ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </button>
+                      <a
+                        href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1 hover:bg-muted rounded transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3 text-primary" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground text-center py-8">
+              No whale wallets tracked yet.
+            </div>
+          )}
+        </div>
+        <WhaleDetailModal 
+          walletAddress={selectedWallet?.wallet_address || null} 
+          onClose={() => setSelectedWallet(null)} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -246,76 +322,71 @@ export const WhaleStatsPanel = () => {
         </div>
       </div>
 
-      {/* Whale Wallets List */}
-      <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
-        <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
-          <Users className="w-4 h-4" />
-          WHALE_WALLETS ({wallets.length})
-        </div>
-        {wallets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-            {wallets.map((wallet) => (
-              <div
-                key={wallet.id}
-                onClick={() => setSelectedWallet(wallet)}
-                className="p-3 md:p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
-              >
-                {/* Header with label and featured badge */}
-                <div className="flex items-center justify-between mb-2 md:mb-3">
-                  <div className="flex items-center gap-2">
-                    {wallet.is_featured && <span className="text-base md:text-lg">🐋</span>}
-                    <span className="font-bold text-foreground text-xs md:text-sm">
-                      {wallet.label || 'Unknown'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); copyAddress(wallet.wallet_address); }}
-                    className="p-1.5 hover:bg-muted rounded transition-colors"
-                    title="Copy address"
-                  >
-                    {copiedAddress === wallet.wallet_address ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="space-y-2 mb-2 md:mb-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
-                    <span className="font-mono text-xs md:text-sm font-bold text-primary">
-                      {formatValue(wallet.total_volume || 0)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Wallet Address */}
-                <div className="p-1.5 md:p-2 bg-muted/20 rounded text-[8px] md:text-[10px] font-mono text-muted-foreground break-all mb-2 md:mb-3">
-                  {wallet.wallet_address}
-                </div>
-
-                {/* View on Polymarket Button */}
-                <a
-                  href={`https://polymarket.com/profile/${wallet.wallet_address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-xs md:text-sm font-medium"
+      {/* Whale Wallets List - hidden if showStatsOnly */}
+      {!showStatsOnly && (
+        <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
+          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
+            <Users className="w-4 h-4" />
+            WHALE_WALLETS ({wallets.length})
+          </div>
+          {wallets.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+              {wallets.map((wallet) => (
+                <div
+                  key={wallet.id}
+                  onClick={() => setSelectedWallet(wallet)}
+                  className="p-3 md:p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
                 >
-                  <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                  <span className="hidden sm:inline">VIEW ON </span>POLYMARKET
-                </a>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground text-center py-8">
-            No whale wallets tracked yet. Click SYNC to fetch data.
-          </div>
-        )}
-      </div>
+                  <div className="flex items-center justify-between mb-2 md:mb-3">
+                    <div className="flex items-center gap-2">
+                      {wallet.is_featured && <span className="text-base md:text-lg">🐋</span>}
+                      <span className="font-bold text-foreground text-xs md:text-sm">
+                        {wallet.label || 'Unknown'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); copyAddress(wallet.wallet_address); }}
+                      className="p-1.5 hover:bg-muted rounded transition-colors"
+                      title="Copy address"
+                    >
+                      {copiedAddress === wallet.wallet_address ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="space-y-2 mb-2 md:mb-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
+                      <span className="font-mono text-xs md:text-sm font-bold text-primary">
+                        {formatValue(wallet.total_volume || 0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-1.5 md:p-2 bg-muted/20 rounded text-[8px] md:text-[10px] font-mono text-muted-foreground break-all mb-2 md:mb-3">
+                    {wallet.wallet_address}
+                  </div>
+                  <a
+                    href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-xs md:text-sm font-medium"
+                  >
+                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">VIEW ON </span>POLYMARKET
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground text-center py-8">
+              No whale wallets tracked yet. Click SYNC to fetch data.
+            </div>
+          )}
+        </div>
+      )}
       {/* Whale Detail Modal */}
       <WhaleDetailModal 
         walletAddress={selectedWallet?.wallet_address || null} 

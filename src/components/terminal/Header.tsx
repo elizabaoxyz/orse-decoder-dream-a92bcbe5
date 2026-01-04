@@ -1,33 +1,33 @@
 const Header = () => {
   return (
-    <header className="border-b border-border bg-card px-2 md:px-4 py-2 flex flex-col md:flex-row items-start md:items-center justify-between text-xs uppercase tracking-widest gap-2 md:gap-0">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-3 md:px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
       <div className="flex items-center gap-2">
-        <span className="text-primary text-glow">DORAMOS_TERMINAL</span>
-        <span className="text-muted-foreground hidden sm:inline">//</span>
-        <span className="text-muted-foreground hidden sm:inline text-[10px] md:text-xs">LIVE DATA FROM POLYMARKET API</span>
+        <span className="text-primary text-glow text-[10px] md:text-xs">DORAMOS</span>
+        <span className="text-muted-foreground hidden md:inline">//</span>
+        <span className="text-muted-foreground hidden md:inline text-xs">LIVE DATA FROM POLYMARKET API</span>
       </div>
-      <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+      <div className="flex items-center gap-1.5 md:gap-3">
         <a
           href="https://twitter.com/ai16zdoram"
           target="_blank"
           rel="noopener noreferrer"
-          className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[10px] md:text-xs"
+          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
         >
-          TWITTER
+          X
         </a>
         <a
           href="https://polymarket.com/?via=ai16zdoram"
           target="_blank"
           rel="noopener noreferrer"
-          className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[10px] md:text-xs"
+          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
         >
-          POLYMARKET
+          POLY
         </a>
         <a
           href="https://github.com/elizaos-plugins/plugin-polymarket"
           target="_blank"
           rel="noopener noreferrer"
-          className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[10px] md:text-xs"
+          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs hidden sm:block"
         >
           GITHUB
         </a>
