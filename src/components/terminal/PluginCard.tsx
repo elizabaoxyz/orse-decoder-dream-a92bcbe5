@@ -42,32 +42,40 @@ const PluginCard = ({
 
   return (
     <>
-      {/* Main Card - Compact with more info */}
+      {/* Main Card - Animated */}
       <div
-        className="border border-border bg-card/50 p-3 space-y-2 hover:border-primary/50 transition-all cursor-pointer rounded-2xl hover:bg-card/80"
+        className="group relative border border-border bg-card/50 p-3 space-y-2 cursor-pointer rounded-2xl transition-all duration-300 hover:border-primary/70 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20"
         onClick={() => setIsOpen(true)}
+        style={{
+          animation: `float ${3 + Math.random() * 2}s ease-in-out infinite`,
+          animationDelay: `${Math.random() * 2}s`
+        }}
       >
+        {/* Glow effect on hover */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        
         {/* Header */}
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-foreground font-medium text-sm truncate">{title}</h3>
+        <div className="relative flex items-center justify-between gap-2">
+          <h3 className="text-foreground font-medium text-sm truncate group-hover:text-primary transition-colors">{title}</h3>
           {enabled && (
-            <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0">
+            <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0 group-hover:bg-primary/20 group-hover:border-primary/50 transition-all">
               ON
             </span>
           )}
         </div>
 
         {/* Description - truncated */}
-        <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+        <p className="relative text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
           {description}
         </p>
 
         {/* Tools Preview */}
-        <div className="flex flex-wrap gap-1">
-          {displayTools.map((tool) => (
+        <div className="relative flex flex-wrap gap-1">
+          {displayTools.map((tool, i) => (
             <span
               key={tool}
-              className="text-[9px] text-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded border border-border/50"
+              className="text-[9px] text-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 transition-all duration-200 group-hover:border-primary/30 group-hover:bg-primary/5"
+              style={{ transitionDelay: `${i * 50}ms` }}
             >
               {tool}
             </span>
@@ -80,9 +88,12 @@ const PluginCard = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-[9px] text-muted-foreground/70 pt-1 border-t border-border/30">
+        <div className="relative flex items-center justify-between text-[9px] text-muted-foreground/70 pt-1 border-t border-border/30 group-hover:border-primary/20 transition-colors">
           <span>{version}</span>
-          <span>{toolCount} tools</span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
+            {toolCount} tools
+          </span>
         </div>
       </div>
 
@@ -193,6 +204,14 @@ const PluginCard = ({
           100% {
             opacity: 1;
             transform: scale(1);
+          }
+        }
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-4px);
           }
         }
       `}</style>
