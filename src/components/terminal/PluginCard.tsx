@@ -42,29 +42,39 @@ const PluginCard = ({
 
   return (
     <>
-      {/* Main Card - Animated */}
+      {/* Main Card - Lab Equipment Style */}
       <div
-        className="group relative border border-border bg-card/50 p-3 space-y-2 cursor-pointer rounded-2xl transition-all duration-300 hover:border-primary/70 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20"
+        className="group relative border border-border bg-card/50 p-3 space-y-2 cursor-pointer rounded-2xl transition-all duration-300 hover:border-primary/70 hover:bg-card/80 hover:shadow-lg hover:shadow-primary/20 overflow-hidden"
         onClick={() => setIsOpen(true)}
-        style={{
-          animation: `float ${3 + Math.random() * 2}s ease-in-out infinite`,
-          animationDelay: `${Math.random() * 2}s`
-        }}
       >
-        {/* Glow effect on hover */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        {/* Subtle scan line effect */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)',
+            animation: 'scanMove 8s linear infinite'
+          }}
+        />
+        
+        {/* Corner indicator light */}
+        <div className="absolute top-2 right-2 flex items-center gap-1">
+          <div 
+            className="w-1.5 h-1.5 rounded-full bg-primary/80"
+            style={{ animation: 'blink 2s ease-in-out infinite' }}
+          />
+        </div>
         
         {/* Header */}
-        <div className="relative flex items-center justify-between gap-2">
+        <div className="relative flex items-center justify-between gap-2 pr-4">
           <h3 className="text-foreground font-medium text-sm truncate group-hover:text-primary transition-colors">{title}</h3>
           {enabled && (
-            <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0 group-hover:bg-primary/20 group-hover:border-primary/50 transition-all">
+            <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0 group-hover:bg-primary/20 transition-all">
               ON
             </span>
           )}
         </div>
 
-        {/* Description - truncated */}
+        {/* Description */}
         <p className="relative text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
           {description}
         </p>
@@ -74,8 +84,7 @@ const PluginCard = ({
           {displayTools.map((tool, i) => (
             <span
               key={tool}
-              className="text-[9px] text-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 transition-all duration-200 group-hover:border-primary/30 group-hover:bg-primary/5"
-              style={{ transitionDelay: `${i * 50}ms` }}
+              className="text-[9px] text-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 transition-all duration-200 group-hover:border-primary/30"
             >
               {tool}
             </span>
@@ -87,13 +96,16 @@ const PluginCard = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="relative flex items-center justify-between text-[9px] text-muted-foreground/70 pt-1 border-t border-border/30 group-hover:border-primary/20 transition-colors">
-          <span>{version}</span>
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
-            {toolCount} tools
+        {/* Footer with status indicators */}
+        <div className="relative flex items-center justify-between text-[9px] text-muted-foreground/70 pt-1 border-t border-border/30">
+          <span className="flex items-center gap-1.5">
+            <span 
+              className="w-1 h-1 rounded-full bg-green-500/70"
+              style={{ animation: 'pulse 3s ease-in-out infinite' }}
+            />
+            {version}
           </span>
+          <span className="font-mono opacity-70">{toolCount} tools</span>
         </div>
       </div>
 
@@ -191,28 +203,22 @@ const PluginCard = ({
 
       <style>{`
         @keyframes bounce-in {
-          0% {
-            opacity: 0;
-            transform: scale(0.3);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-          70% {
-            transform: scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
+          0% { opacity: 0; transform: scale(0.3); }
+          50% { transform: scale(1.05); }
+          70% { transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
         }
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-4px);
-          }
+        @keyframes blink {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+        @keyframes scanMove {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100%); }
         }
       `}</style>
     </>
