@@ -144,13 +144,15 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                   className="p-3 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       {wallet.is_featured && <span className="text-base">🐋</span>}
-                      <span className="font-bold text-foreground text-xs">
-                        {wallet.label || 'Unknown'}
-                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-primary text-xs truncate">
+                          @{wallet.label || 'unknown'}
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-mono text-xs font-bold text-primary">
+                    <span className="font-mono text-xs font-bold text-primary flex-shrink-0">
                       {formatValue(wallet.total_volume || 0)}
                     </span>
                   </div>
@@ -338,11 +340,13 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                   className="p-3 md:p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2 md:mb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       {wallet.is_featured && <span className="text-base md:text-lg">🐋</span>}
-                      <span className="font-bold text-foreground text-xs md:text-sm">
-                        {wallet.label || 'Unknown'}
-                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-primary text-xs md:text-sm truncate">
+                          @{wallet.label || 'unknown'}
+                        </span>
+                      </div>
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); copyAddress(wallet.wallet_address); }}
