@@ -143,7 +143,14 @@ const DiagnosticsPanel = () => {
       <div className="terminal-panel flex-shrink-0">
         <div className="terminal-header">ElizaOSCloud Deploy</div>
         <div className="p-4">
-          <FoxMascot />
+          <a 
+            href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block hover:opacity-80 transition-opacity"
+          >
+            <FoxMascot />
+          </a>
           <div className="space-y-2 text-xs mt-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">AI16ZDoram</span>
