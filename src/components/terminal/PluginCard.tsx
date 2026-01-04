@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { X } from "lucide-react";
 
 export interface PluginCardProps {
   title: string;
@@ -26,7 +26,8 @@ const PluginCard = ({
   serverKey,
   serverType = "sse",
 }: PluginCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const displayTools = tools.slice(0, 3);
   const remainingTools = tools.length - 3;
@@ -40,117 +41,146 @@ const PluginCard = ({
     },
   };
 
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div ref={cardRef} className="relative">
       {/* Main Card */}
       <div
-        className={`relative z-10 border bg-card transition-all cursor-pointer ${
-          isExpanded ? "border-primary" : "border-border hover:border-primary/30"
-        }`}
-        onClick={() => setIsExpanded(!isExpanded)}
+        className="border border-border bg-card/50 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="p-4 space-y-3">
-          {/* Header */}
-          <div className="flex items-start justify-between">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-foreground font-medium">{title}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {version} • {toolCount} tools
+            </p>
+          </div>
+          {enabled && (
+            <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
+              Enabled
+            </span>
+          )}
+        </div>
+
+        {/* Description */}
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {description}
+        </p>
+
+        {/* Tools Preview */}
+        <div className="flex flex-wrap gap-1.5">
+          {displayTools.map((tool) => (
+            <span
+              key={tool}
+              className="text-xs text-foreground/80 bg-muted/50 px-2 py-0.5 border border-border"
+            >
+              {tool}
+            </span>
+          ))}
+          {remainingTools > 0 && (
+            <span className="text-xs text-muted-foreground px-2 py-0.5">
+              +{remainingTools} more
+            </span>
+          )}
+        </div>
+
+        {/* Pricing */}
+        <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
+      </div>
+
+      {/* Popup Card */}
+      {isOpen && (
+        <div 
+          className="absolute z-50 top-2 left-2 right-2 bg-card border border-primary shadow-lg shadow-primary/20 animate-scale-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Popup Header */}
+          <div className="flex items-center justify-between p-3 border-b border-border">
             <div>
               <h3 className="text-foreground font-medium">{title}</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {version} • {toolCount} tools
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {enabled && (
-                <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
-                  Enabled
-                </span>
-              )}
-              <ChevronDown
-                size={16}
-                className={`text-muted-foreground transition-transform duration-300 ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
-              />
-            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            >
+              <X size={16} />
+            </button>
           </div>
 
-          {/* Description */}
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {description}
-          </p>
+          {/* Popup Content */}
+          <div className="p-3 space-y-3 max-h-80 overflow-y-auto">
+            {/* Description */}
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {description}
+            </p>
 
-          {/* Tools Preview */}
-          <div className="flex flex-wrap gap-1.5">
-            {displayTools.map((tool) => (
-              <span
-                key={tool}
-                className="text-xs text-foreground/80 bg-muted/50 px-2 py-0.5 border border-border"
-              >
-                {tool}
-              </span>
-            ))}
-            {remainingTools > 0 && (
-              <span className="text-xs text-muted-foreground px-2 py-0.5">
-                +{remainingTools} more
-              </span>
+            {/* MCP Endpoint */}
+            {endpoint && (
+              <div className="space-y-1.5">
+                <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
+                  MCP Endpoint
+                </h4>
+                <code className="block text-xs text-primary bg-muted/30 p-2 border border-border break-all">
+                  {endpoint}
+                </code>
+              </div>
             )}
-          </div>
 
-          {/* Pricing */}
-          <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
-        </div>
-      </div>
+            {/* Configuration */}
+            {endpoint && (
+              <div className="space-y-1.5">
+                <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
+                  Configuration
+                </h4>
+                <pre className="text-xs text-foreground/80 bg-muted/30 p-2 border border-border overflow-x-auto">
+                  {JSON.stringify(configJson, null, 2)}
+                </pre>
+              </div>
+            )}
 
-      {/* Expanded Panel - slides out from behind */}
-      <div
-        className={`relative -mt-1 border border-t-0 border-border bg-background/95 transition-all duration-300 ease-out origin-top ${
-          isExpanded
-            ? "opacity-100 translate-y-0 scale-y-100"
-            : "opacity-0 -translate-y-4 scale-y-0 pointer-events-none h-0"
-        }`}
-      >
-        <div className="p-4 space-y-4">
-          {/* MCP Endpoint */}
-          {endpoint && (
-            <div className="space-y-2">
+            {/* Available Tools */}
+            <div className="space-y-1.5">
               <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
-                MCP Endpoint
+                Available Tools ({toolCount})
               </h4>
-              <code className="block text-xs text-primary bg-muted/30 p-3 border border-border break-all">
-                {endpoint}
-              </code>
+              <div className="flex flex-wrap gap-1.5">
+                {tools.map((tool) => (
+                  <span
+                    key={tool}
+                    className="text-xs text-foreground/80 bg-muted/50 px-2 py-0.5 border border-border"
+                  >
+                    {tool}
+                  </span>
+                ))}
+              </div>
             </div>
-          )}
 
-          {/* Configuration */}
-          {endpoint && (
-            <div className="space-y-2">
-              <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
-                Configuration
-              </h4>
-              <pre className="text-xs text-foreground/80 bg-muted/30 p-3 border border-border overflow-x-auto">
-                {JSON.stringify(configJson, null, 2)}
-              </pre>
-            </div>
-          )}
-
-          {/* Available Tools */}
-          <div className="space-y-2">
-            <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
-              Available Tools ({toolCount})
-            </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {tools.map((tool) => (
-                <span
-                  key={tool}
-                  className="text-xs text-foreground/80 bg-muted/50 px-2 py-0.5 border border-border"
-                >
-                  {tool}
-                </span>
-              ))}
-            </div>
+            {/* Pricing */}
+            <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
