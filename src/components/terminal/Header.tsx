@@ -4,7 +4,7 @@ const Header = () => {
       <div className="flex items-center gap-2">
         <span className="text-primary text-glow">DORAMOS_TERMINAL</span>
         <span className="text-muted-foreground">//</span>
-        <span className="text-muted-foreground">MARKET_INTEL</span>
+        <span className="text-muted-foreground">LIVE DATA FROM POLYMARKET API</span>
       </div>
       <div className="flex items-center gap-3">
         <a
