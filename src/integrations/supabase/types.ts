@@ -94,36 +94,51 @@ export type Database = {
       }
       whale_wallets: {
         Row: {
+          active_positions: number | null
           created_at: string
           display_name: string | null
           id: string
           is_featured: boolean | null
           label: string | null
           last_active: string | null
+          percent_pnl: number | null
+          positions_value: number | null
+          profile_image: string | null
+          total_pnl: number | null
           total_volume: number | null
           username: string | null
           wallet_address: string
           win_rate: number | null
         }
         Insert: {
+          active_positions?: number | null
           created_at?: string
           display_name?: string | null
           id?: string
           is_featured?: boolean | null
           label?: string | null
           last_active?: string | null
+          percent_pnl?: number | null
+          positions_value?: number | null
+          profile_image?: string | null
+          total_pnl?: number | null
           total_volume?: number | null
           username?: string | null
           wallet_address: string
           win_rate?: number | null
         }
         Update: {
+          active_positions?: number | null
           created_at?: string
           display_name?: string | null
           id?: string
           is_featured?: boolean | null
           label?: string | null
           last_active?: string | null
+          percent_pnl?: number | null
+          positions_value?: number | null
+          profile_image?: string | null
+          total_pnl?: number | null
           total_volume?: number | null
           username?: string | null
           wallet_address?: string

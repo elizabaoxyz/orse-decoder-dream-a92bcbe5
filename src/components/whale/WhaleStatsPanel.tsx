@@ -18,6 +18,11 @@ interface WhaleWallet {
   win_rate: number | null;
   last_active: string | null;
   is_featured: boolean | null;
+  positions_value: number | null;
+  total_pnl: number | null;
+  percent_pnl: number | null;
+  active_positions: number | null;
+  profile_image: string | null;
 }
 
 interface WhaleStatsData {
@@ -147,7 +152,15 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {wallet.is_featured && <span className="text-base">🐋</span>}
+                      {wallet.profile_image ? (
+                        <img 
+                          src={wallet.profile_image} 
+                          alt="" 
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : wallet.is_featured ? (
+                        <span className="text-base">🐋</span>
+                      ) : null}
                       <div className="flex flex-col min-w-0">
                         {wallet.username ? (
                           <span className="font-bold text-primary text-xs truncate">
@@ -165,9 +178,19 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                         )}
                       </div>
                     </div>
-                    <span className="font-mono text-xs font-bold text-primary flex-shrink-0">
-                      {formatValue(wallet.total_volume || 0)}
-                    </span>
+                    <div className="flex flex-col items-end flex-shrink-0">
+                      <span className="font-mono text-xs font-bold text-primary">
+                        {formatValue(wallet.total_volume || 0)}
+                      </span>
+                      {(wallet.total_pnl !== null && wallet.total_pnl !== 0) && (
+                        <span className={`text-[10px] font-mono font-bold ${(wallet.total_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {(wallet.total_pnl || 0) >= 0 ? '+' : ''}{formatValue(wallet.total_pnl || 0)}
+                          <span className="text-[8px] ml-0.5">
+                            ({(wallet.percent_pnl || 0) >= 0 ? '+' : ''}{(wallet.percent_pnl || 0).toFixed(1)}%)
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono text-muted-foreground">
@@ -354,7 +377,15 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                 >
                   <div className="flex items-center justify-between mb-2 md:mb-3">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {wallet.is_featured && <span className="text-base md:text-lg">🐋</span>}
+                      {wallet.profile_image ? (
+                        <img 
+                          src={wallet.profile_image} 
+                          alt="" 
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : wallet.is_featured ? (
+                        <span className="text-base md:text-lg">🐋</span>
+                      ) : null}
                       <div className="flex flex-col min-w-0">
                         {wallet.username ? (
                           <span className="font-bold text-primary text-xs md:text-sm truncate">
@@ -384,13 +415,32 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                       )}
                     </button>
                   </div>
-                  <div className="space-y-2 mb-2 md:mb-3">
+                  <div className="space-y-1.5 mb-2 md:mb-3">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
                       <span className="font-mono text-xs md:text-sm font-bold text-primary">
                         {formatValue(wallet.total_volume || 0)}
                       </span>
                     </div>
+                    {(wallet.total_pnl !== null && wallet.total_pnl !== 0) && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] md:text-xs text-muted-foreground">P&L:</span>
+                        <span className={`font-mono text-xs md:text-sm font-bold ${(wallet.total_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {(wallet.total_pnl || 0) >= 0 ? '+' : ''}{formatValue(wallet.total_pnl || 0)}
+                          <span className="text-[9px] ml-1">
+                            ({(wallet.percent_pnl || 0) >= 0 ? '+' : ''}{(wallet.percent_pnl || 0).toFixed(1)}%)
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                    {(wallet.active_positions !== null && wallet.active_positions > 0) && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] md:text-xs text-muted-foreground">POSITIONS:</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {wallet.active_positions} active
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-1.5 md:p-2 bg-muted/20 rounded text-[8px] md:text-[10px] font-mono text-muted-foreground break-all mb-2 md:mb-3">
                     {wallet.wallet_address}
