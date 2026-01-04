@@ -10,11 +10,16 @@ const FloatingChatButton = () => {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
+        className={`fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
           isOpen
-            ? "bg-muted border border-border rotate-0"
-            : "bg-primary border-2 border-primary"
+            ? "bg-background/80 border border-border"
+            : "bg-background/90 border border-primary/30"
         }`}
+        style={{
+          boxShadow: isOpen 
+            ? 'none' 
+            : '0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2), 0 0 60px rgba(16, 185, 129, 0.1)'
+        }}
       >
         {isOpen ? (
           <X className="w-6 h-6 text-foreground" />
@@ -23,9 +28,12 @@ const FloatingChatButton = () => {
             <img
               src={elizaMascot}
               alt="Chat"
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover animate-pulse"
+              style={{
+                filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.6)) drop-shadow(0 0 16px rgba(16, 185, 129, 0.4))'
+              }}
             />
-            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-primary animate-pulse" />
+            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background animate-pulse" />
           </div>
         )}
       </button>
