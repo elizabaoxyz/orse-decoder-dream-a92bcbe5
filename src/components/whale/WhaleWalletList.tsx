@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { polymarketApi, WhaleWallet } from '@/lib/api/polymarket';
 import { formatDistanceToNow } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { WhaleDetailModal } from './WhaleDetailModal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -10,6 +11,7 @@ export const WhaleWalletList = () => {
   const [allWallets, setAllWallets] = useState<WhaleWallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchWallets = async () => {
@@ -57,124 +59,133 @@ export const WhaleWalletList = () => {
   }
 
   return (
-    <div className="space-y-3">
-      {allWallets.length === 0 ? (
-        <div className="text-center py-8 text-terminal-muted">
-          <p>No whale wallets tracked yet.</p>
-        </div>
-      ) : (
-        <>
-          {currentWallets.map((wallet) => (
-            <div
-              key={wallet.id}
-              className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg hover:border-terminal-accent/50 transition-all group"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {wallet.is_featured && (
-                    <span className="text-yellow-400 text-lg">🐋</span>
-                  )}
-                  <span className="font-mono text-terminal-foreground">
-                    {truncateAddress(wallet.wallet_address)}
-                  </span>
-                  {wallet.label && (
-                    <span className="text-xs bg-terminal-accent/20 text-terminal-accent px-2 py-0.5 rounded">
-                      {wallet.label}
+    <>
+      <div className="space-y-3">
+        {allWallets.length === 0 ? (
+          <div className="text-center py-8 text-terminal-muted">
+            <p>No whale wallets tracked yet.</p>
+          </div>
+        ) : (
+          <>
+            {currentWallets.map((wallet) => (
+              <div
+                key={wallet.id}
+                onClick={() => setSelectedWallet(wallet.wallet_address)}
+                className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg hover:border-terminal-accent/50 transition-all group cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {wallet.is_featured && (
+                      <span className="text-yellow-400 text-lg">🐋</span>
+                    )}
+                    <span className="font-mono text-terminal-foreground">
+                      {truncateAddress(wallet.wallet_address)}
                     </span>
-                  )}
+                    {wallet.label && (
+                      <span className="text-xs bg-terminal-accent/20 text-terminal-accent px-2 py-0.5 rounded">
+                        {wallet.label}
+                      </span>
+                    )}
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-terminal-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-terminal-muted block text-xs mb-1">Volume</span>
+                    <span className="text-terminal-accent font-bold">
+                      {formatVolume(wallet.total_volume)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-terminal-muted block text-xs mb-1">Win Rate</span>
+                    <span className={`font-bold ${
+                      (wallet.win_rate || 0) >= 60 ? 'text-green-400' : 
+                      (wallet.win_rate || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>
+                      {wallet.win_rate?.toFixed(1) || '0'}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-terminal-muted block text-xs mb-1">Last Active</span>
+                    <span className="text-terminal-foreground/70">
+                      {wallet.last_active 
+                        ? formatDistanceToNow(new Date(wallet.last_active), { addSuffix: true })
+                        : 'N/A'
+                      }
+                    </span>
+                  </div>
                 </div>
               </div>
+            ))}
 
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-terminal-muted block text-xs mb-1">Volume</span>
-                  <span className="text-terminal-accent font-bold">
-                    {formatVolume(wallet.total_volume)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-terminal-muted block text-xs mb-1">Win Rate</span>
-                  <span className={`font-bold ${
-                    (wallet.win_rate || 0) >= 60 ? 'text-green-400' : 
-                    (wallet.win_rate || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
-                    {wallet.win_rate?.toFixed(1) || '0'}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-terminal-muted block text-xs mb-1">Last Active</span>
-                  <span className="text-terminal-foreground/70">
-                    {wallet.last_active 
-                      ? formatDistanceToNow(new Date(wallet.last_active), { addSuffix: true })
-                      : 'N/A'
-                    }
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-terminal-border/30">
-              <span className="text-sm text-terminal-muted">
-                {startIndex + 1}-{Math.min(endIndex, allWallets.length)} of {allWallets.length} wallets
-              </span>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="h-8 w-8 p-0 border-terminal-border/50 bg-terminal-surface/30 hover:bg-terminal-accent/20"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t border-terminal-border/30">
+                <span className="text-sm text-terminal-muted">
+                  {startIndex + 1}-{Math.min(endIndex, allWallets.length)} of {allWallets.length} wallets
+                </span>
                 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(page => {
-                      // Show first, last, current, and adjacent pages
-                      return page === 1 || 
-                             page === totalPages || 
-                             Math.abs(page - currentPage) <= 1;
-                    })
-                    .map((page, index, arr) => (
-                      <div key={page} className="flex items-center">
-                        {index > 0 && arr[index - 1] !== page - 1 && (
-                          <span className="text-terminal-muted px-1">...</span>
-                        )}
-                        <Button
-                          variant={currentPage === page ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => goToPage(page)}
-                          className={`h-8 w-8 p-0 ${
-                            currentPage === page 
-                              ? 'bg-terminal-accent text-terminal-background' 
-                              : 'border-terminal-border/50 bg-terminal-surface/30 hover:bg-terminal-accent/20'
-                          }`}
-                        >
-                          {page}
-                        </Button>
-                      </div>
-                    ))}
-                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); goToPage(currentPage - 1); }}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8 p-0 border-terminal-border/50 bg-terminal-surface/30 hover:bg-terminal-accent/20"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first, last, current, and adjacent pages
+                        return page === 1 || 
+                               page === totalPages || 
+                               Math.abs(page - currentPage) <= 1;
+                      })
+                      .map((page, index, arr) => (
+                        <div key={page} className="flex items-center">
+                          {index > 0 && arr[index - 1] !== page - 1 && (
+                            <span className="text-terminal-muted px-1">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); goToPage(page); }}
+                            className={`h-8 w-8 p-0 ${
+                              currentPage === page 
+                                ? 'bg-terminal-accent text-terminal-background' 
+                                : 'border-terminal-border/50 bg-terminal-surface/30 hover:bg-terminal-accent/20'
+                            }`}
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="h-8 w-8 p-0 border-terminal-border/50 bg-terminal-surface/30 hover:bg-terminal-accent/20"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); goToPage(currentPage + 1); }}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8 p-0 border-terminal-border/50 bg-terminal-surface/30 hover:bg-terminal-accent/20"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <WhaleDetailModal 
+        walletAddress={selectedWallet} 
+        onClose={() => setSelectedWallet(null)} 
+      />
+    </>
   );
 };
