@@ -198,7 +198,7 @@ const DiagnosticsPanel = () => {
             SYNC
           </button>
         </div>
-        <div className="p-3 overflow-y-auto h-full max-h-[400px] scrollbar-thin">
+        <div className="p-3 overflow-y-auto h-full max-h-[400px] custom-scrollbar">
           {lastSync && (
             <div className="text-[10px] text-muted-foreground mb-2 border-b border-border/30 pb-1">
               Last sync: {lastSync} | Auto: every 2min
