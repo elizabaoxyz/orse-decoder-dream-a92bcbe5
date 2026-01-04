@@ -169,17 +169,15 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                           <Copy className="w-3 h-3 text-muted-foreground" />
                         )}
                       </button>
-                      {wallet.label && (
-                        <a
-                          href={`https://polymarket.com/profile/${wallet.label}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3 text-primary" />
-                        </a>
-                      )}
+                      <a
+                        href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1 hover:bg-muted rounded transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3 text-primary" />
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -369,22 +367,16 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                   <div className="p-1.5 md:p-2 bg-muted/20 rounded text-[8px] md:text-[10px] font-mono text-muted-foreground break-all mb-2 md:mb-3">
                     {wallet.wallet_address}
                   </div>
-                  {wallet.label ? (
-                    <a
-                      href={`https://polymarket.com/profile/${wallet.label}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-xs md:text-sm font-medium"
-                    >
-                      <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">VIEW ON </span>POLYMARKET
-                    </a>
-                  ) : (
-                    <div className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-muted/30 border border-muted/50 text-muted-foreground text-xs md:text-sm">
-                      No profile available
-                    </div>
-                  )}
+                  <a
+                    href={`https://polymarket.com/profile/${wallet.wallet_address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-xs md:text-sm font-medium"
+                  >
+                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">VIEW ON </span>POLYMARKET
+                  </a>
                 </div>
               ))}
             </div>
