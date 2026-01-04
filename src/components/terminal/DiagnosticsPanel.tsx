@@ -180,19 +180,19 @@ const DiagnosticsPanel = () => {
 
       {/* Whale Activity */}
       <div className={`terminal-panel flex-1 overflow-hidden transition-colors ${newTradeFlash ? 'bg-primary/10' : ''}`}>
-        <div className="terminal-header flex items-center justify-between">
-          <span className="flex items-center gap-1">
-            🐋 WHALE_LIVE
+        <div className="terminal-header flex items-center justify-between gap-2 whitespace-nowrap">
+          <span className="flex items-center gap-1 min-w-0">
+            <span className="truncate">🐋 WHALE_LIVE</span>
             {isConnected ? (
-              <Wifi className="w-3 h-3 text-green-400 animate-pulse" />
+              <Wifi className="w-3 h-3 text-green-400 animate-pulse shrink-0" />
             ) : (
-              <WifiOff className="w-3 h-3 text-red-400" />
+              <WifiOff className="w-3 h-3 text-red-400 shrink-0" />
             )}
           </span>
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 shrink-0 px-1.5 py-0.5 text-[9px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-2.5 h-2.5 ${isSyncing ? 'animate-spin' : ''}`} />
             SYNC
