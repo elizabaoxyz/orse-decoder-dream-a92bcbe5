@@ -86,17 +86,6 @@ const MainTerminal = () => {
             </div>
           </div>
 
-          {/* Bottom Status */}
-          <div className="pt-8 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground">AGENT_ID:</span>
-              <span className="text-foreground">6328b8c7-3add-4fef-a0c5-9f74adacdb43</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">NAME :</span>
-              <span className="text-primary">AI16ZDORAM</span>
-            </div>
-          </div>
 
           {/* Command Input */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
