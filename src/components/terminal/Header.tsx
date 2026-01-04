@@ -23,6 +23,14 @@ const Header = () => {
         >
           POLYMARKET
         </a>
+        <a
+          href="https://github.com/elizaos-plugins/plugin-polymarket"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border border-border px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+        >
+          GITHUB
+        </a>
       </div>
     </header>
   );
