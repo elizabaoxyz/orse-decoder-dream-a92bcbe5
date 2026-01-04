@@ -103,8 +103,12 @@ const PluginCard = ({
       </div>
 
       {/* Expanded Content */}
-      {isExpanded && (
-        <div className="border-t border-border p-4 space-y-4 bg-background/30">
+      <div
+        className={`border-t border-border overflow-hidden transition-all duration-300 ease-out ${
+          isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 border-t-0"
+        }`}
+      >
+        <div className="p-4 space-y-4 bg-background/30 animate-fade-in">
           {/* MCP Endpoint */}
           {endpoint && (
             <div className="space-y-2">
@@ -149,7 +153,7 @@ const PluginCard = ({
           {/* Pricing */}
           <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
         </div>
-      )}
+      </div>
     </div>
   );
 };
