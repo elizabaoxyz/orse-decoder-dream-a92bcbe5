@@ -1,0 +1,96 @@
+import { MessageCircle, X, ExternalLink, Send } from "lucide-react";
+import { useState } from "react";
+import elizaMascot from "@/assets/eliza-mascot.png";
+
+const FloatingChatButton = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {/* Floating Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
+          isOpen
+            ? "bg-muted border border-border rotate-0"
+            : "bg-primary border-2 border-primary"
+        }`}
+      >
+        {isOpen ? (
+          <X className="w-6 h-6 text-foreground" />
+        ) : (
+          <div className="relative">
+            <img
+              src={elizaMascot}
+              alt="Chat"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-primary animate-pulse" />
+          </div>
+        )}
+      </button>
+
+      {/* Chat Panel */}
+      {isOpen && (
+        <div className="fixed bottom-36 right-4 z-50 w-[calc(100%-2rem)] max-w-[320px] bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-scale-in">
+          {/* Header */}
+          <div className="bg-primary/10 border-b border-border p-3 flex items-center gap-3">
+            <div className="relative">
+              <img
+                src={elizaMascot}
+                alt="AI16ZDoram"
+                className="w-10 h-10 rounded-full object-cover border-2 border-primary"
+              />
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-foreground">AI16ZDoram</h3>
+              <p className="text-[10px] text-primary">ONLINE • ElizaOS Agent</p>
+            </div>
+          </div>
+
+          {/* Chat Preview */}
+          <div className="p-4 space-y-3 bg-background/50 min-h-[120px]">
+            <div className="flex gap-2">
+              <img
+                src={elizaMascot}
+                alt=""
+                className="w-6 h-6 rounded-full object-cover shrink-0"
+              />
+              <div className="bg-muted/50 border border-border/50 rounded-lg p-2 text-xs text-foreground">
+                👋 Hey! I'm AI16ZDoram, your Polymarket whale tracking agent. Ask me anything about market trends!
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="p-3 border-t border-border space-y-2">
+            <a
+              href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground font-bold text-sm rounded-lg transition-colors hover:bg-primary/90"
+            >
+              <MessageCircle className="w-4 h-4" />
+              START CHAT
+              <ExternalLink className="w-3 h-3 ml-1" />
+            </a>
+            <p className="text-[9px] text-center text-muted-foreground">
+              Opens ElizaOS Cloud Chat
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-background/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </>
+  );
+};
+
+export default FloatingChatButton;
