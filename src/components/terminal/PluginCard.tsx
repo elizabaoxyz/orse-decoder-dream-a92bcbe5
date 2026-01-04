@@ -1,10 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export interface PluginCardProps {
   title: string;
@@ -31,6 +26,8 @@ const PluginCard = ({
   serverKey,
   serverType = "sse",
 }: PluginCardProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const displayTools = tools.slice(0, 3);
   const remainingTools = tools.length - 3;
 
@@ -44,30 +41,44 @@ const PluginCard = ({
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <div className="border border-border bg-card/50 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-foreground font-medium">{title}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {version} • {toolCount} tools
-              </p>
-            </div>
+    <div
+      className={`border bg-card/50 transition-all cursor-pointer ${
+        isExpanded ? "border-primary/50" : "border-border hover:border-primary/30"
+      }`}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      {/* Main Card Content */}
+      <div className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-foreground font-medium">{title}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {version} • {toolCount} tools
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             {enabled && (
               <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
                 Enabled
               </span>
             )}
+            <ChevronDown
+              size={16}
+              className={`text-muted-foreground transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              }`}
+            />
           </div>
+        </div>
 
-          {/* Description */}
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {description}
-          </p>
+        {/* Description */}
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {description}
+        </p>
 
-          {/* Tools */}
+        {/* Tools Preview (when collapsed) */}
+        {!isExpanded && (
           <div className="flex flex-wrap gap-1.5">
             {displayTools.map((tool) => (
               <span
@@ -83,28 +94,17 @@ const PluginCard = ({
               </span>
             )}
           </div>
+        )}
 
-          {/* Pricing */}
+        {/* Pricing (when collapsed) */}
+        {!isExpanded && (
           <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
-        </div>
-      </DialogTrigger>
+        )}
+      </div>
 
-      <DialogContent className="bg-card border-border max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-foreground flex items-center justify-between">
-            <span>{title}</span>
-            {enabled && (
-              <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10 font-normal">
-                Enabled
-              </span>
-            )}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6 text-sm">
-          {/* Description */}
-          <p className="text-muted-foreground">{description}</p>
-
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="border-t border-border p-4 space-y-4 bg-background/30">
           {/* MCP Endpoint */}
           {endpoint && (
             <div className="space-y-2">
@@ -149,8 +149,8 @@ const PluginCard = ({
           {/* Pricing */}
           <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 };
 
