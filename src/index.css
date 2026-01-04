@@ -104,11 +104,11 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Kode Mono', 'Kode Mono Fallback', monospace;
-    cursor: url('/cursors/cat-hand.png') 16 16, auto;
+    cursor: url('/cursors/cat-pointer.png') 12 4, auto;
   }
 
-  a, button, [role="button"], input[type="submit"], input[type="button"] {
-    cursor: url('/cursors/cat-hand.png') 16 16, pointer;
+  a, button, [role="button"], input[type="submit"], input[type="button"], .cursor-pointer {
+    cursor: url('/cursors/cat-pointer.png') 12 4, pointer;
   }
 
   ::selection {
