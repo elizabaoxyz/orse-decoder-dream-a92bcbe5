@@ -42,8 +42,8 @@ const MainTerminal = () => {
             Official Polymarket Partner | Powered by ElizaOS
           </p>
           <div className="text-xs mt-2 space-y-0.5 font-mono">
+            <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">AI16ZDORAM</span></p>
             <p><span className="text-muted-foreground/70">AGENT_ID:</span><span className="text-white">6328b8c7-3add-4fef-a0c5-9f74adacdb43</span></p>
-            <p><span className="text-muted-foreground/70">NAME:</span><span className="text-cyan-400">AI16ZDORAM</span></p>
           </div>
 
           {/* Navigation Buttons */}
