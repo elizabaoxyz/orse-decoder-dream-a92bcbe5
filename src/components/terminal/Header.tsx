@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Twitter } from "lucide-react";
 
 const Header = () => {
   const [time, setTime] = useState(new Date());
@@ -54,7 +53,7 @@ const Header = () => {
           rel="noopener noreferrer"
           className="text-muted-foreground hover:text-primary transition-colors"
         >
-          <Twitter size={16} />
+          TWITTER
         </a>
       </div>
     </header>
