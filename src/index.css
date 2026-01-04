@@ -1,6 +1,10 @@
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
-@import "@fontsource/ibm-plex-mono/700.css";
+@font-face {
+  font-family: 'CustomFont';
+  src: url('/fonts/custom-font.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -98,8 +102,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-mono;
-    font-family: 'IBM Plex Mono', monospace;
+    @apply bg-background text-foreground;
+    font-family: 'CustomFont', monospace;
   }
 
   ::selection {
