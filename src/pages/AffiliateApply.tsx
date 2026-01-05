@@ -186,6 +186,10 @@ const AffiliateApply = () => {
                     className="w-full h-auto relative z-10"
                     style={{ filter: 'none', mixBlendMode: 'normal' }}
                   />
+                  {/* DoramOS text overlay */}
+                  <span className="absolute top-3 left-3 z-20 text-black font-bold text-sm">
+                    DoramOS
+                  </span>
                 </div>
               </div>
 
