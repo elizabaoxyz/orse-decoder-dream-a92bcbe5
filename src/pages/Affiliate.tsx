@@ -28,11 +28,10 @@ const Affiliate = () => {
       </header>
 
       <div className="max-w-5xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative mt-16">
-        <AsciiMouseEffect />
-        
         {/* Hero Section */}
         <section className="border-b border-border relative">
-          <div className="px-6 py-16 text-center">
+          <AsciiMouseEffect />
+          <div className="px-6 py-16 text-center relative z-10">
             <p className="text-muted-foreground text-sm uppercase tracking-widest mb-4 animate-fade-in">
               Affiliate Program
             </p>
@@ -130,16 +129,16 @@ const Affiliate = () => {
           <div className="px-6 py-16">
             <h2 className="text-2xl font-bold mb-8 text-center">Terms & Conditions</h2>
             <Accordion type="single" collapsible className="space-y-2 max-w-3xl mx-auto">
-              <AccordionItem value="limit" className="border border-border bg-background px-4 hover:border-primary/30 transition-colors duration-300">
+              <AccordionItem value="limit" className="border border-border bg-background px-4">
                 <AccordionTrigger className="text-left">
                   Is there a limit to how many people I can refer?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  No, this affiliate program is uncapped. That being said, all referrals are verified & attempts to game the system (i.e. signing up for multiple accounts, violations of our site's Terms & Conditions, etc.) will result in immediate dismissal from the program.
+                  No, this affiliate program is uncapped. That being said, all referrals are verified & attempts to game the system (i.e. signing up for multiple accounts, violations of our site&apos;s Terms & Conditions, etc.) will result in immediate dismissal from the program.
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="minimum" className="border border-border bg-background px-4 hover:border-primary/30 transition-colors duration-300">
+              <AccordionItem value="minimum" className="border border-border bg-background px-4">
                 <AccordionTrigger className="text-left">
                   Is there a minimum deposit size?
                 </AccordionTrigger>
@@ -148,7 +147,7 @@ const Affiliate = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="advertise" className="border border-border bg-background px-4 hover:border-primary/30 transition-colors duration-300">
+              <AccordionItem value="advertise" className="border border-border bg-background px-4">
                 <AccordionTrigger className="text-left">
                   Can I advertise my affiliate link on Polymarket?
                 </AccordionTrigger>
@@ -157,16 +156,16 @@ const Affiliate = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="existing" className="border border-border bg-background px-4 hover:border-primary/30 transition-colors duration-300">
+              <AccordionItem value="existing" className="border border-border bg-background px-4">
                 <AccordionTrigger className="text-left">
                   Do I get credit for referring existing users?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  No, only new, first-time user deposits are credited for the purposes of this program. If you notice a referral being marked as a "duplicate" it likely means that "referral" was actually an existing user & mistakenly attributed by DoramOS.
+                  No, only new, first-time user deposits are credited for the purposes of this program. If you notice a referral being marked as a &quot;duplicate&quot; it likely means that &quot;referral&quot; was actually an existing user & mistakenly attributed by DoramOS.
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="cancelled" className="border border-border bg-background px-4 hover:border-primary/30 transition-colors duration-300">
+              <AccordionItem value="cancelled" className="border border-border bg-background px-4">
                 <AccordionTrigger className="text-left">
                   Why are my referrals being marked as cancelled?
                 </AccordionTrigger>
