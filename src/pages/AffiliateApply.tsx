@@ -184,9 +184,9 @@ const AffiliateApply = () => {
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
           <p className="mb-2">Powered by <span className="text-primary text-glow">DoramOS</span></p>
           <p>
-            <a href="#" className="hover:text-foreground transition-colors duration-200">Terms of Service</a>
+            <a href="/legal/partners" className="hover:text-foreground transition-colors duration-200">Partner Terms</a>
             {" • "}
-            <a href="#" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
+            <a href="/legal/privacy" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
           </p>
         </footer>
       </div>
