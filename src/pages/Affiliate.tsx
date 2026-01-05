@@ -1,8 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Accordion,
   AccordionContent,
@@ -10,26 +7,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Slider } from "@/components/ui/slider";
-import { Check, DollarSign, MousePointer, BarChart3, CreditCard, Link2, Search } from "lucide-react";
+import { DollarSign, MousePointer, BarChart3, CreditCard, Link2, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Affiliate = () => {
-  const [step, setStep] = useState<1 | 2>(1);
+  const navigate = useNavigate();
   const [referrals, setReferrals] = useState([10]);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    country: "",
-    website: "",
-    promotionPlan: "",
-    comments: "",
-  });
 
   const earnings = referrals[0] * 10;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep(2);
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -59,7 +44,7 @@ const Affiliate = () => {
             </div>
 
             <Button
-              onClick={() => document.getElementById('apply-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => navigate("/affiliate/apply")}
               className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-3"
             >
               Apply Today
@@ -181,140 +166,6 @@ const Affiliate = () => {
           </div>
         </section>
 
-        {/* Application Section */}
-        <section id="apply-section" className="border-b border-border">
-          <div className="px-6 py-16">
-            {step === 1 ? (
-              <>
-                <div className="text-center mb-8">
-                  <p className="text-muted-foreground text-sm mb-2">Step 1 of 2</p>
-                  <h2 className="text-2xl font-bold mb-2">Apply to Polymarket</h2>
-                  <p className="text-muted-foreground">
-                    Submit your application to join the Polymarket affiliate program and start earning commissions for your referrals.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap justify-center gap-4 mb-8">
-                  <div className="flex items-center gap-2 bg-background border border-border px-3 py-2 text-sm">
-                    <MousePointer className="w-4 h-4 text-primary" />
-                    <span>$0.01 per click</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-background border border-border px-3 py-2 text-sm">
-                    <DollarSign className="w-4 h-4 text-primary" />
-                    <span>Earn $10 per first deposit</span>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-6">
-                  <div>
-                    <Label htmlFor="name" className="text-sm mb-2 block">
-                      Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="name"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="bg-background border-border"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email" className="text-sm mb-2 block">
-                      Email <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="bg-background border-border"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="country" className="text-sm mb-2 block">
-                      Country <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="country"
-                      required
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                      className="bg-background border-border"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="website" className="text-sm mb-2 block">
-                      Website / Social media channel <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="website"
-                      required
-                      value={formData.website}
-                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                      className="bg-background border-border"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="promotion" className="text-sm mb-2 block">
-                      How do you plan to promote Polymarket? <span className="text-destructive">*</span>
-                    </Label>
-                    <Textarea
-                      id="promotion"
-                      required
-                      value={formData.promotionPlan}
-                      onChange={(e) => setFormData({ ...formData, promotionPlan: e.target.value })}
-                      className="bg-background border-border min-h-[100px]"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="comments" className="text-sm mb-2 block">
-                      Any additional questions or comments?
-                    </Label>
-                    <Textarea
-                      id="comments"
-                      value={formData.comments}
-                      onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                      className="bg-background border-border min-h-[80px]"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                    Submit Application
-                  </Button>
-                </form>
-              </>
-            ) : (
-              <>
-                <div className="text-center mb-8">
-                  <p className="text-muted-foreground text-sm mb-2">Step 2 of 2</p>
-                  <div className="w-16 h-16 bg-primary/20 border border-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Check className="w-8 h-8 text-primary" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">Application submitted</h2>
-                  <p className="text-muted-foreground">
-                    Your application has been submitted for review. You'll receive an update at{" "}
-                    <span className="text-foreground">{formData.email || "your email"}</span>
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <Button
-                    onClick={() => window.location.href = "/"}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    Continue to DoramOS Partner
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
 
         {/* Features Section */}
         <section className="border-b border-border">
