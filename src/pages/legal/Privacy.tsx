@@ -33,7 +33,7 @@ const Privacy = () => {
           <img 
             src={mascotAvatar} 
             alt="Mascot" 
-            className="h-10 md:h-12 cursor-pointer hover:scale-110 transition-transform duration-200" 
+            className="h-10 w-10 md:h-12 md:w-12 rounded-full cursor-pointer hover:scale-110 transition-transform duration-200" 
             onClick={() => navigate("/")}
           />
         </div>
