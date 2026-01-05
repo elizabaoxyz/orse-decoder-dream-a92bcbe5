@@ -26,9 +26,9 @@ const AffiliateApply = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative">
-        {/* Sticky Header with Logo */}
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
+      {/* Fixed Header with Logo */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
           <img src={logoDark} alt="DoramOS" className="h-8 md:h-10" />
           <Button
             variant="ghost"
@@ -38,7 +38,10 @@ const AffiliateApply = () => {
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
-        </header>
+        </div>
+      </header>
+
+      <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative mt-16">
 
         <div className="px-6 py-8">
           {step === 1 ? (
