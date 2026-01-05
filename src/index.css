@@ -121,10 +121,11 @@
   .scanlines {
     position: relative;
   }
-  
+
+  /* Use fixed overlays so expanding/collapsing content doesn't trigger full repaints */
   .scanlines::before {
     content: "";
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: repeating-linear-gradient(
       0deg,
@@ -135,6 +136,8 @@
     );
     pointer-events: none;
     z-index: 100;
+    will-change: opacity;
+    transform: translateZ(0);
   }
 
   /* CRT flicker animation */
@@ -212,17 +215,119 @@
     position: relative;
   }
 
+  /* Use a static, tiled PNG (much cheaper than SVG turbulence) */
   .noise::after {
     content: "";
-    position: absolute;
+    position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    opacity: 0.03;
+    background-image: url("/textures/noise.png");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    opacity: 0.035;
     pointer-events: none;
     z-index: 50;
+    will-change: opacity;
+    transform: translateZ(0);
   }
 
   /* Terminal panel */
+  .terminal-panel {
+    @apply bg-card border border-border relative;
+    background: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 5%) 100%);
+  }
+
+  .terminal-header {
+    @apply text-xs uppercase tracking-widest text-muted-foreground px-3 py-1 border-b border-border flex items-center gap-2;
+  }
+
+  .terminal-header::before {
+    content: "";
+    @apply w-2 h-2 bg-primary rounded-none;
+  }
+
+  /* Custom scrollbar - terminal style */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted) / 0.3);
+    border-radius: 0;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.4);
+    border-radius: 0;
+    border: 1px solid hsl(var(--primary) / 0.2);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.6);
+  }
+
+  /* Firefox scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.4) hsl(var(--muted) / 0.3);
+  }
+
+  /* Hidden scrollbar with drag support */
+  .drag-scroll {
+    overflow-y: auto;
+    cursor: grab;
+    user-select: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .drag-scroll:active {
+    cursor: grabbing;
+  }
+
+  .drag-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .drag-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Safe area for mobile bottom nav */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Mobile app-like feel */
+  @supports (-webkit-touch-callout: none) {
+    .min-h-screen {
+      min-height: -webkit-fill-available;
+    }
+  }
+
+  /* Hide scrollbar on mobile */
+  .mobile-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide all scrollbars on mobile devices */
+  @media (max-width: 767px) {
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
   .terminal-panel {
     @apply bg-card border border-border relative;
     background: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 5%) 100%);
