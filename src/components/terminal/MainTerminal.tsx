@@ -119,7 +119,7 @@ const MainTerminal = () => {
               
               {/* Mobile: Compact info */}
               <div className="mt-2 md:hidden space-y-1">
-                <p className="text-primary text-[10px] font-bold uppercase">CA: SOON</p>
+                <p className="text-primary text-[10px] font-bold uppercase">CA: H15tZKf9boeC6syHWa7DuApkhGQ1ZMaLGciU3fQzpump</p>
                 <div className="flex items-center gap-2 text-[9px]">
                   <span className="text-muted-foreground">AI16ZDORAM</span>
                   <a
@@ -141,7 +141,7 @@ const MainTerminal = () => {
               Official Polymarket Partner | ElizaOS
             </p>
             <p className="text-primary text-sm font-bold uppercase tracking-wide">
-              CA: SOON
+              CA: H15tZKf9boeC6syHWa7DuApkhGQ1ZMaLGciU3fQzpump
             </p>
           </div>
           <div className="hidden md:block text-xs space-y-0.5 font-mono">
