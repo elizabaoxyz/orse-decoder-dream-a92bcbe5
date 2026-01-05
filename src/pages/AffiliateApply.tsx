@@ -31,17 +31,23 @@ const AffiliateApply = () => {
       {/* Fixed Header with Logo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/affiliate")}
-              className="text-muted-foreground hover:text-foreground gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-          </div>
+          <button
+            onClick={() => navigate("/affiliate")}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors duration-200 group"
+          >
+            <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 group-hover:bg-primary/10 transition-all duration-200">
+              <ArrowLeft className="w-4 h-4 group-hover:text-primary transition-colors" />
+            </div>
+            <span className="text-sm font-medium hidden sm:inline">Back</span>
+          </button>
+          
+          <img 
+            src={logoDark} 
+            alt="DoramOS" 
+            className="h-8 md:h-10 hover-scale cursor-pointer" 
+            onClick={() => navigate("/")}
+          />
+          
           <img 
             src={mascotAvatar} 
             alt="Mascot" 
