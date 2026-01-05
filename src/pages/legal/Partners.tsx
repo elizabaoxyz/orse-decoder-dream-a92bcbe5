@@ -6,7 +6,7 @@ import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const Partners = () => {
   const navigate = useNavigate();
-  const lastUpdated = "January 1, 2025";
+  const lastUpdated = "January 1, 2026";
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines noise">
@@ -173,10 +173,7 @@ const Partners = () => {
             <section>
               <h2 className="text-xl font-bold mb-4 text-foreground">Contact Information</h2>
               <p className="text-muted-foreground leading-relaxed">
-                For questions about the Partner Program or these terms, please contact us at{" "}
-                <a href="mailto:partners@doramos.io" className="text-primary hover:underline">
-                  partners@doramos.io
-                </a>
+                For questions about the Partner Program or these terms, please contact us through our official channels.
               </p>
             </section>
           </div>
