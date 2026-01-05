@@ -19,12 +19,14 @@ const Affiliate = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-5xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative">
-        {/* Sticky Header with Logo */}
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm px-6 py-4">
+      {/* Fixed Header with Logo */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
+        <div className="max-w-5xl mx-auto">
           <img src={logoDark} alt="DoramOS" className="h-8 md:h-10" />
-        </header>
+        </div>
+      </header>
 
+      <div className="max-w-5xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative mt-16">
         {/* Hero Section */}
         <section className="border-b border-border">
           <div className="px-6 py-16 text-center">
@@ -51,7 +53,7 @@ const Affiliate = () => {
 
             <Button
               onClick={() => navigate("/affiliate/apply")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-3"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 px-8 py-3 rounded-full shadow-md transition-all duration-200 hover:-translate-y-0.5"
             >
               Apply Today
             </Button>
