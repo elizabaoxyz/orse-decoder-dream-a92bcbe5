@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, DollarSign, MousePointer } from "lucide-react";
+import { Check, DollarSign, MousePointer, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const AffiliateApply = () => {
@@ -26,7 +26,19 @@ const AffiliateApply = () => {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-6 py-12">
+        {/* Back Button */}
+        <div className="px-6 pt-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/affiliate")}
+            className="text-muted-foreground hover:text-foreground gap-2 px-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+        </div>
+
+        <div className="px-6 py-8">
           {step === 1 ? (
             <>
               <div className="text-center mb-8">
