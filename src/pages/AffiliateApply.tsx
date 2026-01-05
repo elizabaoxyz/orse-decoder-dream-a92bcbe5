@@ -210,12 +210,17 @@ const AffiliateApply = () => {
                       >
                         <X className="w-8 h-8" />
                       </button>
-                      <img 
-                        src={dashboardPreview} 
-                        alt="DoramOS Partners Dashboard Preview" 
-                        className="max-w-full max-h-[85vh] rounded-xl shadow-2xl animate-scale-in"
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <img 
+                          src={dashboardPreview} 
+                          alt="DoramOS Partners Dashboard Preview" 
+                          className="max-w-full max-h-[85vh] rounded-xl shadow-2xl animate-scale-in"
+                        />
+                        {/* DoramOS text overlay in modal */}
+                        <span className="absolute top-3 left-4 z-20 text-black font-bold text-sm">
+                          DoramOS
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
