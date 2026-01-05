@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, DollarSign, MousePointer, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logoDark from "@/assets/logo-dark.png";
 
 const AffiliateApply = () => {
   const navigate = useNavigate();
@@ -25,18 +26,19 @@ const AffiliateApply = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg overflow-hidden">
-        {/* Back Button */}
-        <div className="px-6 pt-6">
+      <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative">
+        {/* Sticky Header with Logo */}
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between">
+          <img src={logoDark} alt="DoramOS" className="h-8 md:h-10" />
           <Button
             variant="ghost"
             onClick={() => navigate("/affiliate")}
-            className="text-muted-foreground hover:text-foreground gap-2 px-0"
+            className="text-muted-foreground hover:text-foreground gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
-        </div>
+        </header>
 
         <div className="px-6 py-8">
           {step === 1 ? (

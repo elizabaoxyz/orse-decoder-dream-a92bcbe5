@@ -9,6 +9,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { DollarSign, MousePointer, BarChart3, CreditCard, Link2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logoDark from "@/assets/logo-dark.png";
 
 const Affiliate = () => {
   const navigate = useNavigate();
@@ -18,7 +19,12 @@ const Affiliate = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-5xl mx-auto bg-card border border-border rounded-lg overflow-hidden">
+      <div className="max-w-5xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative">
+        {/* Sticky Header with Logo */}
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border px-6 py-4">
+          <img src={logoDark} alt="DoramOS" className="h-8 md:h-10" />
+        </header>
+
         {/* Hero Section */}
         <section className="border-b border-border">
           <div className="px-6 py-16 text-center">
