@@ -27,31 +27,27 @@ const AffiliateApply = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines noise">
-      {/* Fixed Header with Logo */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/affiliate")}
-              className="flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors duration-200 group"
-            >
-              <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 group-hover:bg-primary/10 transition-all duration-200">
-                <ArrowLeft className="w-4 h-4 group-hover:text-primary transition-colors" />
-              </div>
-            </button>
-            <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
-          </div>
-          <img 
-            src={mascotAvatar} 
-            alt="Mascot" 
-            className="h-10 w-10 md:h-12 md:w-12 rounded-full cursor-pointer hover:scale-110 transition-transform duration-200" 
-            onClick={() => navigate("/")}
-          />
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines noise flex items-center justify-center">
+      <div className="max-w-2xl w-full bg-card border border-border rounded-lg overflow-hidden relative">
+        {/* Logo and Mascot on card corners */}
+        <div className="absolute -top-5 left-4 z-10 flex items-center gap-2">
+          <button
+            onClick={() => navigate("/affiliate")}
+            className="flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors duration-200 group"
+          >
+            <div className="w-8 h-8 rounded-full border border-border bg-background flex items-center justify-center group-hover:border-primary/50 group-hover:bg-primary/10 transition-all duration-200">
+              <ArrowLeft className="w-4 h-4 group-hover:text-primary transition-colors" />
+            </div>
+          </button>
+          <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
         </div>
-      </header>
-
-      <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative mt-16">
+        <img 
+          src={mascotAvatar} 
+          alt="Mascot" 
+          className="absolute -top-5 right-4 z-10 h-10 w-10 md:h-12 md:w-12 rounded-full cursor-pointer hover:scale-110 transition-transform duration-200 border-2 border-background" 
+          onClick={() => navigate("/")}
+        />
+        
         <AsciiMouseEffect />
 
         <div className="px-6 py-8">
