@@ -21,7 +21,7 @@ const Affiliate = () => {
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-5xl mx-auto bg-card border border-border rounded-lg overflow-hidden relative">
         {/* Sticky Header with Logo */}
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border px-6 py-4">
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm px-6 py-4">
           <img src={logoDark} alt="DoramOS" className="h-8 md:h-10" />
         </header>
 
