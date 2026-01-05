@@ -7,6 +7,7 @@ import { Check, DollarSign, MousePointer, ArrowLeft, CreditCard, BarChart3, Targ
 import { useNavigate } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
 import mascotAvatar from "@/assets/mascot-avatar.png";
+import dashboardPreview from "@/assets/dashboard-preview.png";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const AffiliateApply = () => {
@@ -175,6 +176,15 @@ const AffiliateApply = () => {
                   Once you create your account, your application will be submitted to Polymarket and you'll hear back from them at{" "}
                   <span className="text-foreground font-medium">{formData.email || "your email"}</span>
                 </p>
+                
+                {/* Dashboard Preview */}
+                <div className="mt-6 rounded-lg overflow-hidden border border-border shadow-lg">
+                  <img 
+                    src={dashboardPreview} 
+                    alt="DoramOS Partners Dashboard Preview" 
+                    className="w-full h-auto"
+                  />
+                </div>
               </div>
 
               {/* Feature Cards */}
