@@ -29,7 +29,7 @@ const AffiliateApply = () => {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines noise">
       {/* Fixed Header with Logo */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-10 md:px-16 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
