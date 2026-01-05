@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Check, DollarSign, MousePointer, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
+import mascotAvatar from "@/assets/mascot-avatar.png";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const AffiliateApply = () => {
@@ -30,15 +31,23 @@ const AffiliateApply = () => {
       {/* Fixed Header with Logo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/affiliate")}
-            className="text-muted-foreground hover:text-foreground gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
+          <div className="flex items-center gap-4">
+            <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/affiliate")}
+              className="text-muted-foreground hover:text-foreground gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          </div>
+          <img 
+            src={mascotAvatar} 
+            alt="Mascot" 
+            className="h-10 md:h-12 cursor-pointer hover:scale-110 transition-transform duration-200" 
+            onClick={() => navigate("/")}
+          />
         </div>
       </header>
 
