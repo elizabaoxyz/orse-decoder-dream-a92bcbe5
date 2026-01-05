@@ -46,130 +46,299 @@ const Partners = () => {
           </div>
 
           {/* Content */}
-          <div className="prose prose-invert max-w-none space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="prose prose-invert max-w-none space-y-10 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            
+            {/* Section 2 */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Agreement Overview</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                These Partner Terms ("Agreement") govern your participation in the DoramOS Partner Program. 
-                By joining our program, you agree to be bound by these terms. This Agreement is between you 
-                ("Partner," "you," or "your") and DoramOS ("we," "us," or "our").
-              </p>
+              <h2 className="text-2xl font-bold mb-6 text-primary">2. Partner Programs</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Partner Programs</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    The Platform allows Partners to discover and participate in Partner Programs offered by Clients. 
+                    The Platform may also display details about Partner Programs, such as program descriptions, payment terms, 
+                    commission schedules, and other applicable terms and conditions. If you choose to participate in a Partner Program, 
+                    you will communicate directly with the Client offering it through the Platform and may be required to enter into 
+                    a separate agreement governing that program (such as Affiliate Program Agreement), or another similarly titled 
+                    arrangement agreed upon with the Client. DoramOS is not a party to any Affiliate Program Agreement or related 
+                    agreement and shall have no liability, responsibility, or obligation relating to any such agreement.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Third Party Links</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    The Platform may provide links to third party websites. DoramOS does not endorse the information contained on 
+                    those websites or guarantee their quality, accuracy, reliability, completeness, currency, timeliness, non-infringement, 
+                    merchantability or fitness for any purpose. The content in any linked website is provided for your convenience but 
+                    is not under DoramOS&apos;s control. If you access any such website, you do so entirely at your own risk.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    DoramOS does not warrant or accept any liability or obligation to you with respect to third party software and services. 
+                    This Agreement does not absolve you of any duty or obligations imposed under any such third-party agreements. 
+                    You may request a copy of any agreement with a third-party from them.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Commissions</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    Through Partner Programs, you may earn commissions (&quot;Commissions&quot;) from such Clients. When a Client pays DoramOS 
+                    Commission amounts due under its Partner Program for remittance to you, DoramOS will notify you through the Platform 
+                    that the payment may be deposited via the Payment Provider (as described and defined below).
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    To be eligible to receive Commission payments, you must maintain an active account on the Platform and set up a valid 
+                    payout method. This requires creating a Stripe Express account and completing all necessary identity and other applicable 
+                    verifications. If Stripe Express is not available in your country, you may instead use a PayPal account to receive commissions.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    Commissions are payable only after the applicable Client has paid DoramOS in full for the corresponding transaction. 
+                    The Partner Dashboard will indicate the status of your payouts:
+                  </p>
+                  <ul className="list-none text-muted-foreground space-y-3 ml-4">
+                    <li><strong className="text-foreground">Pending:</strong> When you start earning commissions from a Partner Program, they&apos;ll be accrued under a payout entry. If the Partner Program has a minimum payout amount set, your payout amount will need to reach the threshold to become eligible for payment.</li>
+                    <li><strong className="text-foreground">Processing:</strong> When a Partner Program initiates a payout to you, the payout will be updated to a &quot;processing&quot; state until the payment settles on DoramOS. This process can take up to 5 business days.</li>
+                    <li><strong className="text-foreground">Processed:</strong> Once the program&apos;s payout has settled on DoramOS, the payout will be updated to a &quot;processed&quot; state. If the payout amount is above your minimum withdrawal balance, the funds will be automatically paid out to your connected bank account.</li>
+                    <li><strong className="text-foreground">Sent:</strong> When your payout is on its way to your connected bank account, it will be updated to a &quot;sent&quot; state. Depending on your bank location, this can take anywhere from 1 to 14 business days (you will see the estimated arrival date in the notification email from DoramOS).</li>
+                    <li><strong className="text-foreground">Completed:</strong> When the payout is completed and the funds are deposited into your bank account.</li>
+                  </ul>
+                  <p className="text-muted-foreground leading-relaxed mt-4 mb-2">You agree and acknowledge that:</p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>DoramOS has no obligation to pay any Commission, and is not responsible for any Commission amounts until payment has been received in full from the responsible Client;</li>
+                    <li>Commission payments will be deposited into your account via Stripe Express (or via PayPal only if Stripe Express is unavailable in your country);</li>
+                    <li>DoramOS is not liable for any delays, inaccuracies, or errors in Commission payments;</li>
+                    <li>For any Clients you engage with through the Platform, all related Commission payments must be processed through DoramOS. Receiving payments directly from such Clients, while their program is active on the Platform, is a violation of these Terms of Service.</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Taxes</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Each party is responsible for paying their own taxes, including sales, use, value added, or any other national, 
+                    state, or local taxes on net income, capital, gross receipts or payments, and is responsible for complying with 
+                    any required tax documentation or obligations. This also applies to customs duties and other similar fees. 
+                    With respect to Commission payments earned and received by the Partner, the Partner agrees that it is solely 
+                    responsible for any taxes, levies, customs duties or similar governmental assessments of any nature imposed 
+                    or in force in the relevant jurisdiction of tax residency or incorporation.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Payment Processing</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    The Platform facilitates certain payments between Clients and Partners under Affiliate Program Agreements. 
+                    Payment processing services are provided by third-party payment providers, including Stripe Express (Stripe, Inc.) 
+                    and PayPal (PayPal Holdings, Inc.) (collectively, &quot;Payment Providers&quot;). All payments to Partners will be processed 
+                    through Payment Providers, which require that you enter a separate agreement with the Payment Provider(s). 
+                    DoramOS is not a party to any such agreement and shall have no liability, responsibility or obligation under such agreement. 
+                    You will be solely responsible for any fees charged by any Payment Provider (the &quot;Transaction Costs&quot;).
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    DoramOS is not responsible for any incorrect, delayed, or failed payments resulting from outdated or inaccurate account information.
+                  </p>
+                </div>
+              </div>
             </section>
 
+            {/* Section 3 */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Program Enrollment</h2>
+              <h2 className="text-2xl font-bold mb-6 text-primary">3. Suspension and Termination</h2>
+              
+              <div className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  This Agreement begins on the date you accept its terms (the &quot;Effective Date&quot;) and will remain in effect until 
+                  it is modified, replaced, or terminated. Either party may terminate this Agreement at any time by providing 
+                  the other party with thirty (30) days&apos; written notice.
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  Upon termination of this Agreement, effective as of the termination date, you must immediately cease all use 
+                  of the Platform and return any materials provided by DoramOS (if applicable). Both parties must also destroy 
+                  any confidential information received from the other, except as required to be retained under applicable law.
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  If you breach this Agreement, DoramOS may, at its sole discretion and without notice, temporarily or permanently 
+                  suspend your access to the Platform. You may terminate your account by providing DoramOS with thirty (30) days&apos; 
+                  written notice. Termination of your account will result in the immediate loss of access to the Platform, and 
+                  DoramOS may delete any information stored in your account. Termination does not limit DoramOS&apos;s other rights 
+                  or remedies available under this Agreement or applicable law.
+                </p>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Termination by a Client</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    You acknowledge that a Client may terminate its relationship with you for any reason by providing written notice 
+                    (including by email) in accordance with the Affiliate Program Agreement or other terms previously agreed between 
+                    you and that Client.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    DoramOS has no obligation to confirm or acknowledge any such notice of termination between a Client and a Partner, 
+                    and will not be liable for any unpaid amounts or other obligations that remain unfulfilled by the Client.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 4 */}
+            <section>
+              <h2 className="text-2xl font-bold mb-6 text-primary">4. Platform Ownership</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                To participate in the DoramOS Partner Program, you must:
+                DoramOS owns all right, title, and interest in the Platform, including all information, materials, and content 
+                provided by DoramOS in connection with the Platform or contained within it, as well as any updates, adaptations, 
+                translations, customizations, derivative works, and all associated intellectual property rights. Your use of the 
+                Platform does not grant you any ownership or other rights in the Platform, except for the limited rights expressly 
+                provided in this Agreement.
               </p>
-              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li>Submit a complete and accurate application</li>
-                <li>Be at least 18 years of age or the age of majority in your jurisdiction</li>
-                <li>Have an active website, social media presence, or other qualifying platform</li>
-                <li>Comply with all applicable laws and regulations</li>
-                <li>Not engage in any fraudulent or deceptive practices</li>
-              </ul>
-              <p className="text-muted-foreground leading-relaxed mt-4">
-                We reserve the right to accept or reject any application at our sole discretion.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Commission Structure</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                As a DoramOS Partner, you may earn commissions as follows:
-              </p>
-              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li><strong className="text-foreground">Per Click:</strong> $0.01 for each valid click on your referral link</li>
-                <li><strong className="text-foreground">Per Conversion:</strong> $10 for each referred user who makes their first qualifying deposit of at least $20</li>
-              </ul>
-              <p className="text-muted-foreground leading-relaxed mt-4">
-                Commission rates may be modified at any time with reasonable notice to partners.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Payment Terms</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Payments are processed according to the following terms:
-              </p>
-              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li>Minimum payout threshold: $100</li>
-                <li>Payment processing: via Stripe to your linked bank account</li>
-                <li>Commission approval: typically within 1-5 business days</li>
-                <li>Automatic payment once threshold is reached and commissions are approved</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Partner Obligations</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                As a partner, you agree to:
-              </p>
-              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li>Promote DoramOS in an honest and ethical manner</li>
-                <li>Not engage in spam, misleading advertising, or deceptive practices</li>
-                <li>Not bid on DoramOS branded keywords in paid advertising</li>
-                <li>Clearly disclose your affiliate relationship when required by law</li>
-                <li>Not create fake accounts or generate fraudulent referrals</li>
-                <li>Comply with all platform-specific rules where you promote</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Prohibited Activities</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                The following activities are strictly prohibited:
-              </p>
-              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li>Creating multiple accounts or self-referrals</li>
-                <li>Using bots, scripts, or automated tools to generate clicks or signups</li>
-                <li>Spamming affiliate links in comments on DoramOS or partner platforms</li>
-                <li>Making false or misleading claims about DoramOS services</li>
-                <li>Incentivizing signups through unauthorized means</li>
-                <li>Violating any applicable laws or third-party terms of service</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Intellectual Property</h2>
               <p className="text-muted-foreground leading-relaxed">
-                DoramOS grants you a limited, non-exclusive, revocable license to use our approved 
-                marketing materials and trademarks solely for the purpose of promoting our services 
-                under this program. You may not modify our trademarks or use them in any way that 
-                implies endorsement or partnership beyond the scope of this Agreement.
+                DoramOS may compile and derive aggregated, anonymized data from users of the Platform, including indicators, 
+                performance metrics, and usage patterns. Usage data is not Partner data, is not personal data, and cannot be 
+                used to identify you or any other individual. Usage Data cannot be re-identified and will be considered the 
+                property of DoramOS.
               </p>
             </section>
 
+            {/* Section 5 */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Termination</h2>
+              <h2 className="text-2xl font-bold mb-6 text-primary">5. Privacy</h2>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                To operate the Platform, DoramOS collects, uses, stores, and shares certain information as described in our{" "}
+                <a href="/legal/privacy" className="text-primary hover:underline">DoramOS Privacy Policy</a>, 
+                which is incorporated into this Agreement by reference.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                In using the Platform, each party agrees to comply with all applicable laws, including all applicable privacy 
+                and data protection laws. Each party assures that it has obtained all necessary rights, authorizations, consents, 
+                and permissions for any information, materials, or content entered into the Platform, including any information 
+                relating to identifiable individuals.
+              </p>
               <p className="text-muted-foreground leading-relaxed">
-                Either party may terminate this Agreement at any time for any reason. We may 
-                immediately terminate your participation if you violate these terms or engage in 
-                fraudulent activity. Upon termination, you must cease all use of DoramOS marketing 
-                materials and affiliate links. Pending commissions may be forfeited if termination 
-                is due to your breach of these terms.
+                If you have collected personal data from another site and are sharing it on the Platform, you represent that 
+                you have disclosed that fact in a publicly facing and appropriate privacy policy.
               </p>
             </section>
 
+            {/* Section 6 */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Limitation of Liability</h2>
+              <h2 className="text-2xl font-bold mb-6 text-primary">6. Confidentiality</h2>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                &quot;Confidential Information&quot; means any information disclosed by one party to the other in connection with this 
+                Agreement that is designated as proprietary or confidential by the disclosing party, or should reasonably be 
+                understood to be proprietary or confidential given its nature and the circumstances of disclosure.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-2">Each party agrees to:</p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4 mb-4">
+                <li>use the other party&apos;s Confidential Information solely for the purpose of fulfilling its obligations under this Agreement;</li>
+                <li>protect the other party&apos;s Confidential Information with at least the same degree of care it uses to protect its own confidential information of similar importance;</li>
+                <li>not disclose the other party&apos;s Confidential Information to any third party except to its employees, contractors, or professional advisors who have a legitimate need to know the information and who are bound by confidentiality obligations at least as protective as those in this Agreement.</li>
+              </ul>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                The obligations do not apply to any information that the receiving party can demonstrate has becomes publicly known 
+                through no wrongful act or omission of the receiving party; is rightfully received from a third party without restriction 
+                on disclosure; is independently developed by the receiving party without use of or reference to the disclosing party&apos;s 
+                Confidential Information.
+              </p>
               <p className="text-muted-foreground leading-relaxed">
-                DoramOS shall not be liable for any indirect, incidental, special, consequential, 
-                or punitive damages arising out of or related to this Agreement. Our total liability 
-                shall not exceed the total commissions paid to you in the twelve months preceding 
-                the claim.
+                The receiving party may disclose Confidential Information if required by law, regulation, or court order, provided that 
+                it (where legally permissible) gives prompt written notice to the disclosing party to allow the disclosing party to seek 
+                a protective order or other remedy. Upon termination of this Agreement, each party will, at the disclosing party&apos;s request, 
+                return or destroy all Confidential Information in its possession, subject to any retention required by applicable law.
               </p>
             </section>
 
+            {/* Section 7 */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Modifications</h2>
+              <h2 className="text-2xl font-bold mb-6 text-primary">7. Disclaimers</h2>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                The DoramOS Platform is provided &quot;as is&quot; and &quot;as available.&quot; To the fullest extent permitted by applicable law, 
+                and except as expressly stated in this Agreement, DoramOS makes no warranties, representations, or conditions of any kind, 
+                whether express, implied, statutory, or otherwise, including any implied warranties of merchantability, fitness for a 
+                particular purpose, or non-infringement. Except as expressly stated in this Agreement, DoramOS does not warrant that 
+                the Platform will be uninterrupted or error-free.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                The Platform is made available to various independent entities, including Partners and Clients. These entities are not 
+                partners, agents, or employees of DoramOS. DoramOS is not responsible or liable for the acts, omissions, representations, 
+                warranties, breaches, or negligence of any such entity, nor for any Partner Program, Affiliate Program Agreement, or 
+                other offerings provided by them.
+              </p>
               <p className="text-muted-foreground leading-relaxed">
-                We reserve the right to modify these Partner Terms at any time. Changes will be 
-                effective upon posting to our website. Your continued participation in the program 
-                after changes are posted constitutes acceptance of the modified terms.
+                In no event will DoramOS or its officers, directors, affiliates, partners, employees, shareholders, or agents be liable 
+                for any damages of any kind (including lost profits, loss of data, personal injury, fines, fees, penalties, or other liabilities), 
+                arising from or related to your use of, or inability to use, the Platform, any Partner Program, or any Affiliate Program Agreement. 
+                In no event, regardless of the form or theory of action, will the total aggregate liability of DoramOS or its officers, directors, 
+                affiliates, partners, employees, shareholders, agents, successors, or assigns in connection with your use of the Platform for 
+                any purpose exceed five hundred U.S. dollars ($500).
               </p>
             </section>
 
+            {/* Section 8 */}
+            <section>
+              <h2 className="text-2xl font-bold mb-6 text-primary">8. Changes to this Agreement</h2>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                We may revise this Agreement from time to time and will post the updated version with a &quot;last updated&quot; date on our 
+                website or partner dashboard. Your continued use of the Platform after any changes take effect constitutes your 
+                acceptance of the updated terms.
+              </p>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                DoramOS may also update, modify, or change any aspect of the DoramOS Platform (including, without limitation, its features, 
+                functionality, content, or appearance) at any time, without prior notice.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                In the event of a conflict, a signed exhibit, attachment, or addendum prevails over these Agreement terms to the extent of such conflict.
+              </p>
+            </section>
+
+            {/* Glossary */}
+            <section>
+              <h2 className="text-2xl font-bold mb-6 text-primary">Glossary of Terms</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-foreground font-bold">Term</th>
+                      <th className="text-left py-3 px-4 text-foreground font-bold">Definition</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-muted-foreground">
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Affiliate Program Agreement</td>
+                      <td className="py-3 px-4">A separate agreement between a Partner and a Client that sets forth the terms, conditions, and requirements applicable to the Partner&apos;s participation in that Client&apos;s Partner Program.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Client</td>
+                      <td className="py-3 px-4">The owners, operators, leaders, or authorized representatives of Partner Programs.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Commissions</td>
+                      <td className="py-3 px-4">Payments earned by Partners in connection with their participation in a Partner Program.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">DoramOS</td>
+                      <td className="py-3 px-4">Refers to DoramOS Technologies, also known as ai16zdoram.xyz.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Partner</td>
+                      <td className="py-3 px-4">An individual, consultant, or entity that promotes, refers, resells, or otherwise helps expand the reach or revenue of a Client&apos;s Partner Program.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Partner Dashboard</td>
+                      <td className="py-3 px-4">The online interface provided by DoramOS through which Partners can view Partner Program information, track performance, and monitor payout statuses.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Partner Program</td>
+                      <td className="py-3 px-4">A marketing, referral, reseller, or similar program offered by a Client through the Platform that allows Partners to earn Commissions or other rewards.</td>
+                    </tr>
+                    <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground">Payment Providers</td>
+                      <td className="py-3 px-4">Third-party payment processors, such as Stripe Express (Stripe, Inc.) and PayPal (PayPal Holdings, Inc.), that process Commission payments to Partners.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            {/* Contact */}
             <section>
               <h2 className="text-xl font-bold mb-4 text-foreground">Contact Information</h2>
               <p className="text-muted-foreground leading-relaxed">
