@@ -217,7 +217,7 @@ const AffiliateApply = () => {
                           className="max-w-full max-h-[85vh] rounded-xl shadow-2xl animate-scale-in"
                         />
                         {/* DoramOS text overlay in modal */}
-                        <span className="absolute top-3 left-4 z-20 text-black font-bold text-sm">
+                        <span className="absolute top-2 left-3 z-20 text-black font-bold text-xs">
                           DoramOS
                         </span>
                       </div>
