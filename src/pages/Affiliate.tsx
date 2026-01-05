@@ -217,7 +217,7 @@ const Affiliate = () => {
                 <Search className="w-8 h-8 text-primary mb-4 group-hover:scale-110 transition-transform duration-300" />
                 <h3 className="font-bold mb-2">Track everything</h3>
                 <p className="text-muted-foreground text-sm">
-                  Dub gives you the power to track every click, lead, and conversion. Knowledge is power.
+                  DoramOS gives you the power to track every click, lead, and conversion. Knowledge is power.
                 </p>
               </div>
             </div>
