@@ -48,6 +48,97 @@ const Partners = () => {
           {/* Content */}
           <div className="prose prose-invert max-w-none space-y-10 animate-fade-in" style={{ animationDelay: '0.1s' }}>
             
+            {/* Section 1 */}
+            <section>
+              <h2 className="text-2xl font-bold mb-6 text-primary">1. Platform Access and Usage</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    DoramOS&apos;s Platform is intended to:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>enable Partners to join and participate in Partner Programs, and to earn rewards for their eligible contributions</li>
+                    <li>allow Partners to search, view, learn and participate in Partner Programs</li>
+                  </ul>
+                </div>
+
+                <p className="text-muted-foreground leading-relaxed">
+                  By using the Platform, you grant DoramOS the right to access, collect, store, disclose, process, transmit, 
+                  and use any data, information, records, or files you provide through the Platform —or that others provide 
+                  in connection with your participation— for the sole purpose of operating, maintaining, and improving the Platform.
+                </p>
+
+                <p className="text-muted-foreground leading-relaxed">
+                  DoramOS may, at its sole discretion and without prior notice, suspend or terminate your access to the Platform 
+                  if you fail to comply with this Agreement or engage in conduct that DoramOS determines may harm the Platform, 
+                  other users, or DoramOS&apos;s reputation.
+                </p>
+
+                <p className="text-muted-foreground leading-relaxed">
+                  In all matters relating to this Agreement, you and DoramOS are independent contractors, and nothing will be 
+                  construed to create any association, partnership, joint venture, or relationship of agency or employment 
+                  between you and DoramOS.
+                </p>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Account Registration</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    All users must create partner accounts and accept DoramOS&apos;s Terms of Service to access the DoramOS Platform. 
+                    You&apos;re responsible for ensuring that your Permitted Users (if applicable) comply with the Terms of Service. 
+                    If you are registering on DoramOS Platform as a business entity, you represent that you have the authority 
+                    to bind the entity to this Agreement.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Upon acceptance of the terms of this Agreement, and in order to access the Platform, you must create an account 
+                    with a unique username and password for use by yourself and if applicable, any authorized personnel acting on 
+                    your behalf (&quot;Permitted Users&quot;). You must keep Your User ID confidential and secure. Do not disclose or share 
+                    your User ID. You are responsible for all acts, omissions and content carried out under your User ID and DoramOS 
+                    will consider all acts, omissions and content on the Platform under your User ID as authorized by you. If you 
+                    suspect that a User ID has been compromised, you must notify DoramOS immediately.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Single Account Policy</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Creating multiple partner accounts on DoramOS is strictly prohibited and constitutes a violation of our Partner 
+                    Terms of Service. Each individual or business entity is limited to one partner account. Any attempt to create 
+                    additional accounts using different email addresses, identities, or other means to circumvent this restriction 
+                    will result in immediate account suspension or termination. If you need to modify your account details or transfer 
+                    account ownership, please contact our support team instead of creating a new account.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold mb-3 text-foreground">Partner Obligations</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    You represent and warrant that you will use the Platform only in accordance with all applicable laws, rules, 
+                    and regulations, including but not limited to privacy and data protection laws, and refrain from misrepresentation 
+                    of any information uploaded or provided, impersonation of another individual or entity, or engaging in fraudulent 
+                    behavior or misconduct.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    You agree to collaborate with each Client only through methods approved or specified by that Client in the 
+                    Affiliate Program Agreement or a similar agreement. Your interactions with Clients must also comply with this 
+                    Agreement, and you will not use Client data in any way that infringes the intellectual property rights of a 
+                    third party or violates any applicable law, rule, or regulation.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    You further represent and warrant that you have full power and authority to enter into and perform your 
+                    obligations under this Agreement, and that in carrying out this Agreement and using the Platform, you will 
+                    comply with all applicable laws and have the right to transmit your data through or to our Platform.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-2">DoramOS will not be responsible or liable for:</p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>any defects, issues, or failures of products or software not provided by DoramOS</li>
+                    <li>glitches, defects, problems associated with or caused by a failure of the internet</li>
+                    <li>any losses, disputes, or expenses arising from your engagement with third parties (including Clients)</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
             {/* Section 2 */}
             <section>
               <h2 className="text-2xl font-bold mb-6 text-primary">2. Partner Programs</h2>
