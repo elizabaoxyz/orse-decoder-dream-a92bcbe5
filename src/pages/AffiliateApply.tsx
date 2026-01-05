@@ -177,12 +177,14 @@ const AffiliateApply = () => {
                   <span className="text-foreground font-medium">{formData.email || "your email"}</span>
                 </p>
                 
-                {/* Dashboard Preview */}
-                <div className="mt-6 rounded-lg overflow-hidden border border-border shadow-lg">
+                {/* Dashboard Preview - isolated from scanlines/noise effects */}
+                <div className="mt-6 rounded-lg overflow-hidden border border-border shadow-lg relative isolate" style={{ isolation: 'isolate' }}>
+                  <div className="absolute inset-0 bg-white z-0"></div>
                   <img 
                     src={dashboardPreview} 
                     alt="DoramOS Partners Dashboard Preview" 
-                    className="w-full h-auto"
+                    className="w-full h-auto relative z-10"
+                    style={{ filter: 'none', mixBlendMode: 'normal' }}
                   />
                 </div>
               </div>
