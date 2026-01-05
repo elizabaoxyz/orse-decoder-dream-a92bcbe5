@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { DollarSign, MousePointer, BarChart3, CreditCard, Link2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
+import mascotAvatar from "@/assets/mascot-avatar.png";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const Affiliate = () => {
@@ -22,8 +23,14 @@ const Affiliate = () => {
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines noise">
       {/* Fixed Header with Logo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
+          <img 
+            src={mascotAvatar} 
+            alt="Mascot" 
+            className="h-10 md:h-12 cursor-pointer hover:scale-110 transition-transform duration-200" 
+            onClick={() => navigate("/")}
+          />
         </div>
       </header>
 
