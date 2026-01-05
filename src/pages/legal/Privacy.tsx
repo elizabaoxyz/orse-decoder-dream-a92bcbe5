@@ -6,7 +6,7 @@ import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const Privacy = () => {
   const navigate = useNavigate();
-  const lastUpdated = "January 1, 2025";
+  const lastUpdated = "January 1, 2026";
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 scanlines noise">
@@ -143,10 +143,7 @@ const Privacy = () => {
             <section>
               <h2 className="text-xl font-bold mb-4 text-foreground">Contact Us</h2>
               <p className="text-muted-foreground leading-relaxed">
-                If you have any questions about this Privacy Policy, please contact us at{" "}
-                <a href="mailto:privacy@doramos.io" className="text-primary hover:underline">
-                  privacy@doramos.io
-                </a>
+                If you have any questions about this Privacy Policy, please contact us through our official channels.
               </p>
             </section>
           </div>
