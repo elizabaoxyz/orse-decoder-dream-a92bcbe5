@@ -19,6 +19,7 @@ const AffiliateApply = () => {
     email: "",
     country: "",
     website: "",
+    solanaWallet: "",
     promotionPlan: "",
     comments: "",
   });
@@ -130,6 +131,21 @@ const AffiliateApply = () => {
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     className="bg-background border-border focus:border-primary transition-colors duration-300"
                   />
+                </div>
+
+                <div className="group">
+                  <Label htmlFor="solanaWallet" className="text-sm mb-2 block group-focus-within:text-primary transition-colors">
+                    Holder Wallet (Solana) <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="solanaWallet"
+                    required
+                    placeholder="Enter your Solana wallet address holding $ai16zdoram"
+                    value={formData.solanaWallet}
+                    onChange={(e) => setFormData({ ...formData, solanaWallet: e.target.value })}
+                    className="bg-background border-border focus:border-primary transition-colors duration-300 font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">We'll verify if you're holding $ai16zdoram tokens</p>
                 </div>
 
                 <div className="group">
