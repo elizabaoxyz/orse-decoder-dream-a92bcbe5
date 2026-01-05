@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, DollarSign, MousePointer, ArrowLeft } from "lucide-react";
+import { Check, DollarSign, MousePointer, ArrowLeft, CreditCard, BarChart3, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
 import mascotAvatar from "@/assets/mascot-avatar.png";
@@ -167,22 +167,57 @@ const AffiliateApply = () => {
             <>
               <div className="text-center mb-8 animate-fade-in">
                 <p className="text-muted-foreground text-sm mb-2">Step 2 of 2</p>
-                <div className="w-16 h-16 bg-primary/20 border border-primary rounded-full flex items-center justify-center mx-auto mb-4 animate-scale-in shadow-[0_0_30px_hsl(var(--primary)/0.4)]">
-                  <Check className="w-8 h-8 text-primary" />
-                </div>
-                <h1 className="text-2xl font-bold mb-2">Application <span className="text-primary text-glow">submitted</span></h1>
-                <p className="text-muted-foreground">
-                  Your application has been submitted for review. You'll receive an update at{" "}
-                  <span className="text-foreground">{formData.email || "your email"}</span>
+                <h1 className="text-2xl font-bold mb-4">Finish your <span className="text-primary text-glow">application</span></h1>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Your application to Polymarket has been saved, but you still need to create your DoramOS Partners account to complete your application.
                 </p>
+                <p className="text-muted-foreground text-sm mt-3">
+                  Once you create your account, your application will be submitted to Polymarket and you'll hear back from them at{" "}
+                  <span className="text-foreground font-medium">{formData.email || "your email"}</span>
+                </p>
+              </div>
+
+              {/* Feature Cards */}
+              <div className="grid grid-cols-2 gap-4 mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                <div className="bg-background border border-border p-4 hover:border-primary/50 transition-colors duration-300">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center mb-3">
+                    <Check className="w-4 h-4 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1">Join other programs</h3>
+                  <p className="text-xs text-muted-foreground">Our expanding marketplace is full of high-quality programs. We guarantee their quality.</p>
+                </div>
+                
+                <div className="bg-background border border-border p-4 hover:border-primary/50 transition-colors duration-300">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center mb-3">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1">Get paid how you want</h3>
+                  <p className="text-xs text-muted-foreground">Connect your bank account, PayPal, or other payout choices. Get paid in any country.</p>
+                </div>
+                
+                <div className="bg-background border border-border p-4 hover:border-primary/50 transition-colors duration-300">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center mb-3">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1">Full analytics</h3>
+                  <p className="text-xs text-muted-foreground">View how your efforts are doing and how much you've earned with our program analytics.</p>
+                </div>
+                
+                <div className="bg-background border border-border p-4 hover:border-primary/50 transition-colors duration-300">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center mb-3">
+                    <Target className="w-4 h-4 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1">Track everything</h3>
+                  <p className="text-xs text-muted-foreground">DoramOS gives you the power to track every click, lead, and conversion. Knowledge is power.</p>
+                </div>
               </div>
 
               <div className="text-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
                 <Button
                   onClick={() => navigate("/")}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 rounded-full transition-all duration-200 hover:-translate-y-0.5"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 rounded-full transition-all duration-200 hover:-translate-y-0.5"
                 >
-                  Continue to DoramOS Partner
+                  Create DoramOS Partners Account
                 </Button>
               </div>
             </>
