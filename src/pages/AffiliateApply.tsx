@@ -213,11 +213,16 @@ const AffiliateApply = () => {
               </div>
 
               <div className="text-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-foreground font-medium mb-1">Application Under Review</p>
+                  <p className="text-xs text-muted-foreground">Please allow 48-72 hours for our team to review your application.</p>
+                </div>
                 <Button
                   onClick={() => navigate("/")}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 rounded-full transition-all duration-200 hover:-translate-y-0.5"
+                  variant="outline"
+                  className="rounded-full transition-all duration-200 hover:-translate-y-0.5"
                 >
-                  Create DoramOS Partners Account
+                  Back to DoramOS
                 </Button>
               </div>
             </>
