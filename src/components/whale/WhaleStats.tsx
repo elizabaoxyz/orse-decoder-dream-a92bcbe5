@@ -52,8 +52,8 @@ export const WhaleStats = () => {
     { label: '24H Volume', value: formatValue(stats.totalVolume24h), color: 'text-terminal-accent' },
     { label: 'Transactions', value: stats.totalTransactions.toString(), color: 'text-blue-400' },
     { label: 'Active Whales', value: stats.activeWhales.toString(), color: 'text-purple-400' },
-    { label: 'Avg Win Rate', value: `${stats.avgWinRate.toFixed(1)}%`, color: 'text-green-400' },
-    { label: 'Top Buy', value: formatValue(stats.topBuy), color: 'text-green-400' },
+    { label: 'Avg Win Rate', value: `${stats.avgWinRate.toFixed(1)}%`, color: 'text-primary' },
+    { label: 'Top Buy', value: formatValue(stats.topBuy), color: 'text-primary' },
     { label: 'Top Sell', value: formatValue(stats.topSell), color: 'text-red-400' },
   ];
 

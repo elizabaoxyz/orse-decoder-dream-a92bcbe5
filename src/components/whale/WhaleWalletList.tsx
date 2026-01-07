@@ -100,7 +100,7 @@ export const WhaleWalletList = () => {
                   <div>
                     <span className="text-terminal-muted block text-xs mb-1">Win Rate</span>
                     <span className={`font-bold ${
-                      (wallet.win_rate || 0) >= 60 ? 'text-green-400' : 
+                      (wallet.win_rate || 0) >= 60 ? 'text-primary' : 
                       (wallet.win_rate || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'
                     }`}>
                       {wallet.win_rate?.toFixed(1) || '0'}%

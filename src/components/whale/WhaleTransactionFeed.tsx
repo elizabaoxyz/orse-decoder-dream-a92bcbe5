@@ -62,7 +62,7 @@ export const WhaleTransactionFeed = () => {
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-mono px-2 py-0.5 rounded ${
                   tx.side === 'buy' 
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                    ? 'bg-primary/20 text-primary border border-primary/30' 
                     : 'bg-red-500/20 text-red-400 border border-red-500/30'
                 }`}>
                   {tx.side.toUpperCase()}

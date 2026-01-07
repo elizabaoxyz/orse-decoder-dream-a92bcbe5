@@ -202,7 +202,7 @@ const DiagnosticsPanel = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">REALTIME</span>
-              <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
+              <span className={isConnected ? 'text-primary' : 'text-red-400'}>
                 {isConnected ? 'CONNECTED' : 'OFFLINE'}
               </span>
             </div>
@@ -217,7 +217,7 @@ const DiagnosticsPanel = () => {
           <span className="flex items-center gap-1">
             WHALE_LIVE
             {isConnected ? (
-              <Wifi className="w-3 h-3 text-green-400 animate-pulse shrink-0" />
+              <Wifi className="w-3 h-3 text-primary animate-pulse shrink-0" />
             ) : (
               <WifiOff className="w-3 h-3 text-red-400 shrink-0" />
             )}
@@ -252,7 +252,7 @@ const DiagnosticsPanel = () => {
               >
                 <div className="flex justify-between">
                   <span className="text-primary font-mono">{formatWallet(activity.wallet)}</span>
-                  <span className={activity.side === 'BUY' || activity.side === 'buy' ? 'text-green-400' : 'text-red-400'}>
+                  <span className={activity.side === 'BUY' || activity.side === 'buy' ? 'text-primary' : 'text-red-400'}>
                     {activity.side.toUpperCase()}
                   </span>
                 </div>

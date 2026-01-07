@@ -192,7 +192,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                         className="p-1 hover:bg-muted rounded transition-colors"
                       >
                         {copiedAddress === wallet.wallet_address ? (
-                          <Check className="w-3 h-3 text-green-500" />
+                          <Check className="w-3 h-3 text-primary" />
                         ) : (
                           <Copy className="w-3 h-3 text-muted-foreground" />
                         )}
@@ -275,7 +275,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-3 bg-card/50 border border-border/50 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-green-500" />
+              <TrendingUp className="w-3 h-3 text-primary" />
               BUY_PRESSURE
             </span>
             <span className="text-muted-foreground flex items-center gap-1">
@@ -285,7 +285,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
           </div>
           <div className="h-4 bg-muted/30 rounded-full overflow-hidden flex">
             <div 
-              className="bg-green-500/80 transition-all duration-500"
+              className="bg-primary/80 transition-all duration-500"
               style={{ width: `${buyPercent}%` }}
             />
             <div 
@@ -294,7 +294,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
             />
           </div>
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-green-500">{formatValue(stats.buyVolume)} ({buyPercent.toFixed(0)}%)</span>
+            <span className="text-primary">{formatValue(stats.buyVolume)} ({buyPercent.toFixed(0)}%)</span>
             <span className="text-red-500">{formatValue(stats.sellVolume)} ({(100 - buyPercent).toFixed(0)}%)</span>
           </div>
         </div>
@@ -329,12 +329,12 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
 
       {/* Top Buy/Sell */}
       <div className="grid grid-cols-2 gap-2 md:gap-3">
-        <div className="p-3 bg-green-500/10 border border-green-500/30 space-y-1">
-          <div className="flex items-center gap-2 text-xs text-green-400">
+        <div className="p-3 bg-primary/10 border border-primary/30 space-y-1">
+          <div className="flex items-center gap-2 text-xs text-primary">
             <TrendingUp className="w-3 h-3" />
             LARGEST_BUY
           </div>
-          <div className="text-lg font-bold font-mono text-green-500">
+          <div className="text-lg font-bold font-mono text-primary">
             {formatValue(stats.topBuy)}
           </div>
         </div>
@@ -399,7 +399,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                       title="Copy address"
                     >
                       {copiedAddress === wallet.wallet_address ? (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-primary" />
                       ) : (
                         <Copy className="w-4 h-4 text-muted-foreground" />
                       )}
