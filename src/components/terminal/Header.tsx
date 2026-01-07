@@ -6,7 +6,7 @@ const Header = () => {
       <div className="flex items-center gap-2">
         <span className="text-primary text-glow text-[10px] md:text-xs">ELIZABAO</span>
         <span className="text-muted-foreground hidden md:inline">//</span>
-        <span className="text-muted-foreground hidden md:inline text-xs">LIVE DATA FROM POLYMARKET API</span>
+        <span className="text-muted-foreground hidden md:inline text-xs">HERITAGE CRAFTSMANSHIP MEETS INNOVATION</span>
       </div>
       <div className="flex items-center gap-1.5 md:gap-3">
         <a
