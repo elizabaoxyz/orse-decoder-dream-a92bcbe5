@@ -176,7 +176,7 @@ const DiagnosticsPanel = () => {
         <div className="terminal-header">ElizaOSCloud Deploy</div>
         <div className="p-4">
           <a 
-            href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
+            href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
             target="_blank"
             rel="noopener noreferrer"
             className="block hover:opacity-80 transition-opacity"
