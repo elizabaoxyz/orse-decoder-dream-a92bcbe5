@@ -136,7 +136,6 @@ const MainTerminal = () => {
 
           <div className="hidden md:block text-xs space-y-0.5 font-mono">
             <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">ELIZABAO</span></p>
-            <p><span className="text-muted-foreground/70">AGENT_ID:</span><span className="text-white">6328b8c7-3add-4fef-a0c5-9f74adacdb43</span></p>
           </div>
 
           {/* Enabled Plugins Count */}
