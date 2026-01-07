@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
-import mascotAvatar from "@/assets/mascot-avatar.png";
+import agentAvatar from "@/assets/agent-avatar.jpg";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const Privacy = () => {
@@ -31,7 +31,7 @@ const Privacy = () => {
             </Button>
           </div>
           <img 
-            src={mascotAvatar} 
+            src={agentAvatar} 
             alt="Mascot" 
             className="h-10 w-10 md:h-12 md:w-12 rounded-full cursor-pointer hover:scale-110 transition-transform duration-200" 
             onClick={() => navigate("/")}

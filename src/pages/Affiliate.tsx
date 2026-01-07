@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { DollarSign, MousePointer, BarChart3, CreditCard, Link2, Search, ArrowLeft } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
-import mascotAvatar from "@/assets/mascot-avatar.png";
+import agentAvatar from "@/assets/agent-avatar.jpg";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const Affiliate = () => {
@@ -36,7 +36,7 @@ const Affiliate = () => {
             <img src={logoDark} alt="ElizaBAO" className="h-7 md:h-10 hover-scale" />
           </div>
           <img 
-            src={mascotAvatar} 
+            src={agentAvatar} 
             alt="Mascot" 
             className="h-9 w-9 md:h-12 md:w-12 rounded-full cursor-pointer hover:scale-110 transition-transform duration-200" 
             onClick={() => navigate("/")}
