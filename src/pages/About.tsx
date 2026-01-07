@@ -1,5 +1,4 @@
-import { ArrowLeft, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import agentAvatar from "@/assets/agent-avatar.jpg";
@@ -31,22 +30,12 @@ const About = () => {
       {/* Fixed Header with Logo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span 
-              className="text-primary text-glow text-lg md:text-xl font-bold cursor-pointer hover-scale" 
-              onClick={() => navigate("/")}
-            >
-              ELIZABAO
-            </span>
-            <Button
-              variant="ghost"
-              onClick={() => navigate(-1)}
-              className="text-muted-foreground hover:text-foreground gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-          </div>
+          <span 
+            className="text-primary text-glow text-lg md:text-xl font-bold cursor-pointer hover-scale" 
+            onClick={() => navigate("/")}
+          >
+            ELIZABAO
+          </span>
           <img 
             src={agentAvatar} 
             alt="Mascot" 
