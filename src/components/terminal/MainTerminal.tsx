@@ -119,7 +119,6 @@ const MainTerminal = () => {
               
               {/* Mobile: Compact info */}
               <div className="mt-2 md:hidden space-y-1">
-                <p className="text-primary text-[10px] font-bold uppercase">CA: H15tZKf9boeC6syHWa7DuApkhGQ1ZMaLGciU3fQzpump</p>
                 <div className="flex items-center gap-2 text-[9px]">
                   <span className="text-muted-foreground">ELIZABAO</span>
                   <a
@@ -135,15 +134,6 @@ const MainTerminal = () => {
             </div>
           </div>
 
-          {/* Desktop: Full description */}
-          <div className="hidden md:block space-y-0.5">
-            <p className="text-muted-foreground text-sm max-w-xl leading-relaxed uppercase tracking-wide">
-              Official Polymarket Partner | ElizaOS
-            </p>
-            <p className="text-primary text-sm font-bold uppercase tracking-wide">
-              CA: H15tZKf9boeC6syHWa7DuApkhGQ1ZMaLGciU3fQzpump
-            </p>
-          </div>
           <div className="hidden md:block text-xs space-y-0.5 font-mono">
             <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">ELIZABAO</span></p>
             <p><span className="text-muted-foreground/70">AGENT_ID:</span><span className="text-white">6328b8c7-3add-4fef-a0c5-9f74adacdb43</span></p>
