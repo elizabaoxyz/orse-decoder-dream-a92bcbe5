@@ -9,6 +9,7 @@ import Affiliate from "./pages/Affiliate";
 import AffiliateApply from "./pages/AffiliateApply";
 import Privacy from "./pages/legal/Privacy";
 import Partners from "./pages/legal/Partners";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/about" element={<About />} />
           <Route path="/affiliate" element={<Affiliate />} />
           <Route path="/affiliate/apply" element={<AffiliateApply />} />
           <Route path="/legal/privacy" element={<Privacy />} />
