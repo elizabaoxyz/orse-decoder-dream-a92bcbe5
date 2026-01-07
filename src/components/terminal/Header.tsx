@@ -5,8 +5,6 @@ const Header = () => {
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-3 md:px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
       <div className="flex items-center gap-2">
         <span className="text-primary text-glow text-[10px] md:text-xs">ELIZABAO</span>
-        <span className="text-muted-foreground hidden md:inline">//</span>
-        <span className="text-muted-foreground hidden md:inline text-xs">HERITAGE CRAFTSMANSHIP MEETS INNOVATION</span>
       </div>
       <div className="flex items-center gap-1.5 md:gap-3">
         <a
