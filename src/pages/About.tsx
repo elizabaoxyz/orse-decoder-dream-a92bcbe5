@@ -164,12 +164,7 @@ const About = () => {
 
         {/* Footer */}
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-          <p className="mb-2">Powered by <span className="text-primary text-glow">ElizaBAO</span></p>
-          <p>
-            <a href="/legal/privacy" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
-            {" • "}
-            <a href="/legal/partners" className="hover:text-foreground transition-colors duration-200">Partner Terms</a>
-          </p>
+          <p>Powered by <span className="text-primary text-glow">ElizaBAO</span></p>
         </footer>
       </div>
     </div>
