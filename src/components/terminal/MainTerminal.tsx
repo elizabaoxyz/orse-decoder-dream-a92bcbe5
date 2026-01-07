@@ -77,7 +77,7 @@ const MainTerminal = () => {
       {/* Terminal Primary */}
       <div className="terminal-panel flex-1 relative">
         <AsciiMouseEffect />
-        <div className="terminal-header">DORAMOS_TERMINAL_PRIMARY</div>
+        <div className="terminal-header">ELIZABAO_TERMINAL_PRIMARY</div>
         
         <div className="p-4 md:p-8 lg:p-12 space-y-4 md:space-y-6 lg:space-y-8">
           {/* Mobile: Agent Card + Title Row */}
@@ -113,7 +113,7 @@ const MainTerminal = () => {
             {/* Title & Info */}
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tight glitch">
-                DoramOS<span className="text-primary">_</span>
+                ElizaBAO<span className="text-primary">_</span>
               </h1>
               <div className="w-12 md:w-24 h-0.5 md:h-1 bg-primary mt-1 md:mt-2 pulse-glow" />
               
@@ -121,7 +121,7 @@ const MainTerminal = () => {
               <div className="mt-2 md:hidden space-y-1">
                 <p className="text-primary text-[10px] font-bold uppercase">CA: H15tZKf9boeC6syHWa7DuApkhGQ1ZMaLGciU3fQzpump</p>
                 <div className="flex items-center gap-2 text-[9px]">
-                  <span className="text-muted-foreground">AI16ZDORAM</span>
+                  <span className="text-muted-foreground">ELIZABAO</span>
                   <a
                     href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
                     target="_blank"
@@ -145,7 +145,7 @@ const MainTerminal = () => {
             </p>
           </div>
           <div className="hidden md:block text-xs space-y-0.5 font-mono">
-            <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">AI16ZDORAM</span></p>
+            <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">ELIZABAO</span></p>
             <p><span className="text-muted-foreground/70">AGENT_ID:</span><span className="text-white">6328b8c7-3add-4fef-a0c5-9f74adacdb43</span></p>
           </div>
 

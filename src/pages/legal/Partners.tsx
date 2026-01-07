@@ -17,7 +17,7 @@ const Partners = () => {
           <div className="flex items-center gap-4">
             <img 
               src={logoDark} 
-              alt="DoramOS" 
+              alt="ElizaBAO" 
               className="h-8 md:h-10 hover-scale cursor-pointer" 
               onClick={() => navigate("/")}
             />
@@ -64,7 +64,7 @@ const Partners = () => {
               <div className="space-y-6">
                 <div>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    DoramOS&apos;s Platform is intended to:
+                    ElizaBAO&apos;s Platform is intended to:
                   </p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
                     <li>enable Partners to join and participate in Partner Programs, and to earn rewards for their eligible contributions</li>
@@ -73,45 +73,45 @@ const Partners = () => {
                 </div>
 
                 <p className="text-muted-foreground leading-relaxed">
-                  By using the Platform, you grant DoramOS the right to access, collect, store, disclose, process, transmit, 
+                  By using the Platform, you grant ElizaBAO the right to access, collect, store, disclose, process, transmit, 
                   and use any data, information, records, or files you provide through the Platform —or that others provide 
                   in connection with your participation— for the sole purpose of operating, maintaining, and improving the Platform.
                 </p>
 
                 <p className="text-muted-foreground leading-relaxed">
-                  DoramOS may, at its sole discretion and without prior notice, suspend or terminate your access to the Platform 
-                  if you fail to comply with this Agreement or engage in conduct that DoramOS determines may harm the Platform, 
-                  other users, or DoramOS&apos;s reputation.
+                  ElizaBAO may, at its sole discretion and without prior notice, suspend or terminate your access to the Platform 
+                  if you fail to comply with this Agreement or engage in conduct that ElizaBAO determines may harm the Platform, 
+                  other users, or ElizaBAO&apos;s reputation.
                 </p>
 
                 <p className="text-muted-foreground leading-relaxed">
-                  In all matters relating to this Agreement, you and DoramOS are independent contractors, and nothing will be 
+                  In all matters relating to this Agreement, you and ElizaBAO are independent contractors, and nothing will be 
                   construed to create any association, partnership, joint venture, or relationship of agency or employment 
-                  between you and DoramOS.
+                  between you and ElizaBAO.
                 </p>
 
                 <div>
                   <h3 className="text-xl font-bold mb-3 text-foreground">Account Registration</h3>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    All users must create partner accounts and accept DoramOS&apos;s Terms of Service to access the DoramOS Platform. 
+                    All users must create partner accounts and accept ElizaBAO&apos;s Terms of Service to access the ElizaBAO Platform. 
                     You&apos;re responsible for ensuring that your Permitted Users (if applicable) comply with the Terms of Service. 
-                    If you are registering on DoramOS Platform as a business entity, you represent that you have the authority 
+                    If you are registering on ElizaBAO Platform as a business entity, you represent that you have the authority 
                     to bind the entity to this Agreement.
                   </p>
                   <p className="text-muted-foreground leading-relaxed">
                     Upon acceptance of the terms of this Agreement, and in order to access the Platform, you must create an account 
                     with a unique username and password for use by yourself and if applicable, any authorized personnel acting on 
                     your behalf (&quot;Permitted Users&quot;). You must keep Your User ID confidential and secure. Do not disclose or share 
-                    your User ID. You are responsible for all acts, omissions and content carried out under your User ID and DoramOS 
+                    your User ID. You are responsible for all acts, omissions and content carried out under your User ID and ElizaBAO 
                     will consider all acts, omissions and content on the Platform under your User ID as authorized by you. If you 
-                    suspect that a User ID has been compromised, you must notify DoramOS immediately.
+                    suspect that a User ID has been compromised, you must notify ElizaBAO immediately.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="text-xl font-bold mb-3 text-foreground">Single Account Policy</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Creating multiple partner accounts on DoramOS is strictly prohibited and constitutes a violation of our Partner 
+                    Creating multiple partner accounts on ElizaBAO is strictly prohibited and constitutes a violation of our Partner 
                     Terms of Service. Each individual or business entity is limited to one partner account. Any attempt to create 
                     additional accounts using different email addresses, identities, or other means to circumvent this restriction 
                     will result in immediate account suspension or termination. If you need to modify your account details or transfer 
@@ -138,9 +138,9 @@ const Partners = () => {
                     obligations under this Agreement, and that in carrying out this Agreement and using the Platform, you will 
                     comply with all applicable laws and have the right to transmit your data through or to our Platform.
                   </p>
-                  <p className="text-muted-foreground leading-relaxed mb-2">DoramOS will not be responsible or liable for:</p>
+                  <p className="text-muted-foreground leading-relaxed mb-2">ElizaBAO will not be responsible or liable for:</p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                    <li>any defects, issues, or failures of products or software not provided by DoramOS</li>
+                    <li>any defects, issues, or failures of products or software not provided by ElizaBAO</li>
                     <li>glitches, defects, problems associated with or caused by a failure of the internet</li>
                     <li>any losses, disputes, or expenses arising from your engagement with third parties (including Clients)</li>
                   </ul>
@@ -161,7 +161,7 @@ const Partners = () => {
                     commission schedules, and other applicable terms and conditions. If you choose to participate in a Partner Program, 
                     you will communicate directly with the Client offering it through the Platform and may be required to enter into 
                     a separate agreement governing that program (such as Affiliate Program Agreement), or another similarly titled 
-                    arrangement agreed upon with the Client. DoramOS is not a party to any Affiliate Program Agreement or related 
+                    arrangement agreed upon with the Client. ElizaBAO is not a party to any Affiliate Program Agreement or related 
                     agreement and shall have no liability, responsibility, or obligation relating to any such agreement.
                   </p>
                 </div>
@@ -169,13 +169,13 @@ const Partners = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-3 text-foreground">Third Party Links</h3>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    The Platform may provide links to third party websites. DoramOS does not endorse the information contained on 
+                    The Platform may provide links to third party websites. ElizaBAO does not endorse the information contained on 
                     those websites or guarantee their quality, accuracy, reliability, completeness, currency, timeliness, non-infringement, 
                     merchantability or fitness for any purpose. The content in any linked website is provided for your convenience but 
-                    is not under DoramOS&apos;s control. If you access any such website, you do so entirely at your own risk.
+                    is not under ElizaBAO&apos;s control. If you access any such website, you do so entirely at your own risk.
                   </p>
                   <p className="text-muted-foreground leading-relaxed">
-                    DoramOS does not warrant or accept any liability or obligation to you with respect to third party software and services. 
+                    ElizaBAO does not warrant or accept any liability or obligation to you with respect to third party software and services. 
                     This Agreement does not absolve you of any duty or obligations imposed under any such third-party agreements. 
                     You may request a copy of any agreement with a third-party from them.
                   </p>
@@ -184,8 +184,8 @@ const Partners = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-3 text-foreground">Commissions</h3>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    Through Partner Programs, you may earn commissions (&quot;Commissions&quot;) from such Clients. When a Client pays DoramOS 
-                    Commission amounts due under its Partner Program for remittance to you, DoramOS will notify you through the Platform 
+                    Through Partner Programs, you may earn commissions (&quot;Commissions&quot;) from such Clients. When a Client pays ElizaBAO 
+                    Commission amounts due under its Partner Program for remittance to you, ElizaBAO will notify you through the Platform 
                     that the payment may be deposited via the Payment Provider (as described and defined below).
                   </p>
                   <p className="text-muted-foreground leading-relaxed mb-4">
@@ -194,22 +194,22 @@ const Partners = () => {
                     verifications. If Stripe Express is not available in your country, you may instead use a PayPal account to receive commissions.
                   </p>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    Commissions are payable only after the applicable Client has paid DoramOS in full for the corresponding transaction. 
+                    Commissions are payable only after the applicable Client has paid ElizaBAO in full for the corresponding transaction. 
                     The Partner Dashboard will indicate the status of your payouts:
                   </p>
                   <ul className="list-none text-muted-foreground space-y-3 ml-4">
                     <li><strong className="text-foreground">Pending:</strong> When you start earning commissions from a Partner Program, they&apos;ll be accrued under a payout entry. If the Partner Program has a minimum payout amount set, your payout amount will need to reach the threshold to become eligible for payment.</li>
-                    <li><strong className="text-foreground">Processing:</strong> When a Partner Program initiates a payout to you, the payout will be updated to a &quot;processing&quot; state until the payment settles on DoramOS. This process can take up to 5 business days.</li>
-                    <li><strong className="text-foreground">Processed:</strong> Once the program&apos;s payout has settled on DoramOS, the payout will be updated to a &quot;processed&quot; state. If the payout amount is above your minimum withdrawal balance, the funds will be automatically paid out to your connected bank account.</li>
-                    <li><strong className="text-foreground">Sent:</strong> When your payout is on its way to your connected bank account, it will be updated to a &quot;sent&quot; state. Depending on your bank location, this can take anywhere from 1 to 14 business days (you will see the estimated arrival date in the notification email from DoramOS).</li>
+                    <li><strong className="text-foreground">Processing:</strong> When a Partner Program initiates a payout to you, the payout will be updated to a &quot;processing&quot; state until the payment settles on ElizaBAO. This process can take up to 5 business days.</li>
+                    <li><strong className="text-foreground">Processed:</strong> Once the program&apos;s payout has settled on ElizaBAO, the payout will be updated to a &quot;processed&quot; state. If the payout amount is above your minimum withdrawal balance, the funds will be automatically paid out to your connected bank account.</li>
+                    <li><strong className="text-foreground">Sent:</strong> When your payout is on its way to your connected bank account, it will be updated to a &quot;sent&quot; state. Depending on your bank location, this can take anywhere from 1 to 14 business days (you will see the estimated arrival date in the notification email from ElizaBAO).</li>
                     <li><strong className="text-foreground">Completed:</strong> When the payout is completed and the funds are deposited into your bank account.</li>
                   </ul>
                   <p className="text-muted-foreground leading-relaxed mt-4 mb-2">You agree and acknowledge that:</p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                    <li>DoramOS has no obligation to pay any Commission, and is not responsible for any Commission amounts until payment has been received in full from the responsible Client;</li>
+                    <li>ElizaBAO has no obligation to pay any Commission, and is not responsible for any Commission amounts until payment has been received in full from the responsible Client;</li>
                     <li>Commission payments will be deposited into your account via Stripe Express (or via PayPal only if Stripe Express is unavailable in your country);</li>
-                    <li>DoramOS is not liable for any delays, inaccuracies, or errors in Commission payments;</li>
-                    <li>For any Clients you engage with through the Platform, all related Commission payments must be processed through DoramOS. Receiving payments directly from such Clients, while their program is active on the Platform, is a violation of these Terms of Service.</li>
+                    <li>ElizaBAO is not liable for any delays, inaccuracies, or errors in Commission payments;</li>
+                    <li>For any Clients you engage with through the Platform, all related Commission payments must be processed through ElizaBAO. Receiving payments directly from such Clients, while their program is active on the Platform, is a violation of these Terms of Service.</li>
                   </ul>
                 </div>
 
@@ -232,11 +232,11 @@ const Partners = () => {
                     Payment processing services are provided by third-party payment providers, including Stripe Express (Stripe, Inc.) 
                     and PayPal (PayPal Holdings, Inc.) (collectively, &quot;Payment Providers&quot;). All payments to Partners will be processed 
                     through Payment Providers, which require that you enter a separate agreement with the Payment Provider(s). 
-                    DoramOS is not a party to any such agreement and shall have no liability, responsibility or obligation under such agreement. 
+                    ElizaBAO is not a party to any such agreement and shall have no liability, responsibility or obligation under such agreement. 
                     You will be solely responsible for any fees charged by any Payment Provider (the &quot;Transaction Costs&quot;).
                   </p>
                   <p className="text-muted-foreground leading-relaxed">
-                    DoramOS is not responsible for any incorrect, delayed, or failed payments resulting from outdated or inaccurate account information.
+                    ElizaBAO is not responsible for any incorrect, delayed, or failed payments resulting from outdated or inaccurate account information.
                   </p>
                 </div>
               </div>
@@ -254,14 +254,14 @@ const Partners = () => {
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
                   Upon termination of this Agreement, effective as of the termination date, you must immediately cease all use 
-                  of the Platform and return any materials provided by DoramOS (if applicable). Both parties must also destroy 
+                  of the Platform and return any materials provided by ElizaBAO (if applicable). Both parties must also destroy 
                   any confidential information received from the other, except as required to be retained under applicable law.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  If you breach this Agreement, DoramOS may, at its sole discretion and without notice, temporarily or permanently 
-                  suspend your access to the Platform. You may terminate your account by providing DoramOS with thirty (30) days&apos; 
+                  If you breach this Agreement, ElizaBAO may, at its sole discretion and without notice, temporarily or permanently 
+                  suspend your access to the Platform. You may terminate your account by providing ElizaBAO with thirty (30) days&apos; 
                   written notice. Termination of your account will result in the immediate loss of access to the Platform, and 
-                  DoramOS may delete any information stored in your account. Termination does not limit DoramOS&apos;s other rights 
+                  ElizaBAO may delete any information stored in your account. Termination does not limit ElizaBAO&apos;s other rights 
                   or remedies available under this Agreement or applicable law.
                 </p>
 
@@ -273,7 +273,7 @@ const Partners = () => {
                     you and that Client.
                   </p>
                   <p className="text-muted-foreground leading-relaxed">
-                    DoramOS has no obligation to confirm or acknowledge any such notice of termination between a Client and a Partner, 
+                    ElizaBAO has no obligation to confirm or acknowledge any such notice of termination between a Client and a Partner, 
                     and will not be liable for any unpaid amounts or other obligations that remain unfulfilled by the Client.
                   </p>
                 </div>
@@ -284,17 +284,17 @@ const Partners = () => {
             <section>
               <h2 className="text-2xl font-bold mb-6 text-primary">4. Platform Ownership</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                DoramOS owns all right, title, and interest in the Platform, including all information, materials, and content 
-                provided by DoramOS in connection with the Platform or contained within it, as well as any updates, adaptations, 
+                ElizaBAO owns all right, title, and interest in the Platform, including all information, materials, and content 
+                provided by ElizaBAO in connection with the Platform or contained within it, as well as any updates, adaptations, 
                 translations, customizations, derivative works, and all associated intellectual property rights. Your use of the 
                 Platform does not grant you any ownership or other rights in the Platform, except for the limited rights expressly 
                 provided in this Agreement.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                DoramOS may compile and derive aggregated, anonymized data from users of the Platform, including indicators, 
+                ElizaBAO may compile and derive aggregated, anonymized data from users of the Platform, including indicators, 
                 performance metrics, and usage patterns. Usage data is not Partner data, is not personal data, and cannot be 
                 used to identify you or any other individual. Usage Data cannot be re-identified and will be considered the 
-                property of DoramOS.
+                property of ElizaBAO.
               </p>
             </section>
 
@@ -302,8 +302,8 @@ const Partners = () => {
             <section>
               <h2 className="text-2xl font-bold mb-6 text-primary">5. Privacy</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                To operate the Platform, DoramOS collects, uses, stores, and shares certain information as described in our{" "}
-                <a href="/legal/privacy" className="text-primary hover:underline">DoramOS Privacy Policy</a>, 
+                To operate the Platform, ElizaBAO collects, uses, stores, and shares certain information as described in our{" "}
+                <a href="/legal/privacy" className="text-primary hover:underline">ElizaBAO Privacy Policy</a>, 
                 which is incorporated into this Agreement by reference.
               </p>
               <p className="text-muted-foreground leading-relaxed mb-4">
@@ -350,23 +350,23 @@ const Partners = () => {
             <section>
               <h2 className="text-2xl font-bold mb-6 text-primary">7. Disclaimers</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                The DoramOS Platform is provided &quot;as is&quot; and &quot;as available.&quot; To the fullest extent permitted by applicable law, 
-                and except as expressly stated in this Agreement, DoramOS makes no warranties, representations, or conditions of any kind, 
+                The ElizaBAO Platform is provided &quot;as is&quot; and &quot;as available.&quot; To the fullest extent permitted by applicable law, 
+                and except as expressly stated in this Agreement, ElizaBAO makes no warranties, representations, or conditions of any kind, 
                 whether express, implied, statutory, or otherwise, including any implied warranties of merchantability, fitness for a 
-                particular purpose, or non-infringement. Except as expressly stated in this Agreement, DoramOS does not warrant that 
+                particular purpose, or non-infringement. Except as expressly stated in this Agreement, ElizaBAO does not warrant that 
                 the Platform will be uninterrupted or error-free.
               </p>
               <p className="text-muted-foreground leading-relaxed mb-4">
                 The Platform is made available to various independent entities, including Partners and Clients. These entities are not 
-                partners, agents, or employees of DoramOS. DoramOS is not responsible or liable for the acts, omissions, representations, 
+                partners, agents, or employees of ElizaBAO. ElizaBAO is not responsible or liable for the acts, omissions, representations, 
                 warranties, breaches, or negligence of any such entity, nor for any Partner Program, Affiliate Program Agreement, or 
                 other offerings provided by them.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                In no event will DoramOS or its officers, directors, affiliates, partners, employees, shareholders, or agents be liable 
+                In no event will ElizaBAO or its officers, directors, affiliates, partners, employees, shareholders, or agents be liable 
                 for any damages of any kind (including lost profits, loss of data, personal injury, fines, fees, penalties, or other liabilities), 
                 arising from or related to your use of, or inability to use, the Platform, any Partner Program, or any Affiliate Program Agreement. 
-                In no event, regardless of the form or theory of action, will the total aggregate liability of DoramOS or its officers, directors, 
+                In no event, regardless of the form or theory of action, will the total aggregate liability of ElizaBAO or its officers, directors, 
                 affiliates, partners, employees, shareholders, agents, successors, or assigns in connection with your use of the Platform for 
                 any purpose exceed five hundred U.S. dollars ($500).
               </p>
@@ -381,7 +381,7 @@ const Partners = () => {
                 acceptance of the updated terms.
               </p>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                DoramOS may also update, modify, or change any aspect of the DoramOS Platform (including, without limitation, its features, 
+                ElizaBAO may also update, modify, or change any aspect of the ElizaBAO Platform (including, without limitation, its features, 
                 functionality, content, or appearance) at any time, without prior notice.
               </p>
               <p className="text-muted-foreground leading-relaxed">
@@ -414,8 +414,8 @@ const Partners = () => {
                       <td className="py-3 px-4">Payments earned by Partners in connection with their participation in a Partner Program.</td>
                     </tr>
                     <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-foreground">DoramOS</td>
-                      <td className="py-3 px-4">Refers to DoramOS Technologies, also known as ai16zdoram.xyz.</td>
+                      <td className="py-3 px-4 font-medium text-foreground">ElizaBAO</td>
+                      <td className="py-3 px-4">Refers to ElizaBAO Technologies, also known as elizabao.xyz.</td>
                     </tr>
                     <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-foreground">Partner</td>
@@ -423,7 +423,7 @@ const Partners = () => {
                     </tr>
                     <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-foreground">Partner Dashboard</td>
-                      <td className="py-3 px-4">The online interface provided by DoramOS through which Partners can view Partner Program information, track performance, and monitor payout statuses.</td>
+                      <td className="py-3 px-4">The online interface provided by ElizaBAO through which Partners can view Partner Program information, track performance, and monitor payout statuses.</td>
                     </tr>
                     <tr className="border-b border-border/50 hover:bg-background/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-foreground">Partner Program</td>
@@ -450,7 +450,7 @@ const Partners = () => {
 
         {/* Footer */}
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-          <p className="mb-2">Powered by <span className="text-primary text-glow">DoramOS</span></p>
+          <p className="mb-2">Powered by <span className="text-primary text-glow">ElizaBAO</span></p>
           <p>
             <a href="/legal/privacy" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
             {" • "}
