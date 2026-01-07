@@ -185,7 +185,7 @@ const DiagnosticsPanel = () => {
           </a>
           <div className="space-y-2 text-xs mt-4">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">AI16ZDoram</span>
+              <span className="text-muted-foreground">ElizaBAO</span>
               <span className="text-foreground">MCP</span>
             </div>
             <div className="flex justify-between">

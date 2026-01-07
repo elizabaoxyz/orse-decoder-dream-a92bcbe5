@@ -33,7 +33,7 @@ const Affiliate = () => {
                 <ArrowLeft className="w-4 h-4 group-hover:text-primary transition-colors" />
               </div>
             </button>
-            <img src={logoDark} alt="DoramOS" className="h-7 md:h-10 hover-scale" />
+            <img src={logoDark} alt="ElizaBAO" className="h-7 md:h-10 hover-scale" />
           </div>
           <img 
             src={mascotAvatar} 
@@ -178,7 +178,7 @@ const Affiliate = () => {
                   Do I get credit for referring existing users?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground text-sm">
-                  No, only new, first-time user deposits are credited for the purposes of this program. If you notice a referral being marked as a &quot;duplicate&quot; it likely means that &quot;referral&quot; was actually an existing user & mistakenly attributed by DoramOS.
+                  No, only new, first-time user deposits are credited for the purposes of this program. If you notice a referral being marked as a &quot;duplicate&quot; it likely means that &quot;referral&quot; was actually an existing user & mistakenly attributed by ElizaBAO.
                 </AccordionContent>
               </AccordionItem>
 
@@ -236,7 +236,7 @@ const Affiliate = () => {
 
         {/* Footer */}
         <footer className="py-6 md:py-8 text-center text-xs md:text-sm text-muted-foreground">
-          <p className="mb-2">Powered by <span className="text-primary text-glow">DoramOS</span></p>
+          <p className="mb-2">Powered by <span className="text-primary text-glow">ElizaBAO</span></p>
           <p>
             <Link to="/legal/partners" className="hover:text-foreground transition-colors duration-200">Partner Terms</Link>
             {" • "}

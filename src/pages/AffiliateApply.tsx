@@ -43,7 +43,7 @@ const AffiliateApply = () => {
                 <ArrowLeft className="w-4 h-4 group-hover:text-primary transition-colors" />
               </div>
             </button>
-            <img src={logoDark} alt="DoramOS" className="h-8 md:h-10 hover-scale" />
+            <img src={logoDark} alt="ElizaBAO" className="h-8 md:h-10 hover-scale" />
           </div>
           <img 
             src={mascotAvatar} 
@@ -140,12 +140,12 @@ const AffiliateApply = () => {
                   <Input
                     id="solanaWallet"
                     required
-                    placeholder="Enter your Solana wallet address holding $ai16zdoram"
+                    placeholder="Enter your Solana wallet address holding $ElizaBAO"
                     value={formData.solanaWallet}
                     onChange={(e) => setFormData({ ...formData, solanaWallet: e.target.value })}
                     className="bg-background border-border focus:border-primary transition-colors duration-300 font-mono text-sm"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">We'll verify if you're holding $ai16zdoram tokens</p>
+                  <p className="text-xs text-muted-foreground mt-1">We'll verify if you're holding $ElizaBAO tokens</p>
                 </div>
 
                 <div className="group">
@@ -187,7 +187,7 @@ const AffiliateApply = () => {
                 <p className="text-muted-foreground text-sm mb-2">Step 2 of 2</p>
                 <h1 className="text-2xl font-bold mb-4">Finish your <span className="text-primary text-glow">application</span></h1>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Your application to Polymarket has been saved, but you still need to create your DoramOS Partners account to complete your application.
+                  Your application to Polymarket has been saved, but you still need to create your ElizaBAO Partners account to complete your application.
                 </p>
                 <p className="text-muted-foreground text-sm mt-3">
                   Once you create your account, your application will be submitted to Polymarket and you'll hear back from them at{" "}
@@ -203,13 +203,13 @@ const AffiliateApply = () => {
                   <div className="absolute inset-0 bg-white z-0 rounded-2xl"></div>
                   <img 
                     src={dashboardPreview} 
-                    alt="DoramOS Partners Dashboard Preview" 
+                    alt="ElizaBAO Partners Dashboard Preview"
                     className="w-full h-auto relative z-10 rounded-2xl"
                     style={{ filter: 'none', mixBlendMode: 'normal' }}
                   />
-                  {/* DoramOS text overlay */}
+                  {/* ElizaBAO text overlay */}
                   <span className="absolute top-1.5 left-2 z-20 text-black font-bold" style={{ fontSize: '8px' }}>
-                    DoramOS
+                    ElizaBAO
                   </span>
                 </div>
 
@@ -229,12 +229,12 @@ const AffiliateApply = () => {
                       <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <img 
                           src={dashboardPreview} 
-                          alt="DoramOS Partners Dashboard Preview" 
+                          alt="ElizaBAO Partners Dashboard Preview" 
                           className="max-w-full max-h-[85vh] rounded-xl shadow-2xl animate-scale-in"
                         />
-                        {/* DoramOS text overlay in modal */}
+                        {/* ElizaBAO text overlay in modal */}
                         <span className="absolute top-2 left-3 z-20 text-black font-bold text-xs">
-                          DoramOS
+                          ElizaBAO
                         </span>
                       </div>
                     </div>
@@ -273,7 +273,7 @@ const AffiliateApply = () => {
                     <Target className="w-4 h-4 text-primary" />
                   </div>
                   <h3 className="font-semibold text-sm mb-1">Track everything</h3>
-                  <p className="text-xs text-muted-foreground">DoramOS gives you the power to track every click, lead, and conversion. Knowledge is power.</p>
+                  <p className="text-xs text-muted-foreground">ElizaBAO gives you the power to track every click, lead, and conversion. Knowledge is power.</p>
                 </div>
               </div>
 
@@ -287,7 +287,7 @@ const AffiliateApply = () => {
                   variant="outline"
                   className="rounded-full transition-all duration-200 hover:-translate-y-0.5"
                 >
-                  Back to DoramOS
+                  Back to ElizaBAO
                 </Button>
               </div>
             </>
@@ -296,7 +296,7 @@ const AffiliateApply = () => {
 
         {/* Footer */}
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-          <p className="mb-2">Powered by <span className="text-primary text-glow">DoramOS</span></p>
+          <p className="mb-2">Powered by <span className="text-primary text-glow">ElizaBAO</span></p>
           <p>
             <a href="/legal/partners" className="hover:text-foreground transition-colors duration-200">Partner Terms</a>
             {" • "}
