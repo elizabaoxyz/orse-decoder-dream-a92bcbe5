@@ -81,7 +81,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                 icon={<Clock className="w-4 h-4" />}
                 label="WIN_RATE"
                 value={analytics.win_rate ? `${analytics.win_rate.toFixed(1)}%` : 'N/A'}
-                color={analytics.win_rate && analytics.win_rate >= 50 ? 'text-green-400' : 'text-red-400'}
+                color={analytics.win_rate && analytics.win_rate >= 50 ? 'text-primary' : 'text-red-400'}
               />
             </div>
 
@@ -96,7 +96,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                   </div>
                   <div className="h-2 bg-terminal-surface rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-green-500 to-green-400"
+                      className="h-full bg-gradient-to-r from-primary to-orange-400"
                       style={{ 
                         width: `${analytics.buy_count + analytics.sell_count > 0 
                           ? (analytics.buy_count / (analytics.buy_count + analytics.sell_count)) * 100 
@@ -105,7 +105,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                     />
                   </div>
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-green-400">BUY</span>
+                    <span className="text-primary">BUY</span>
                     <span className="text-red-400">SELL</span>
                   </div>
                 </div>
@@ -161,7 +161,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                       <span>•</span>
                       <span>Avg {formatValue(market.avg_trade_size)}</span>
                       <span>•</span>
-                      <span className={market.dominant_side === 'buy' ? 'text-green-400' : 'text-red-400'}>
+                      <span className={market.dominant_side === 'buy' ? 'text-primary' : 'text-red-400'}>
                         {market.dominant_side === 'buy' ? 'BUY' : 'SELL'}
                       </span>
                       <span className={market.dominant_outcome === 'YES' ? 'text-blue-400' : 'text-orange-400'}>
@@ -191,7 +191,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
                         tx.side.toLowerCase() === 'buy' 
-                          ? 'bg-green-500/20 text-green-400' 
+                          ? 'bg-primary/20 text-primary' 
                           : 'bg-red-500/20 text-red-400'
                       }`}>
                         {tx.side.toUpperCase()}
