@@ -1,4 +1,4 @@
-import elizaMascot from "@/assets/eliza-mascot.png";
+import agentAvatar from "@/assets/agent-avatar.jpg";
 
 const FoxMascot = () => {
   return (
@@ -22,9 +22,9 @@ const FoxMascot = () => {
         <div className="relative z-10 p-[2px] rounded-full bg-gradient-to-br from-primary via-emerald-400 to-primary">
           <div className="rounded-full bg-background p-1">
             <img 
-              src={elizaMascot} 
-              alt="Eliza Mascot" 
-              className="w-32 h-32 object-contain rounded-full transition-transform duration-300 group-hover:scale-105"
+              src={agentAvatar} 
+              alt="Agent Avatar" 
+              className="w-32 h-32 object-cover rounded-full transition-transform duration-300 group-hover:scale-105"
             />
           </div>
         </div>
