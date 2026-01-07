@@ -10,7 +10,7 @@ export default function CursorSetup() {
     img.src = "/cursors/bao-cursor.png";
 
     img.onload = () => {
-      const size = 48; // keep <= 128px to satisfy browser cursor limits
+      const size = 25;
       const canvas = document.createElement("canvas");
       canvas.width = size;
       canvas.height = size;
@@ -22,10 +22,9 @@ export default function CursorSetup() {
       ctx.drawImage(img, 0, 0, size, size);
 
       const dataUrl = canvas.toDataURL("image/png");
-      // Hotspot kept proportional (~25%) for a "pointer-like" feel.
       document.documentElement.style.setProperty(
         "--app-cursor",
-        `url('${dataUrl}') 12 12`
+        `url('${dataUrl}') 6 6`
       );
     };
 
