@@ -17,8 +17,8 @@ const Privacy = () => {
           <div className="flex items-center gap-4">
             <img 
               src={logoDark} 
-              alt="DoramOS" 
-              className="h-8 md:h-10 hover-scale cursor-pointer" 
+              alt="ElizaBAO" 
+              className="h-8 md:h-10 hover-scale cursor-pointer"
               onClick={() => navigate("/")}
             />
             <Button
@@ -59,9 +59,9 @@ const Privacy = () => {
             <section>
               <h2 className="text-xl font-bold mb-4 text-foreground">Introduction</h2>
               <p className="text-muted-foreground leading-relaxed">
-                At DoramOS, we take your privacy seriously. This Privacy Policy explains how we collect, 
+                At ElizaBAO, we take your privacy seriously. This Privacy Policy explains how we collect, 
                 use, disclose, and safeguard your information when you use our platform and services. 
-                Please read this privacy policy carefully. By using DoramOS, you consent to the data 
+                Please read this privacy policy carefully. By using ElizaBAO, you consent to the data 
                 practices described in this policy.
               </p>
             </section>
@@ -76,7 +76,7 @@ const Privacy = () => {
                 <li>Usage data and analytics about how you interact with our platform</li>
                 <li>Device information including IP address, browser type, and operating system</li>
                 <li>Cookies and similar tracking technologies</li>
-                <li>Information from third-party services you connect to DoramOS</li>
+                <li>Information from third-party services you connect to ElizaBAO</li>
               </ul>
             </section>
 
@@ -160,7 +160,7 @@ const Privacy = () => {
 
         {/* Footer */}
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-          <p className="mb-2">Powered by <span className="text-primary text-glow">DoramOS</span></p>
+          <p className="mb-2">Powered by <span className="text-primary text-glow">ElizaBAO</span></p>
           <p>
             <a href="/legal/privacy" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
             {" • "}

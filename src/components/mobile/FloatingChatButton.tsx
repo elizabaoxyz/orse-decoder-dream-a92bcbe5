@@ -46,13 +46,13 @@ const FloatingChatButton = () => {
             <div className="relative">
               <img
                 src={elizaMascot}
-                alt="AI16ZDoram"
+                alt="ElizaBAO"
                 className="w-10 h-10 rounded-full object-cover border-2 border-primary"
               />
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-bold text-foreground">AI16ZDoram</h3>
+              <h3 className="text-sm font-bold text-foreground">ElizaBAO</h3>
               <p className="text-[10px] text-primary">ONLINE • ElizaOS Agent</p>
             </div>
           </div>
@@ -66,7 +66,7 @@ const FloatingChatButton = () => {
                 className="w-6 h-6 rounded-full object-cover shrink-0"
               />
               <div className="bg-muted/50 border border-border/50 rounded-lg p-2 text-xs text-foreground">
-                👋 Hey! I'm AI16ZDoram, your Polymarket whale tracking agent. Ask me anything about market trends!
+                👋 Hey! I'm ElizaBAO, your Polymarket whale tracking agent. Ask me anything about market trends!
               </div>
             </div>
           </div>
@@ -74,7 +74,7 @@ const FloatingChatButton = () => {
           {/* Action Buttons */}
           <div className="p-3 border-t border-border space-y-2">
             <a
-              href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
+              href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground font-bold text-sm rounded-lg transition-colors hover:bg-primary/90"
