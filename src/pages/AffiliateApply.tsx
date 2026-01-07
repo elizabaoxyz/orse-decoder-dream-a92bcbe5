@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Check, DollarSign, MousePointer, ArrowLeft, CreditCard, BarChart3, Target, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoDark from "@/assets/logo-dark.png";
-import mascotAvatar from "@/assets/mascot-avatar.png";
+import agentAvatar from "@/assets/agent-avatar.jpg";
 import dashboardPreview from "@/assets/dashboard-preview.png";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
@@ -46,7 +46,7 @@ const AffiliateApply = () => {
             <img src={logoDark} alt="ElizaBAO" className="h-8 md:h-10 hover-scale" />
           </div>
           <img 
-            src={mascotAvatar} 
+            src={agentAvatar} 
             alt="Mascot" 
             className="h-10 w-10 md:h-12 md:w-12 rounded-full cursor-pointer hover:scale-110 transition-transform duration-200" 
             onClick={() => navigate("/")}
