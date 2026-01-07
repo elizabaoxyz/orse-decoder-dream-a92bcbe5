@@ -1,7 +1,7 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import logoDark from "@/assets/logo-dark.png";
+
 import mascotAvatar from "@/assets/mascot-avatar.png";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
@@ -32,12 +32,12 @@ const About = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img 
-              src={logoDark} 
-              alt="ElizaBAO" 
-              className="h-8 md:h-10 hover-scale cursor-pointer" 
+            <span 
+              className="text-primary text-glow text-lg md:text-xl font-bold cursor-pointer hover-scale" 
               onClick={() => navigate("/")}
-            />
+            >
+              ELIZABAO
+            </span>
             <Button
               variant="ghost"
               onClick={() => navigate(-1)}
