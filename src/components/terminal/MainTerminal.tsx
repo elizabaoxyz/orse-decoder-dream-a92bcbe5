@@ -87,7 +87,7 @@ const MainTerminal = () => {
           <div className="flex items-start gap-4">
             {/* Agent Avatar - visible on mobile */}
             <a
-              href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
+              href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
               target="_blank"
               rel="noopener noreferrer"
               className="block md:hidden shrink-0"
@@ -125,7 +125,7 @@ const MainTerminal = () => {
                 <div className="flex items-center gap-2 text-[9px]">
                   <span className="text-muted-foreground">ELIZABAO</span>
                   <a
-                    href="https://www.elizacloud.ai/dashboard/chat?characterId=6328b8c7-3add-4fef-a0c5-9f74adacdb43"
+                    href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-primary"
