@@ -13,20 +13,13 @@ serve(async (req) => {
 
   try {
     const ELIZAOS_API_KEY = Deno.env.get('ELIZAOS_API_KEY');
-    const ELIZAOS_AGENT_ID = Deno.env.get('ELIZAOS_AGENT_ID');
 
     if (!ELIZAOS_API_KEY) {
       console.error('ELIZAOS_API_KEY is not configured');
       throw new Error('ELIZAOS_API_KEY is not configured');
     }
 
-    if (!ELIZAOS_AGENT_ID) {
-      console.error('ELIZAOS_AGENT_ID is not configured');
-      throw new Error('ELIZAOS_AGENT_ID is not configured');
-    }
-
     console.log('API Key prefix:', ELIZAOS_API_KEY.substring(0, 10) + '...');
-    console.log('Agent ID:', ELIZAOS_AGENT_ID);
 
     const { message, conversationHistory } = await req.json();
     console.log('Received message:', message);
@@ -37,127 +30,77 @@ serve(async (req) => {
       ? conversationHistory
       : [];
 
-    // Build OpenAI-style messages
-    const openaiMessages = history
+    // Build Vercel AI SDK style messages with parts
+    const messages = history
       .filter((m) => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
-      .map((msg) => ({ role: msg.role, content: msg.content }));
-    openaiMessages.push({ role: "user", content: message });
+      .map((msg) => ({
+        role: msg.role,
+        parts: [{ type: "text", text: msg.content }]
+      }));
+    messages.push({ role: "user", parts: [{ type: "text", text: message }] });
 
     // Keep only recent context
-    const recentMessages = openaiMessages.slice(-12);
+    const recentMessages = messages.slice(-12);
 
-    console.log("History length:", history.length, "last user message:", String(message).slice(0, 80));
+    console.log("Messages count:", recentMessages.length);
 
-    // Try multiple API endpoint formats
-    const endpoints = [
-      // Primary endpoint - base chat API with characterId in body
-      { url: "https://www.elizacloud.ai/api/v1/chat", name: "base_chat" },
-      // Alternative endpoint formats
-      { url: "https://www.elizacloud.ai/api/chat", name: "api_chat" },
-      { url: `https://www.elizacloud.ai/${ELIZAOS_AGENT_ID}/message`, name: "agent_message" },
-      { url: `https://www.elizacloud.ai/api/agents/${ELIZAOS_AGENT_ID}/message`, name: "agents_message" },
-    ];
+    // Eliza Cloud Chat Completion endpoint
+    const url = "https://www.elizacloud.ai/api/v1/chat";
 
-    const payloadVariants = [
-      // Variant 1: OpenAI-style with characterId
-      { name: "openai_with_characterId", body: { messages: recentMessages, characterId: ELIZAOS_AGENT_ID } },
-      // Variant 2: Simple text message
-      { name: "simple_text", body: { text: message, characterId: ELIZAOS_AGENT_ID } },
-      // Variant 3: message field
-      { name: "message_field", body: { message: message, characterId: ELIZAOS_AGENT_ID } },
-      // Variant 4: content field
-      { name: "content_field", body: { content: message, characterId: ELIZAOS_AGENT_ID } },
-      // Variant 5: OpenAI format with model
-      { name: "openai_with_model", body: { messages: recentMessages, characterId: ELIZAOS_AGENT_ID, model: "gpt-4o" } },
-    ];
+    // The 2 params are likely: messages and model
+    const requestBody = {
+      messages: recentMessages,
+      model: "gpt-4o-mini"  // Default model
+    };
 
-    let chosen: { name: string; respText: string } | null = null;
-    let lastErr: { status: number; text: string; attempt: string } | null = null;
+    console.log("Request URL:", url);
+    console.log("Request body:", JSON.stringify(requestBody).slice(0, 800));
 
-    // Try each endpoint with each payload variant
-    outer:
-    for (const endpoint of endpoints) {
-      for (const payload of payloadVariants) {
-        const attemptName = `${endpoint.name}_${payload.name}`;
-        console.log("Upstream attempt:", attemptName);
-        console.log("URL:", endpoint.url);
-        console.log("Request body:", JSON.stringify(payload.body).slice(0, 800));
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${ELIZAOS_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-        try {
-          const resp = await fetch(endpoint.url, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload.body),
-          });
+    const respText = await resp.text();
+    console.log("Response status:", resp.status);
+    console.log("Response body preview:", respText.slice(0, 1000));
 
-          const respText = await resp.text();
-          console.log("Response status:", attemptName, resp.status);
-          console.log("Response body preview:", respText.slice(0, 500));
-
-          if (resp.status === 401) {
-            return new Response(
-              JSON.stringify({
-                error: "Invalid API key - check your ELIZAOS_API_KEY",
-                details: respText,
-                status: resp.status,
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-            );
-          }
-
-          if (resp.status === 429) {
-            return new Response(
-              JSON.stringify({
-                error: "Rate limit exceeded",
-                details: respText,
-                status: resp.status,
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-            );
-          }
-
-          if (!resp.ok) {
-            lastErr = { status: resp.status, text: respText, attempt: attemptName };
-            continue;
-          }
-
-          // Check for SSE error in successful response
-          if (respText.includes('"type":"error"')) {
-            const errorMatch = respText.match(/"errorText"\s*:\s*"([^"]+)"/);
-            if (errorMatch) {
-              lastErr = { status: 200, text: errorMatch[1], attempt: attemptName };
-              continue;
-            }
-          }
-
-          chosen = { name: attemptName, respText };
-          break outer;
-        } catch (fetchError) {
-          console.log("Fetch error for", attemptName, ":", fetchError);
-          lastErr = { status: 0, text: String(fetchError), attempt: attemptName };
-          continue;
-        }
-      }
-    }
-
-    if (!chosen) {
+    if (resp.status === 401) {
       return new Response(
         JSON.stringify({
-          error: "Eliza Cloud API error",
-          details: lastErr?.text ?? "No response body",
-          status: lastErr?.status ?? 500,
-          attempt: lastErr?.attempt ?? "none",
+          error: "Invalid API key - check your ELIZAOS_API_KEY",
+          details: respText,
+          status: resp.status,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const respText = chosen.respText;
-    console.log("Chosen attempt:", chosen.name);
-    console.log("Raw response preview:", respText.slice(0, 500));
+    if (resp.status === 429) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded",
+          details: respText,
+          status: resp.status,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (!resp.ok) {
+      return new Response(
+        JSON.stringify({
+          error: "Eliza Cloud API error",
+          details: respText,
+          status: resp.status,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Parse response - try SSE format first, then JSON
     let fullContent = "";
@@ -182,9 +125,14 @@ serve(async (req) => {
             }
 
             // Extract content from various formats
-            if (parsed.type === "text-delta" && typeof parsed.delta === "string") {
+            // Vercel AI SDK text-delta format
+            if (parsed.type === "text-delta" && typeof parsed.textDelta === "string") {
+              fullContent += parsed.textDelta;
+            } else if (parsed.type === "text-delta" && typeof parsed.delta === "string") {
               fullContent += parsed.delta;
-            } else if (parsed.choices?.[0]?.delta?.content) {
+            }
+            // OpenAI compatible format
+            else if (parsed.choices?.[0]?.delta?.content) {
               fullContent += parsed.choices[0].delta.content;
             } else if (parsed.choices?.[0]?.message?.content) {
               fullContent += parsed.choices[0].message.content;
