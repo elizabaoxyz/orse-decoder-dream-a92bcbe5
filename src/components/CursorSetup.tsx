@@ -7,7 +7,7 @@ import { useEffect } from "react";
 export default function CursorSetup() {
   useEffect(() => {
     const img = new Image();
-    img.src = "/cursors/onion-cursor.gif";
+    img.src = `/cursors/onion-cursor.gif?v=${Date.now()}`;
 
     img.onload = () => {
       const size = 25;
