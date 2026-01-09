@@ -30,14 +30,14 @@ serve(async (req) => {
       ? conversationHistory
       : [];
 
-    // Build Vercel AI SDK style messages with parts
+    // Build standard OpenAI-style messages
     const messages = history
       .filter((m) => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
       .map((msg) => ({
         role: msg.role,
-        parts: [{ type: "text", text: msg.content }]
+        content: msg.content
       }));
-    messages.push({ role: "user", parts: [{ type: "text", text: message }] });
+    messages.push({ role: "user", content: message });
 
     // Keep only recent context
     const recentMessages = messages.slice(-12);
@@ -47,7 +47,7 @@ serve(async (req) => {
     // Eliza Cloud Chat Completion endpoint
     const url = "https://www.elizacloud.ai/api/v1/chat";
 
-    // The 2 params are likely: messages and model
+    // Standard OpenAI format: messages and model
     const requestBody = {
       messages: recentMessages,
       model: "gpt-4o-mini"  // Default model
