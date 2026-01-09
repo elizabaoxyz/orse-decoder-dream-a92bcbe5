@@ -3,22 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, DollarSign, MousePointer, ArrowLeft, CreditCard, BarChart3, Target, X } from "lucide-react";
+import { Check, DollarSign, MousePointer, ArrowLeft, CreditCard, BarChart3, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoDarkBase from "@/assets/logo-dark.png";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
-import dashboardPreviewBase from "@/assets/dashboard-preview.png";
 import { cacheBust } from "@/lib/utils";
 
 const logoDark = cacheBust(logoDarkBase);
 const agentAvatar = cacheBust(agentAvatarBase);
-const dashboardPreview = cacheBust(dashboardPreviewBase);
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const AffiliateApply = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
-  const [showImageModal, setShowImageModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -198,53 +195,6 @@ const AffiliateApply = () => {
                   Once you create your account, your application will be submitted to Polymarket and you'll hear back from them at{" "}
                   <span className="text-foreground font-medium">{formData.email || "your email"}</span>
                 </p>
-                
-                {/* Dashboard Preview - isolated from scanlines/noise effects */}
-                <div 
-                  className="mt-6 rounded-2xl overflow-hidden border border-border shadow-lg relative isolate cursor-pointer hover:scale-[1.02] transition-transform duration-300" 
-                  style={{ isolation: 'isolate' }}
-                  onClick={() => setShowImageModal(true)}
-                >
-                  <div className="absolute inset-0 bg-white z-0 rounded-2xl"></div>
-                  <img 
-                    src={dashboardPreview} 
-                    alt="ElizaBAO Partners Dashboard Preview"
-                    className="w-full h-auto relative z-10 rounded-2xl"
-                    style={{ filter: 'none', mixBlendMode: 'normal' }}
-                  />
-                  {/* ElizaBAO text overlay */}
-                  <span className="absolute top-1.5 left-2 z-20 text-black font-bold" style={{ fontSize: '8px' }}>
-                    ElizaBAO
-                  </span>
-                </div>
-
-                {/* Image Modal */}
-                {showImageModal && (
-                  <div 
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
-                    onClick={() => setShowImageModal(false)}
-                  >
-                    <div className="relative max-w-4xl max-h-[90vh] m-4">
-                      <button
-                        onClick={() => setShowImageModal(false)}
-                        className="absolute -top-10 right-0 text-white hover:text-primary transition-colors"
-                      >
-                        <X className="w-8 h-8" />
-                      </button>
-                      <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <img 
-                          src={dashboardPreview} 
-                          alt="ElizaBAO Partners Dashboard Preview" 
-                          className="max-w-full max-h-[85vh] rounded-xl shadow-2xl animate-scale-in"
-                        />
-                        {/* ElizaBAO text overlay in modal */}
-                        <span className="absolute top-2 left-3 z-20 text-black font-bold text-xs">
-                          ElizaBAO
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Feature Cards */}

@@ -1,6 +1,9 @@
-import { MessageCircle, X, ExternalLink, Send } from "lucide-react";
+import { MessageCircle, X, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import elizaMascot from "@/assets/eliza-mascot.png";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import { cacheBust } from "@/lib/utils";
+
+const agentAvatar = cacheBust(agentAvatarBase);
 
 const FloatingChatButton = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,7 +29,7 @@ const FloatingChatButton = () => {
         ) : (
           <div className="relative">
             <img
-              src={elizaMascot}
+              src={agentAvatar}
               alt="Chat"
               className="w-10 h-10 rounded-full object-cover animate-pulse"
               style={{
@@ -45,7 +48,7 @@ const FloatingChatButton = () => {
           <div className="bg-primary/10 border-b border-border p-3 flex items-center gap-3">
             <div className="relative">
               <img
-                src={elizaMascot}
+                src={agentAvatar}
                 alt="ElizaBAO"
                 className="w-10 h-10 rounded-full object-cover border-2 border-primary"
               />
@@ -61,7 +64,7 @@ const FloatingChatButton = () => {
           <div className="p-4 space-y-3 bg-background/50 min-h-[120px]">
             <div className="flex gap-2">
               <img
-                src={elizaMascot}
+                src={agentAvatar}
                 alt=""
                 className="w-6 h-6 rounded-full object-cover shrink-0"
               />
