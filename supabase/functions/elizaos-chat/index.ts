@@ -47,12 +47,12 @@ serve(async (req) => {
     // Eliza Cloud Chat Completion endpoint
     const url = 'https://www.elizacloud.ai/api/v1/chat';
 
+    // Use provider prefix format as required by Eliza Cloud
+    const modelName = 'openai/gpt-4o-mini';
+    
     const basePayloads: Array<{ name: string; body: Record<string, unknown> }> = [
-      // Some APIs expect model, others expect id
-      { name: 'model_array', body: { messages: recentMessages, model: 'gpt-4o-mini' } },
-      { name: 'model_string', body: { messages: JSON.stringify(recentMessages), model: 'gpt-4o-mini' } },
-      { name: 'id_array', body: { messages: recentMessages, id: 'gpt-4o-mini' } },
-      { name: 'id_string', body: { messages: JSON.stringify(recentMessages), id: 'gpt-4o-mini' } },
+      { name: 'model_array', body: { messages: recentMessages, model: modelName } },
+      { name: 'id_array', body: { messages: recentMessages, id: modelName } },
     ];
 
     const payloads = ELIZAOS_AGENT_ID
