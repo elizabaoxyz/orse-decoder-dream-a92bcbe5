@@ -1,11 +1,11 @@
 import PluginCard from "./PluginCard";
 import AsciiMouseEffect from "./AsciiMouseEffect";
+import ElizaChat from "./ElizaChat";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 import { Wifi, WifiOff, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
 const agentAvatar = cacheBust(agentAvatarBase);
 
 const MainTerminal = () => {
@@ -154,11 +154,8 @@ const MainTerminal = () => {
             ))}
           </div>
 
-          {/* Command Input */}
-          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground pb-4 md:pb-0">
-            <span className="text-primary">&gt;&gt;</span>
-            <span className="cursor-blink">ENTER_COMMAND...</span>
-          </div>
+          {/* Eliza Chat Interface */}
+          <ElizaChat />
         </div>
       </div>
     </main>
