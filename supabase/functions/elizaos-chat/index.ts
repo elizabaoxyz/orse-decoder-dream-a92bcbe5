@@ -13,13 +13,20 @@ serve(async (req) => {
 
   try {
     const ELIZAOS_API_KEY = Deno.env.get('ELIZAOS_API_KEY');
+    const ELIZAOS_AGENT_ID = Deno.env.get('ELIZAOS_AGENT_ID');
 
     if (!ELIZAOS_API_KEY) {
       console.error('ELIZAOS_API_KEY is not configured');
       throw new Error('ELIZAOS_API_KEY is not configured');
     }
 
+    if (!ELIZAOS_AGENT_ID) {
+      console.error('ELIZAOS_AGENT_ID is not configured');
+      throw new Error('ELIZAOS_AGENT_ID is not configured');
+    }
+
     console.log('API Key prefix:', ELIZAOS_API_KEY.substring(0, 10) + '...');
+    console.log('Agent ID:', ELIZAOS_AGENT_ID);
 
     const { message, conversationHistory } = await req.json();
     console.log('Received message:', message);
@@ -59,7 +66,8 @@ serve(async (req) => {
 
     console.log("History length:", history.length, "last user message:", String(message).slice(0, 80));
 
-    const url = "https://www.elizacloud.ai/api/v1/chat";
+    // Use the agent-specific chat endpoint
+    const url = `https://www.elizacloud.ai/api/v1/chat/${ELIZAOS_AGENT_ID}`;
 
     // Safety: keep only recent context to avoid upstream processing failures
     const recentPartsMessages = partsMessages.slice(-12);
@@ -71,17 +79,20 @@ serve(async (req) => {
     }));
 
     const candidates: Array<{ name: string; body: Record<string, unknown> }> = [
+      // Try with characterId in body first
+      { name: "with_characterId_parts", body: { messages: recentPartsMessages, characterId: ELIZAOS_AGENT_ID } },
+      { name: "with_characterId_openai", body: { messages: openaiMessages, characterId: ELIZAOS_AGENT_ID } },
       // Vercel AI SDK "parts" format (stringified)
-      { name: "gpt-4o_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o" } },
-      { name: "gpt-4o_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o" } },
+      { name: "gpt-4o_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
+      { name: "gpt-4o_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
       // OpenAI-style format
-      { name: "gpt-4o_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o" } },
-      { name: "gpt-4o_openai_array", body: { messages: openaiMessages, id: "gpt-4o" } },
+      { name: "gpt-4o_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
+      { name: "gpt-4o_openai_array", body: { messages: openaiMessages, id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
       // Fallback to a cheaper/commonly-available model
-      { name: "gpt-4o-mini_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o-mini" } },
-      { name: "gpt-4o-mini_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o-mini" } },
-      { name: "gpt-4o-mini_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o-mini" } },
-      { name: "gpt-4o-mini_openai_array", body: { messages: openaiMessages, id: "gpt-4o-mini" } },
+      { name: "gpt-4o-mini_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
+      { name: "gpt-4o-mini_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
+      { name: "gpt-4o-mini_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
+      { name: "gpt-4o-mini_openai_array", body: { messages: openaiMessages, id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
     ];
 
     const extractSseErrorText = (text: string): string | null => {
