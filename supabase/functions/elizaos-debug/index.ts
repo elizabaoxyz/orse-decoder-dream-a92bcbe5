@@ -5,14 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type DebugAction = "models" | "agents" | "agent";
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const ELIZAOS_API_KEY = Deno.env.get("ELIZAOS_API_KEY");
-    const ELIZAOS_AGENT_ID = Deno.env.get("ELIZAOS_AGENT_ID");
 
     if (!ELIZAOS_API_KEY) {
       return new Response(
@@ -22,20 +19,106 @@ serve(async (req) => {
     }
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    const action: DebugAction = body?.action ?? "models";
-    const agentId: string | undefined = body?.agentId ?? ELIZAOS_AGENT_ID ?? undefined;
-    const query: string = typeof body?.query === "string" ? body.query : "";
+    const endpoint = body?.endpoint ?? "models";
 
     const base = "https://www.elizacloud.ai";
-    const url =
-      action === "models"
-        ? `${base}/api/v1/models`
-        : action === "agents"
-          ? `${base}/api/v1/agents`
-          : agentId
-            ? `${base}/api/v1/agents/${agentId}`
-            : `${base}/api/v1/agents`;
+    
+    // Test Chat endpoint
+    if (endpoint === "chat-test") {
+      const chatUrl = `${base}/api/v1/chat`;
+      
+      // Try multiple payload variations to find what works
+      const payloadVariations = [
+        // Variation 1: id + UIMessage format (per OpenAPI)
+        {
+          name: "id + UIMessage parts",
+          payload: {
+            id: "openai/gpt-4o-mini",
+            messages: [{ role: "user", parts: [{ type: "text", text: "Hello" }] }]
+          }
+        },
+        // Variation 2: model + UIMessage format
+        {
+          name: "model + UIMessage parts", 
+          payload: {
+            model: "openai/gpt-4o-mini",
+            messages: [{ role: "user", parts: [{ type: "text", text: "Hello" }] }]
+          }
+        },
+        // Variation 3: id + simple content format
+        {
+          name: "id + simple content",
+          payload: {
+            id: "openai/gpt-4o-mini",
+            messages: [{ role: "user", content: "Hello" }]
+          }
+        },
+        // Variation 4: model + simple content format
+        {
+          name: "model + simple content",
+          payload: {
+            model: "openai/gpt-4o-mini",
+            messages: [{ role: "user", content: "Hello" }]
+          }
+        },
+        // Variation 5: short model name + UIMessage
+        {
+          name: "short id + UIMessage",
+          payload: {
+            id: "gpt-4o-mini",
+            messages: [{ role: "user", parts: [{ type: "text", text: "Hello" }] }]
+          }
+        },
+        // Variation 6: Only messages, no model
+        {
+          name: "only messages (UIMessage)",
+          payload: {
+            messages: [{ role: "user", parts: [{ type: "text", text: "Hello" }] }]
+          }
+        },
+      ];
 
+      const results = [];
+
+      for (const variation of payloadVariations) {
+        try {
+          const response = await fetch(chatUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${ELIZAOS_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(variation.payload),
+          });
+
+          const responseText = await response.text();
+          
+          results.push({
+            name: variation.name,
+            status: response.status,
+            ok: response.ok,
+            success: response.ok,
+            contentType: response.headers.get("content-type"),
+            response: responseText.slice(0, 500),
+            payload: variation.payload,
+          });
+        } catch (err) {
+          results.push({
+            name: variation.name,
+            error: err instanceof Error ? err.message : String(err),
+            payload: variation.payload,
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ results }, null, 2),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Default: list models
+    const url = `${base}/api/v1/models`;
     const upstream = await fetch(url, {
       method: "GET",
       headers: {
@@ -51,43 +134,13 @@ serve(async (req) => {
     if (contentType.includes("application/json")) {
       try {
         const parsed = JSON.parse(text);
-
-        // Attempt to extract a compact list for common shapes
-        if (action === "models") {
-          const models = (parsed?.data?.models ?? parsed?.data ?? parsed?.models ?? []) as any[];
-          if (Array.isArray(models)) {
-            const filtered = query
-              ? models.filter((m) => {
-                  const id = String(m?.id ?? "");
-                  const name = String(m?.name ?? "");
-                  const ownedBy = String(m?.owned_by ?? m?.provider ?? "");
-                  const hay = `${id} ${name} ${ownedBy}`.toLowerCase();
-                  return hay.includes(query.toLowerCase());
-                })
-              : models;
-
-            extracted = filtered.slice(0, 50).map((m) => ({
-              id: m?.id ?? m?.name ?? m?.model,
-              name: m?.name ?? m?.id ?? m?.model,
-              rawModel: m?.model,
-              provider: m?.provider ?? m?.owned_by,
-            }));
-          }
-        }
-
-        if (action === "agents") {
-          const agents = (parsed?.data?.agents ?? parsed?.data ?? parsed?.agents ?? []) as any[];
-          if (Array.isArray(agents)) {
-            extracted = agents.slice(0, 50).map((a) => ({
-              id: a?.id,
-              name: a?.name,
-              status: a?.status,
-            }));
-          }
-        }
-
-        if (action === "agent") {
-          extracted = parsed?.data ?? parsed;
+        const models = (parsed?.data?.models ?? parsed?.data ?? parsed?.models ?? []) as any[];
+        if (Array.isArray(models)) {
+          extracted = models.slice(0, 50).map((m) => ({
+            id: m?.id ?? m?.name ?? m?.model,
+            name: m?.name ?? m?.id ?? m?.model,
+            provider: m?.provider ?? m?.owned_by,
+          }));
         }
       } catch {
         // ignore
@@ -95,14 +148,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        ok: upstream.ok,
-        status: upstream.status,
-        url,
-        contentType,
-        extracted,
-        preview: text.slice(0, 4000),
-      }),
+      JSON.stringify({ contentType, extracted }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
