@@ -32,151 +32,115 @@ serve(async (req) => {
     console.log('Received message:', message);
 
     type HistoryMsg = { role: string; content: string };
-    type PartsMsg = { role: string; parts: { type: "text"; text: string }[] };
 
     const history: HistoryMsg[] = Array.isArray(conversationHistory)
       ? conversationHistory
       : [];
 
-    const looksLikeSSE = (text: string) => {
-      const t = text.trim();
-      return (
-        t.startsWith("data:") ||
-        t.includes("\ndata:") ||
-        t.includes("data: [DONE]") ||
-        t.includes('"type":"error"')
-      );
-    };
+    // Build OpenAI-style messages
+    const openaiMessages = history
+      .filter((m) => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
+      .map((msg) => ({ role: msg.role, content: msg.content }));
+    openaiMessages.push({ role: "user", content: message });
 
-    // Build messages in the Eliza Cloud format (Vercel AI SDK style with parts)
-    // NOTE: We must drop any prior assistant messages that accidentally stored raw SSE (e.g. lines starting with "data:")
-    // because sending them back as conversation history can cause upstream 500 errors.
-    const partsMessages: PartsMsg[] = history
-      .filter((m) => {
-        if (!m || typeof m.content !== 'string') return false;
-        if (m.role !== 'user' && m.role !== 'assistant') return false;
-        if (looksLikeSSE(m.content)) return false;
-        return true;
-      })
-      .map((msg) => ({
-        role: msg.role,
-        parts: [{ type: "text", text: msg.content }],
-      }));
-    partsMessages.push({ role: "user", parts: [{ type: "text", text: message }] });
+    // Keep only recent context
+    const recentMessages = openaiMessages.slice(-12);
 
     console.log("History length:", history.length, "last user message:", String(message).slice(0, 80));
 
-    // Use the agent-specific chat endpoint
-    const url = `https://www.elizacloud.ai/api/v1/chat/${ELIZAOS_AGENT_ID}`;
-
-    // Safety: keep only recent context to avoid upstream processing failures
-    const recentPartsMessages = partsMessages.slice(-12);
-
-    // Also prepare an OpenAI-style messages format (some gateways prefer this)
-    const openaiMessages = recentPartsMessages.map((m) => ({
-      role: m.role,
-      content: m.parts?.[0]?.text ?? "",
-    }));
-
-    const candidates: Array<{ name: string; body: Record<string, unknown> }> = [
-      // Try with characterId in body first
-      { name: "with_characterId_parts", body: { messages: recentPartsMessages, characterId: ELIZAOS_AGENT_ID } },
-      { name: "with_characterId_openai", body: { messages: openaiMessages, characterId: ELIZAOS_AGENT_ID } },
-      // Vercel AI SDK "parts" format (stringified)
-      { name: "gpt-4o_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
-      { name: "gpt-4o_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
-      // OpenAI-style format
-      { name: "gpt-4o_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
-      { name: "gpt-4o_openai_array", body: { messages: openaiMessages, id: "gpt-4o", characterId: ELIZAOS_AGENT_ID } },
-      // Fallback to a cheaper/commonly-available model
-      { name: "gpt-4o-mini_parts_string", body: { messages: JSON.stringify(recentPartsMessages), id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
-      { name: "gpt-4o-mini_parts_array", body: { messages: recentPartsMessages, id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
-      { name: "gpt-4o-mini_openai_string", body: { messages: JSON.stringify(openaiMessages), id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
-      { name: "gpt-4o-mini_openai_array", body: { messages: openaiMessages, id: "gpt-4o-mini", characterId: ELIZAOS_AGENT_ID } },
+    // Try multiple API endpoint formats
+    const endpoints = [
+      // Primary endpoint - base chat API with characterId in body
+      { url: "https://www.elizacloud.ai/api/v1/chat", name: "base_chat" },
+      // Alternative endpoint formats
+      { url: "https://www.elizacloud.ai/api/chat", name: "api_chat" },
+      { url: `https://www.elizacloud.ai/${ELIZAOS_AGENT_ID}/message`, name: "agent_message" },
+      { url: `https://www.elizacloud.ai/api/agents/${ELIZAOS_AGENT_ID}/message`, name: "agents_message" },
     ];
 
-    const extractSseErrorText = (text: string): string | null => {
-      for (const line of text.split("\n")) {
-        if (!line.startsWith("data: ")) continue;
-        const jsonStr = line.slice(6).trim();
-        if (!jsonStr || jsonStr === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (parsed?.type === "error" && typeof parsed?.errorText === "string") return parsed.errorText;
-        } catch {
-          // ignore
-        }
-      }
-      return null;
-    };
+    const payloadVariants = [
+      // Variant 1: OpenAI-style with characterId
+      { name: "openai_with_characterId", body: { messages: recentMessages, characterId: ELIZAOS_AGENT_ID } },
+      // Variant 2: Simple text message
+      { name: "simple_text", body: { text: message, characterId: ELIZAOS_AGENT_ID } },
+      // Variant 3: message field
+      { name: "message_field", body: { message: message, characterId: ELIZAOS_AGENT_ID } },
+      // Variant 4: content field
+      { name: "content_field", body: { content: message, characterId: ELIZAOS_AGENT_ID } },
+      // Variant 5: OpenAI format with model
+      { name: "openai_with_model", body: { messages: recentMessages, characterId: ELIZAOS_AGENT_ID, model: "gpt-4o" } },
+    ];
 
     let chosen: { name: string; respText: string } | null = null;
     let lastErr: { status: number; text: string; attempt: string } | null = null;
 
-    for (const c of candidates) {
-      console.log("Upstream attempt:", c.name);
-      console.log("Request body:", JSON.stringify(c.body).slice(0, 800));
+    // Try each endpoint with each payload variant
+    outer:
+    for (const endpoint of endpoints) {
+      for (const payload of payloadVariants) {
+        const attemptName = `${endpoint.name}_${payload.name}`;
+        console.log("Upstream attempt:", attemptName);
+        console.log("URL:", endpoint.url);
+        console.log("Request body:", JSON.stringify(payload.body).slice(0, 800));
 
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(c.body),
-      });
+        try {
+          const resp = await fetch(endpoint.url, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload.body),
+          });
 
-      const respText = await resp.text();
-      console.log("Response status:", c.name, resp.status);
-      console.log("Response body preview:", respText.slice(0, 500));
+          const respText = await resp.text();
+          console.log("Response status:", attemptName, resp.status);
+          console.log("Response body preview:", respText.slice(0, 500));
 
-      if (!resp.ok) {
-        if (resp.status === 401) {
-          return new Response(
-            JSON.stringify({
-              error: "Invalid API key - check your ELIZAOS_API_KEY",
-              details: respText,
-              status: resp.status,
-              attempt: c.name,
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-        if (resp.status === 429) {
-          return new Response(
-            JSON.stringify({
-              error: "Rate limit exceeded",
-              details: respText,
-              status: resp.status,
-              attempt: c.name,
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
+          if (resp.status === 401) {
+            return new Response(
+              JSON.stringify({
+                error: "Invalid API key - check your ELIZAOS_API_KEY",
+                details: respText,
+                status: resp.status,
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
 
-        lastErr = { status: resp.status, text: respText, attempt: c.name };
-        continue;
-      }
+          if (resp.status === 429) {
+            return new Response(
+              JSON.stringify({
+                error: "Rate limit exceeded",
+                details: respText,
+                status: resp.status,
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
 
-      // Some successful (200) responses are SSE with an error event
-      const sseError = extractSseErrorText(respText);
-      if (sseError) {
-        console.log("SSE error from upstream:", sseError);
+          if (!resp.ok) {
+            lastErr = { status: resp.status, text: respText, attempt: attemptName };
+            continue;
+          }
 
-        // Try the next candidate for common "not found" / processing errors
-        if (/not found/i.test(sseError) || /failed to process chat/i.test(sseError)) {
-          lastErr = { status: 200, text: sseError, attempt: c.name };
+          // Check for SSE error in successful response
+          if (respText.includes('"type":"error"')) {
+            const errorMatch = respText.match(/"errorText"\s*:\s*"([^"]+)"/);
+            if (errorMatch) {
+              lastErr = { status: 200, text: errorMatch[1], attempt: attemptName };
+              continue;
+            }
+          }
+
+          chosen = { name: attemptName, respText };
+          break outer;
+        } catch (fetchError) {
+          console.log("Fetch error for", attemptName, ":", fetchError);
+          lastErr = { status: 0, text: String(fetchError), attempt: attemptName };
           continue;
         }
-
-        return new Response(
-          JSON.stringify({ error: "Eliza Cloud API error", details: sseError, status: 200, attempt: c.name }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
       }
-
-      chosen = { name: c.name, respText };
-      break;
     }
 
     if (!chosen) {
@@ -194,50 +158,48 @@ serve(async (req) => {
     const respText = chosen.respText;
     console.log("Chosen attempt:", chosen.name);
     console.log("Raw response preview:", respText.slice(0, 500));
-    // Parse SSE stream to extract content
+
+    // Parse response - try SSE format first, then JSON
     let fullContent = "";
-    const lines = respText.split("\n");
-    
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") continue;
-        
-        try {
-          const parsed = JSON.parse(jsonStr);
-          
-          // Handle different response formats
-          if (parsed.type === "error" && parsed.errorText) {
-            return new Response(
-              JSON.stringify({
-                error: "Eliza Cloud API error",
-                details: parsed.errorText,
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-            );
+
+    // Check if response is SSE format
+    if (respText.includes("data: ")) {
+      const lines = respText.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            
+            // Handle error response
+            if (parsed.type === "error" && parsed.errorText) {
+              return new Response(
+                JSON.stringify({ error: "Eliza Cloud API error", details: parsed.errorText }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+              );
+            }
+
+            // Extract content from various formats
+            if (parsed.type === "text-delta" && typeof parsed.delta === "string") {
+              fullContent += parsed.delta;
+            } else if (parsed.choices?.[0]?.delta?.content) {
+              fullContent += parsed.choices[0].delta.content;
+            } else if (parsed.choices?.[0]?.message?.content) {
+              fullContent += parsed.choices[0].message.content;
+            } else if (parsed.content) {
+              fullContent += parsed.content;
+            } else if (parsed.text) {
+              fullContent += parsed.text;
+            } else if (parsed.delta?.content) {
+              fullContent += parsed.delta.content;
+            } else if (typeof parsed.delta === "string") {
+              fullContent += parsed.delta;
+            }
+          } catch {
+            // Skip unparseable lines
           }
-          
-          // Extract content from various possible formats
-          // Vercel AI SDK format (text-delta events)
-          if (parsed.type === "text-delta" && typeof parsed.delta === "string") {
-            fullContent += parsed.delta;
-          }
-          // OpenAI compatible format
-          else if (parsed.choices?.[0]?.delta?.content) {
-            fullContent += parsed.choices[0].delta.content;
-          } else if (parsed.choices?.[0]?.message?.content) {
-            fullContent += parsed.choices[0].message.content;
-          } else if (parsed.content) {
-            fullContent += parsed.content;
-          } else if (parsed.text) {
-            fullContent += parsed.text;
-          } else if (parsed.delta?.content) {
-            fullContent += parsed.delta.content;
-          } else if (typeof parsed.delta === "string") {
-            fullContent += parsed.delta;
-          }
-        } catch {
-          // Skip unparseable lines
         }
       }
     }
@@ -256,6 +218,12 @@ serve(async (req) => {
           fullContent = data.reply;
         } else if (data.response) {
           fullContent = data.response;
+        } else if (data.message) {
+          fullContent = typeof data.message === 'string' ? data.message : JSON.stringify(data.message);
+        } else if (data.data?.text) {
+          fullContent = data.data.text;
+        } else if (data.data?.content) {
+          fullContent = data.data.content;
         } else {
           fullContent = JSON.stringify(data);
         }
