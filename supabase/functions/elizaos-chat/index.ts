@@ -11,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const ELIZAOS_API_KEY = Deno.env.get('ELIZAOS_API_KEY');
 
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
-      throw new Error('LOVABLE_API_KEY is not configured');
+    if (!ELIZAOS_API_KEY) {
+      console.error('ELIZAOS_API_KEY is not configured');
+      throw new Error('ELIZAOS_API_KEY is not configured');
     }
 
     const { message, conversationHistory } = await req.json();
@@ -33,63 +33,84 @@ serve(async (req) => {
     // Keep only recent context
     const recentMessages = messages.slice(-12);
 
+    // Vercel AI SDK UIMessage format: { role, parts: [{ type, text }] }
+    const uiMessages = recentMessages.map((m) => ({
+      role: m.role,
+      parts: [{ type: 'text', text: m.content }],
+    }));
+
     console.log('Messages count:', recentMessages.length);
 
-    // Call Lovable AI Gateway
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Eliza Cloud Chat Completion endpoint
+    const response = await fetch('https://www.elizacloud.ai/api/v1/chat', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are a helpful AI assistant integrated into a terminal interface. Keep your responses concise, informative, and friendly. Use plain text formatting suitable for terminal display.'
-          },
-          ...recentMessages,
-        ],
+        messages: uiMessages,
+        id: 'openai/gpt-4o-mini',
       }),
     });
 
+    const respText = await response.text();
+    console.log('Response status:', response.status);
+    console.log('Response body:', respText.slice(0, 500));
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded, please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Credits exhausted, please add funds to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
       return new Response(
-        JSON.stringify({ error: 'AI service error', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: `Eliza Cloud API error (${response.status})`, 
+          details: respText 
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'No response generated';
+    // Parse response - try SSE format first, then JSON
+    let fullContent = "";
 
-    console.log('Reply preview:', reply.slice(0, 200));
+    if (respText.includes("data: ")) {
+      const lines = respText.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.type === "text-delta" && parsed.textDelta) {
+              fullContent += parsed.textDelta;
+            } else if (parsed.choices?.[0]?.delta?.content) {
+              fullContent += parsed.choices[0].delta.content;
+            } else if (parsed.choices?.[0]?.message?.content) {
+              fullContent += parsed.choices[0].message.content;
+            }
+          } catch { /* skip */ }
+        }
+      }
+    }
+
+    if (!fullContent) {
+      try {
+        const data = JSON.parse(respText);
+        fullContent = data.choices?.[0]?.message?.content || 
+                      data.content || 
+                      data.text || 
+                      data.reply || 
+                      JSON.stringify(data);
+      } catch {
+        fullContent = respText;
+      }
+    }
 
     return new Response(
-      JSON.stringify({ reply }),
+      JSON.stringify({ reply: fullContent }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in chat function:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
