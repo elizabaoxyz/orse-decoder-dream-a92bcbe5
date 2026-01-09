@@ -5,9 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, DollarSign, MousePointer, ArrowLeft, CreditCard, BarChart3, Target, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import logoDark from "@/assets/logo-dark.png";
-import agentAvatar from "@/assets/agent-avatar.jpg";
-import dashboardPreview from "@/assets/dashboard-preview.png";
+import logoDarkBase from "@/assets/logo-dark.png";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import dashboardPreviewBase from "@/assets/dashboard-preview.png";
+import { cacheBust } from "@/lib/utils";
+
+const logoDark = cacheBust(logoDarkBase);
+const agentAvatar = cacheBust(agentAvatarBase);
+const dashboardPreview = cacheBust(dashboardPreviewBase);
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const AffiliateApply = () => {

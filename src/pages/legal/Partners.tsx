@@ -1,8 +1,12 @@
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import logoDark from "@/assets/logo-dark.png";
-import agentAvatar from "@/assets/agent-avatar.jpg";
+import logoDarkBase from "@/assets/logo-dark.png";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import { cacheBust } from "@/lib/utils";
+
+const logoDark = cacheBust(logoDarkBase);
+const agentAvatar = cacheBust(agentAvatarBase);
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const Partners = () => {
