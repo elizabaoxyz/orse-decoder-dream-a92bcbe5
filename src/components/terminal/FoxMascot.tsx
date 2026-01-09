@@ -1,4 +1,7 @@
-import agentAvatar from "@/assets/agent-avatar.jpg";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import { cacheBust } from "@/lib/utils";
+
+const agentAvatar = cacheBust(agentAvatarBase);
 
 const FoxMascot = () => {
   return (

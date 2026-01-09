@@ -1,7 +1,10 @@
 import { ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import agentAvatar from "@/assets/agent-avatar.jpg";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import { cacheBust } from "@/lib/utils";
+
+const agentAvatar = cacheBust(agentAvatarBase);
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 
 const About = () => {
