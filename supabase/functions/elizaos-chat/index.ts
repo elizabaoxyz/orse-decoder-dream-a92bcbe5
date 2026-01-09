@@ -42,138 +42,76 @@ serve(async (req) => {
     // Keep only recent context
     const recentMessages = messages.slice(-12);
 
-    // Alternative message formats some Eliza deployments use
-    const recentMessagesTextObject = recentMessages.map((m) => ({
-      role: m.role,
-      content: { text: m.content },
-    }));
-
-    const recentMessagesParts = recentMessages.map((m) => ({
+    // Vercel AI SDK UIMessage format: { role, parts: [{ type, text }] }
+    const uiMessages = recentMessages.map((m) => ({
       role: m.role,
       parts: [{ type: 'text', text: m.content }],
     }));
 
     console.log('Messages count:', recentMessages.length);
 
-    // Prefer agent-specific endpoints (agent API); fall back to generic chat endpoint.
-    const urlCandidates = ELIZAOS_AGENT_ID
-      ? [
-          `https://www.elizacloud.ai/api/v1/agents/${ELIZAOS_AGENT_ID}/chat`,
-          `https://www.elizacloud.ai/api/v1/agents/${ELIZAOS_AGENT_ID}/messages`,
-          'https://www.elizacloud.ai/api/v1/chat',
-        ]
-      : ['https://www.elizacloud.ai/api/v1/chat'];
+    // Eliza Cloud Chat Completion endpoint
+    const url = 'https://www.elizacloud.ai/api/v1/chat';
 
     // Use provider prefix format as required by Eliza Cloud
     const modelName = 'openai/gpt-4o-mini';
 
-    const basePayloads: Array<{ name: string; body: Record<string, unknown> }> = [
-      // Common chat-completions-like shapes
-      { name: 'model_openai_messages', body: { messages: recentMessages, model: modelName } },
-      { name: 'model_textObject_messages', body: { messages: recentMessagesTextObject, model: modelName } },
-      { name: 'model_parts_messages', body: { messages: recentMessagesParts, model: modelName } },
+    // Vercel AI SDK format: messages (UIMessage[]) + model
+    const payload = {
+      messages: uiMessages,
+      model: modelName,
+    };
 
-      // Some deployments accept a single message field
-      { name: 'model_message', body: { message, model: modelName } },
-      { name: 'model_input', body: { input: message, model: modelName } },
-    ];
+    console.log('Request URL:', url);
+    console.log('Request body:', JSON.stringify(payload).slice(0, 1000));
 
-    const payloads = ELIZAOS_AGENT_ID
-      ? basePayloads.flatMap((p) => [
-          p,
-          { name: `${p.name}_agentId`, body: { ...p.body, agentId: ELIZAOS_AGENT_ID } },
-          { name: `${p.name}_agent_id`, body: { ...p.body, agent_id: ELIZAOS_AGENT_ID } },
-          { name: `${p.name}_characterId`, body: { ...p.body, characterId: ELIZAOS_AGENT_ID } },
-        ])
-      : basePayloads;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-    let chosenText: string | null = null;
-    let lastErr: { status: number; text: string; attempt: string; url: string } | null = null;
+    const respText = await resp.text();
+    console.log('Response status:', resp.status);
+    console.log('Response body preview:', respText.slice(0, 1000));
 
-    outer: for (const url of urlCandidates) {
-      for (const p of payloads) {
-        console.log('Upstream attempt:', p.name);
-        console.log('Request URL:', url);
-        console.log('Request body:', JSON.stringify(p.body).slice(0, 800));
-
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(p.body),
-        });
-
-        const respText = await resp.text();
-        console.log('Response status:', resp.status);
-        console.log('Response body preview:', respText.slice(0, 1000));
-
-        if (resp.status === 401) {
-          return new Response(
-            JSON.stringify({
-              error: 'Invalid API key - check your ELIZAOS_API_KEY',
-              details: respText,
-              status: resp.status,
-              attempt: p.name,
-              url,
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
-        }
-
-        if (resp.status === 429) {
-          return new Response(
-            JSON.stringify({
-              error: 'Rate limit exceeded',
-              details: respText,
-              status: resp.status,
-              attempt: p.name,
-              url,
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
-        }
-
-        if (!resp.ok) {
-          const retryableByFormat = resp.status === 500 && /Failed to process chat/i.test(respText);
-          const retryableByRoute = resp.status === 404 || resp.status === 405;
-
-          if (retryableByFormat || retryableByRoute) {
-            lastErr = { status: resp.status, text: respText, attempt: p.name, url };
-            continue;
-          }
-
-          return new Response(
-            JSON.stringify({
-              error: 'Eliza Cloud API error',
-              details: respText,
-              status: resp.status,
-              attempt: p.name,
-              url,
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
-        }
-
-        chosenText = respText;
-        break outer;
-      }
-    }
-
-    if (!chosenText) {
+    if (resp.status === 401) {
       return new Response(
         JSON.stringify({
-          error: 'Eliza Cloud API error',
-          details: lastErr?.text ?? '',
-          status: lastErr?.status ?? 500,
-          attempt: lastErr?.attempt ?? 'none',
+          error: 'Invalid API key - check your ELIZAOS_API_KEY',
+          details: respText,
+          status: resp.status,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const respText = chosenText;
+    if (resp.status === 429) {
+      return new Response(
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          details: respText,
+          status: resp.status,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    if (!resp.ok) {
+      return new Response(
+        JSON.stringify({
+          error: `Eliza Cloud API error (${resp.status})`,
+          details: respText,
+          status: resp.status,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const chosenText = respText;
 
     // Parse response - try SSE format first, then JSON
     let fullContent = "";
