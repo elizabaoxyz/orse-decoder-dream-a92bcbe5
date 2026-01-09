@@ -42,6 +42,17 @@ serve(async (req) => {
     // Keep only recent context
     const recentMessages = messages.slice(-12);
 
+    // Alternative message formats some Eliza deployments use
+    const recentMessagesTextObject = recentMessages.map((m) => ({
+      role: m.role,
+      content: { text: m.content },
+    }));
+
+    const recentMessagesParts = recentMessages.map((m) => ({
+      role: m.role,
+      parts: [{ type: 'text', text: m.content }],
+    }));
+
     console.log('Messages count:', recentMessages.length);
 
     // Prefer agent-specific endpoints (agent API); fall back to generic chat endpoint.
@@ -57,8 +68,14 @@ serve(async (req) => {
     const modelName = 'openai/gpt-4o-mini';
 
     const basePayloads: Array<{ name: string; body: Record<string, unknown> }> = [
-      { name: 'model_array', body: { messages: recentMessages, model: modelName } },
-      { name: 'id_array', body: { messages: recentMessages, id: modelName } },
+      // Common chat-completions-like shapes
+      { name: 'model_openai_messages', body: { messages: recentMessages, model: modelName } },
+      { name: 'model_textObject_messages', body: { messages: recentMessagesTextObject, model: modelName } },
+      { name: 'model_parts_messages', body: { messages: recentMessagesParts, model: modelName } },
+
+      // Some deployments accept a single message field
+      { name: 'model_message', body: { message, model: modelName } },
+      { name: 'model_input', body: { input: message, model: modelName } },
     ];
 
     const payloads = ELIZAOS_AGENT_ID
