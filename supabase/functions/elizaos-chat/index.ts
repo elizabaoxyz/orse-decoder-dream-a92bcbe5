@@ -53,13 +53,13 @@ serve(async (req) => {
     // Eliza Cloud Chat Completion endpoint
     const url = 'https://www.elizacloud.ai/api/v1/chat';
 
-    // Use provider prefix format as required by Eliza Cloud
-    const modelName = 'openai/gpt-4o-mini';
+    // Use short model name per OpenAPI example (gpt-4o-mini, not openai/gpt-4o-mini)
+    const modelId = 'gpt-4o-mini';
 
-    // Vercel AI SDK format: messages (UIMessage[]) + model
+    // Eliza Cloud format: messages (UIMessage[]) + id (model name)
     const payload = {
       messages: uiMessages,
-      model: modelName,
+      id: modelId,  // NOTE: it's "id" not "model" per OpenAPI spec
     };
 
     console.log('Request URL:', url);
