@@ -1,9 +1,12 @@
 import PluginCard from "./PluginCard";
 import AsciiMouseEffect from "./AsciiMouseEffect";
-import elizaMascot from "@/assets/eliza-mascot.png";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import { cacheBust } from "@/lib/utils";
 import { Wifi, WifiOff, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+const agentAvatar = cacheBust(agentAvatarBase);
 
 const MainTerminal = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -94,7 +97,7 @@ const MainTerminal = () => {
                 <div className="relative z-10 p-[2px] rounded-full bg-gradient-to-br from-primary to-emerald-400">
                   <div className="rounded-full bg-background p-0.5">
                     <img 
-                      src={elizaMascot} 
+                      src={agentAvatar}
                       alt="Agent" 
                       className="w-16 h-16 object-contain rounded-full"
                     />
