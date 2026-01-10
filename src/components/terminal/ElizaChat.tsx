@@ -12,10 +12,14 @@ const ElizaChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll only within the chat container, not the whole page
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -78,7 +82,10 @@ const ElizaChat = () => {
       
       <div className="p-4 space-y-4">
         {/* Chat Messages */}
-        <div className="h-48 overflow-y-auto space-y-3 font-mono text-xs scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+        <div 
+          ref={messagesContainerRef}
+          className="h-48 overflow-y-auto space-y-3 font-mono text-xs scrollbar-none"
+        >
           {messages.length === 0 && (
             <div className="text-muted-foreground animate-pulse">
               &gt; AWAITING_INPUT...
