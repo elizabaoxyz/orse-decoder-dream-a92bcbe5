@@ -36,19 +36,25 @@ serve(async (req) => {
     // Use ElizaBAO character ID from elizacloud.ai
     const CHARACTER_ID = 'af4e609a-7ebc-4f59-8920-b5931a762102';
 
-    console.log('Messages count:', recentMessages.length);
+    // Add messages with character context
+    const apiMessages = [
+      ...recentMessages
+    ];
 
-    // Eliza Cloud Agent endpoint - uses character configuration from elizacloud.ai
-    const response = await fetch(`https://elizacloud.ai/api/v1/agents/${CHARACTER_ID}/message`, {
+    console.log('Messages count:', recentMessages.length);
+    console.log('Using character ID:', CHARACTER_ID);
+
+    // Eliza Cloud Chat Completions endpoint with agent_id
+    const response = await fetch('https://elizacloud.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${ELIZAOS_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        text: message,
-        userId: 'web-user',
-        roomId: 'elizabao-terminal'
+        model: 'gpt-4o-mini',
+        messages: apiMessages,
+        agent_id: CHARACTER_ID
       }),
     });
 
