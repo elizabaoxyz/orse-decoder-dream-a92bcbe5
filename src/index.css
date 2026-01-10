@@ -117,6 +117,11 @@
 }
 
 @layer utilities {
+  /* Hide scrollbar for WebKit browsers */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Ensure Tailwind cursor utilities still use our custom cursor image */
   .cursor-pointer {
     cursor: var(--app-cursor, url('/cursors/bao-cursor.png') 16 16), pointer;
