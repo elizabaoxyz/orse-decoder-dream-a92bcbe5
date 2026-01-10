@@ -137,9 +137,6 @@ const MainTerminal = () => {
             </div>
           </div>
 
-          <div className="hidden md:block text-xs space-y-0.5 font-mono">
-            <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">ELIZABAO</span></p>
-          </div>
 
           {/* Eliza Chat Interface - Above plugins */}
           <ElizaChat />
