@@ -141,6 +141,9 @@ const MainTerminal = () => {
             <p><span className="text-muted-foreground/70">NAME:</span><span className="text-primary">ELIZABAO</span></p>
           </div>
 
+          {/* Eliza Chat Interface - Above plugins */}
+          <ElizaChat />
+
           {/* Enabled Plugins Count */}
           <div className="text-[10px] md:text-xs text-muted-foreground">
             <span className="text-foreground">Enabled</span>{" "}
@@ -153,9 +156,6 @@ const MainTerminal = () => {
               <PluginCard key={plugin.title} {...plugin} />
             ))}
           </div>
-
-          {/* Eliza Chat Interface */}
-          <ElizaChat />
         </div>
       </div>
     </main>
