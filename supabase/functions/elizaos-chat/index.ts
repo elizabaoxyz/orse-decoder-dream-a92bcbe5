@@ -33,24 +33,22 @@ serve(async (req) => {
     // Keep only recent context
     const recentMessages = messages.slice(-12);
 
-    // Add system message for ElizaBAO personality
-    const apiMessages = [
-      { role: 'system', content: 'You are ElizaBAO, a helpful AI assistant for the ElizaBAO platform. Be friendly, concise, and helpful.' },
-      ...recentMessages
-    ];
+    // Use ElizaBAO character ID from elizacloud.ai
+    const CHARACTER_ID = 'af4e609a-7ebc-4f59-8920-b5931a762102';
 
     console.log('Messages count:', recentMessages.length);
 
-    // Eliza Cloud Chat Completions endpoint (OpenAI-compatible)
-    const response = await fetch('https://elizacloud.ai/api/v1/chat/completions', {
+    // Eliza Cloud Agent endpoint - uses character configuration from elizacloud.ai
+    const response = await fetch(`https://elizacloud.ai/api/v1/agents/${CHARACTER_ID}/message`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${ELIZAOS_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: apiMessages
+        text: message,
+        userId: 'web-user',
+        roomId: 'elizabao-terminal'
       }),
     });
 
