@@ -72,6 +72,7 @@ serve(async (req) => {
     const videoUrl = data.url || 
                      data.video_url || 
                      data.videoUrl || 
+                     data.video?.url ||
                      data.videos?.[0]?.url ||
                      data.data?.[0]?.url;
     
