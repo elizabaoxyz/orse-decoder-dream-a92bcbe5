@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Loader2 } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, Loader2 } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
 }
 
 const ElizaChat = () => {
@@ -16,6 +17,7 @@ const ElizaChat = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isTTSEnabled, setIsTTSEnabled] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,29 @@ const ElizaChat = () => {
       return null;
     } finally {
       setIsGeneratingImage(false);
+    }
+  };
+
+  // Generate video
+  const generateVideo = async (prompt: string) => {
+    setIsGeneratingVideo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("elizaos-video", {
+        body: { prompt },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || "Video generation failed");
+        return null;
+      }
+
+      return data?.videoUrl;
+    } catch (error) {
+      console.error("Video generation error:", error);
+      toast.error("Video generation failed");
+      return null;
+    } finally {
+      setIsGeneratingVideo(false);
     }
   };
 
@@ -200,6 +225,30 @@ const ElizaChat = () => {
       return;
     }
 
+    // Check for video generation command
+    const videoMatch = userMessage.match(/^\/video\s+(.+)/i);
+    if (videoMatch) {
+      const prompt = videoMatch[1];
+      setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+      
+      toast.info("Video generation may take 30-60 seconds...");
+      const videoUrl = await generateVideo(prompt);
+      if (videoUrl) {
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: `Generated video for: "${prompt}"`,
+          videoUrl 
+        }]);
+      } else {
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: "Failed to generate video. Please try again." 
+        }]);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     // Regular chat message
     const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
     setMessages(newMessages);
@@ -248,6 +297,12 @@ const ElizaChat = () => {
     }
   };
 
+  const getLoadingText = () => {
+    if (isGeneratingVideo) return " GENERATING_VIDEO (this may take a minute)";
+    if (isGeneratingImage) return " GENERATING_IMAGE";
+    return " PROCESSING_QUERY";
+  };
+
   return (
     <div className="terminal-panel mt-4">
       <div className="terminal-header flex items-center justify-between">
@@ -278,16 +333,17 @@ const ElizaChat = () => {
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
             ElizaBAO is an AI agent powered by <span className="text-primary">ElizaOS</span>. 
-            Ask about crypto prices, prediction markets, weather, time zones, or anything else. 
-            Use <span className="text-primary">/image [prompt]</span> to generate images.
+            Use <span className="text-primary">/image [prompt]</span> or <span className="text-primary">/video [prompt]</span> to generate media.
           </p>
           <div className="flex flex-wrap gap-2 text-[10px]">
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Crypto Prices</span>
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Polymarket</span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Time & Timezone</span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Weather Data</span>
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Weather</span>
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" /> Image Gen
+              <ImageIcon className="w-3 h-3" /> Image
+            </span>
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
+              <Video className="w-3 h-3" /> Video
             </span>
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
               <Volume2 className="w-3 h-3" /> Voice
@@ -317,13 +373,22 @@ const ElizaChat = () => {
                   />
                 </div>
               )}
+              {msg.videoUrl && (
+                <div className="ml-12 mt-2">
+                  <video 
+                    src={msg.videoUrl} 
+                    controls
+                    className="max-w-full max-h-48 rounded border border-border/50"
+                  />
+                </div>
+              )}
             </div>
           ))}
           
           {isLoading && (
             <div className="text-muted-foreground animate-pulse">
               <span className="text-primary">[ELIZABAO]:</span> 
-              {isGeneratingImage ? " GENERATING_IMAGE" : " PROCESSING_QUERY"}
+              {getLoadingText()}
               <span className="inline-block w-2 h-4 bg-primary ml-1 animate-pulse" />
             </div>
           )}
@@ -356,7 +421,7 @@ const ElizaChat = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
-            placeholder="/image [prompt] or ask anything..."
+            placeholder="/image or /video [prompt]..."
             className="flex-1 bg-transparent border-none outline-none text-foreground font-mono text-sm placeholder:text-muted-foreground/50 disabled:opacity-50"
             autoFocus
           />
