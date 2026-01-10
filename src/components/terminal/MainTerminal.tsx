@@ -80,7 +80,7 @@ const MainTerminal = () => {
       {/* Terminal Primary */}
       <div className="terminal-panel flex-1 relative">
         <AsciiMouseEffect />
-        <div className="terminal-header">ELIZABAO_TERMINAL_PRIMARY</div>
+        <div className="terminal-header">Meet ElizaBAO</div>
         
         <div className="p-4 md:p-8 lg:p-12 space-y-4 md:space-y-6 lg:space-y-8">
           {/* Mobile: Agent Card + Title Row */}
