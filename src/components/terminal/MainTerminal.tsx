@@ -73,6 +73,18 @@ const MainTerminal = () => {
       serverKey: "polymarket",
       serverType: "http",
     },
+    {
+      title: "Weather Data",
+      version: "v1.0.0",
+      toolCount: 4,
+      description: "Current weather conditions and forecasts for locations worldwide. Temperature, humidity, wind, and more.",
+      tools: ["get_current_weather", "get_weather_forecast", "compare_weather", "search_location"],
+      pricing: "Free to use",
+      enabled: true,
+      endpoint: "https://www.elizacloud.ai/api/mcps/weather/sse",
+      serverKey: "weather",
+      serverType: "sse",
+    },
   ];
 
   return (
