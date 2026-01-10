@@ -106,11 +106,6 @@ const ElizaChat = () => {
           ref={messagesContainerRef}
           className="h-48 overflow-y-auto space-y-3 font-mono text-xs scrollbar-none"
         >
-          {messages.length === 0 && (
-            <div className="text-muted-foreground animate-pulse">
-              &gt; AWAITING_INPUT...
-            </div>
-          )}
           
           {messages.map((msg, idx) => (
             <div key={idx} className="space-y-1">
