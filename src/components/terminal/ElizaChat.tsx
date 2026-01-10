@@ -81,6 +81,25 @@ const ElizaChat = () => {
       <div className="terminal-header">meet ElizaBAO</div>
       
       <div className="p-4 space-y-4">
+        {/* Agent Introduction */}
+        <div className="border border-border/30 rounded-lg p-3 bg-card/30 space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-xs font-mono text-primary">ONLINE</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            ElizaBAO is an AI agent powered by <span className="text-primary">ElizaOS</span>. 
+            Ask about crypto prices, prediction markets, time zones, or anything else. 
+            Connected to real-time data via MCP plugins.
+          </p>
+          <div className="flex flex-wrap gap-2 text-[10px]">
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Crypto Prices</span>
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Polymarket</span>
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Time & Timezone</span>
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">ElizaOS Platform</span>
+          </div>
+        </div>
+
         {/* Chat Messages */}
         <div 
           ref={messagesContainerRef}
