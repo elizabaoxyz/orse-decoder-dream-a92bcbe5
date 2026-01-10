@@ -155,7 +155,7 @@ const MainTerminal = () => {
 
           {/* Enabled Plugins Count */}
           <div className="text-[10px] md:text-xs text-muted-foreground">
-            <span className="text-foreground">Enabled</span>{" "}
+            <span className="text-foreground">Plugins MCP Enabled</span>{" "}
             <span className="text-primary">{plugins.filter(p => p.enabled).length}</span>
           </div>
 
