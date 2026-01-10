@@ -68,8 +68,14 @@ serve(async (req) => {
       );
     }
 
-    // Return image URL
-    const imageUrl = data.url || data.image_url || data.imageUrl || data.data?.[0]?.url;
+    // Return image URL - handle multiple response formats
+    const imageUrl = data.url || 
+                     data.image_url || 
+                     data.imageUrl || 
+                     data.images?.[0]?.url ||
+                     data.data?.[0]?.url;
+    
+    console.log('Extracted image URL:', imageUrl);
     
     return new Response(
       JSON.stringify({ imageUrl, raw: data }),
