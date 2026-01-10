@@ -33,24 +33,24 @@ serve(async (req) => {
     // Keep only recent context
     const recentMessages = messages.slice(-12);
 
-    // Vercel AI SDK UIMessage format: { role, parts: [{ type, text }] }
-    const uiMessages = recentMessages.map((m) => ({
-      role: m.role,
-      parts: [{ type: 'text', text: m.content }],
-    }));
+    // Add system message for ElizaBAO personality
+    const apiMessages = [
+      { role: 'system', content: 'You are ElizaBAO, a helpful AI assistant for the ElizaBAO platform. Be friendly, concise, and helpful.' },
+      ...recentMessages
+    ];
 
     console.log('Messages count:', recentMessages.length);
 
-    // Eliza Cloud Chat Completion endpoint
-    const response = await fetch('https://www.elizacloud.ai/api/v1/chat', {
+    // Eliza Cloud Chat Completions endpoint (OpenAI-compatible)
+    const response = await fetch('https://elizacloud.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${ELIZAOS_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        messages: uiMessages,
-        id: 'openai/gpt-4o-mini',
+        model: 'gpt-4o-mini',
+        messages: apiMessages
       }),
     });
 
