@@ -78,7 +78,7 @@ const ElizaChat = () => {
 
   return (
     <div className="terminal-panel mt-4">
-      <div className="terminal-header">ELIZABAO_AGENT_INTERFACE</div>
+      <div className="terminal-header">meet ElizaBAO</div>
       
       <div className="p-4 space-y-4">
         {/* Chat Messages */}
