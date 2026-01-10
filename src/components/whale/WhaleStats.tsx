@@ -19,9 +19,9 @@ export const WhaleStats = () => {
       ]);
 
       const now = new Date();
-      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       
-      const recent = transactions.filter(tx => new Date(tx.timestamp) > dayAgo);
+      const recent = transactions.filter(tx => new Date(tx.timestamp) > weekAgo);
       const buys = recent.filter(tx => tx.side === 'buy');
       const sells = recent.filter(tx => tx.side === 'sell');
 
@@ -49,7 +49,7 @@ export const WhaleStats = () => {
   };
 
   const statItems = [
-    { label: '24H Volume', value: formatValue(stats.totalVolume24h), color: 'text-terminal-accent' },
+    { label: '7D Volume', value: formatValue(stats.totalVolume24h), color: 'text-terminal-accent' },
     { label: 'Transactions', value: stats.totalTransactions.toString(), color: 'text-blue-400' },
     { label: 'Active Whales', value: stats.activeWhales.toString(), color: 'text-purple-400' },
     { label: 'Avg Win Rate', value: `${stats.avgWinRate.toFixed(1)}%`, color: 'text-primary' },
