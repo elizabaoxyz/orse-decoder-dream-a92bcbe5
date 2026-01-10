@@ -89,13 +89,14 @@ const ElizaChat = () => {
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
             ElizaBAO is an AI agent powered by <span className="text-primary">ElizaOS</span>. 
-            Ask about crypto prices, prediction markets, time zones, or anything else. 
+            Ask about crypto prices, prediction markets, weather, time zones, or anything else. 
             Connected to real-time data via MCP plugins.
           </p>
           <div className="flex flex-wrap gap-2 text-[10px]">
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Crypto Prices</span>
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Polymarket</span>
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Time & Timezone</span>
+            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Weather Data</span>
             <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">ElizaOS Platform</span>
           </div>
         </div>
