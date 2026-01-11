@@ -5,6 +5,102 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const CHARACTER_ID = 'af4e609a-7ebc-4f59-8920-b5931a762102';
+const ELIZA_BASE_URL = 'https://elizacloud.ai/api/eliza';
+
+// In-memory room cache (per function instance)
+const roomCache: Map<string, string> = new Map();
+
+async function createRoom(apiKey: string, sessionId: string): Promise<string> {
+  console.log('Creating new room for session:', sessionId);
+  
+  const response = await fetch(`${ELIZA_BASE_URL}/rooms`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      characterId: CHARACTER_ID,
+      name: `ElizaBAO Chat - ${sessionId}`
+    }),
+  });
+
+  const respText = await response.text();
+  console.log('Create room response:', response.status, respText);
+
+  if (!response.ok) {
+    throw new Error(`Failed to create room: ${response.status} - ${respText}`);
+  }
+
+  const data = JSON.parse(respText);
+  const roomId = data.id || data.roomId || data.room_id || data.data?.id;
+  
+  if (!roomId) {
+    console.error('Room response structure:', JSON.stringify(data));
+    throw new Error('Room ID not found in response');
+  }
+
+  console.log('Created room:', roomId);
+  return roomId;
+}
+
+async function sendMessage(apiKey: string, roomId: string, text: string): Promise<string> {
+  console.log('Sending message to room:', roomId);
+  
+  const response = await fetch(`${ELIZA_BASE_URL}/rooms/${roomId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ text }),
+  });
+
+  const respText = await response.text();
+  console.log('Message response status:', response.status);
+  console.log('Message response:', respText.slice(0, 500));
+
+  if (!response.ok) {
+    // If room not found, clear cache and throw to retry
+    if (response.status === 404) {
+      throw new Error('ROOM_NOT_FOUND');
+    }
+    throw new Error(`Failed to send message: ${response.status} - ${respText}`);
+  }
+
+  // Parse the response - could be various formats
+  try {
+    const data = JSON.parse(respText);
+    
+    // Try various response structures
+    const reply = data.text || 
+                  data.content || 
+                  data.message || 
+                  data.reply ||
+                  data.response ||
+                  data.data?.text ||
+                  data.data?.content ||
+                  data.messages?.[0]?.text ||
+                  data.messages?.[0]?.content;
+    
+    if (reply) {
+      return reply;
+    }
+    
+    // If it's an array, get the last message
+    if (Array.isArray(data) && data.length > 0) {
+      const lastMsg = data[data.length - 1];
+      return lastMsg.text || lastMsg.content || JSON.stringify(lastMsg);
+    }
+    
+    console.log('Full response structure:', JSON.stringify(data));
+    return JSON.stringify(data);
+  } catch {
+    return respText;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,98 +114,39 @@ serve(async (req) => {
       throw new Error('ELIZAOS_API_KEY is not configured');
     }
 
-    const { message, conversationHistory } = await req.json();
+    const { message, sessionId } = await req.json();
     console.log('Received message:', message);
+    console.log('Session ID:', sessionId);
 
-    type HistoryMsg = { role: string; content: string };
-    const history: HistoryMsg[] = Array.isArray(conversationHistory) ? conversationHistory : [];
-
-    // Build messages array
-    const messages = history
-      .filter((m) => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant'))
-      .map((msg) => ({ role: msg.role, content: msg.content }));
-    messages.push({ role: 'user', content: message });
-
-    // Keep only recent context
-    const recentMessages = messages.slice(-12);
-
-    // Use ElizaBAO character ID from elizacloud.ai
-    const CHARACTER_ID = 'af4e609a-7ebc-4f59-8920-b5931a762102';
-
-    // Add messages with character context
-    const apiMessages = [
-      ...recentMessages
-    ];
-
-    console.log('Messages count:', recentMessages.length);
-    console.log('Using character ID:', CHARACTER_ID);
-
-    // Eliza Cloud Chat Completions endpoint with agent_id
-    const response = await fetch('https://elizacloud.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${ELIZAOS_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: apiMessages,
-        agent_id: CHARACTER_ID
-      }),
-    });
-
-    const respText = await response.text();
-    console.log('Response status:', response.status);
-    console.log('Response body:', respText.slice(0, 500));
-
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({ 
-          error: `Eliza Cloud API error (${response.status})`, 
-          details: respText 
-        }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Use session ID or generate one
+    const chatSessionId = sessionId || `default-${Date.now()}`;
+    
+    // Get or create room for this session
+    let roomId = roomCache.get(chatSessionId);
+    
+    if (!roomId) {
+      roomId = await createRoom(ELIZAOS_API_KEY, chatSessionId);
+      roomCache.set(chatSessionId, roomId);
     }
 
-    // Parse response - try SSE format first, then JSON
-    let fullContent = "";
-
-    if (respText.includes("data: ")) {
-      const lines = respText.split("\n");
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            if (parsed.type === "text-delta" && parsed.textDelta) {
-              fullContent += parsed.textDelta;
-            } else if (parsed.choices?.[0]?.delta?.content) {
-              fullContent += parsed.choices[0].delta.content;
-            } else if (parsed.choices?.[0]?.message?.content) {
-              fullContent += parsed.choices[0].message.content;
-            }
-          } catch { /* skip */ }
-        }
-      }
-    }
-
-    if (!fullContent) {
-      try {
-        const data = JSON.parse(respText);
-        fullContent = data.choices?.[0]?.message?.content || 
-                      data.content || 
-                      data.text || 
-                      data.reply || 
-                      JSON.stringify(data);
-      } catch {
-        fullContent = respText;
+    // Try to send message, create new room if current one is invalid
+    let reply: string;
+    try {
+      reply = await sendMessage(ELIZAOS_API_KEY, roomId, message);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ROOM_NOT_FOUND') {
+        console.log('Room not found, creating new one...');
+        roomCache.delete(chatSessionId);
+        roomId = await createRoom(ELIZAOS_API_KEY, chatSessionId);
+        roomCache.set(chatSessionId, roomId);
+        reply = await sendMessage(ELIZAOS_API_KEY, roomId, message);
+      } else {
+        throw error;
       }
     }
 
     return new Response(
-      JSON.stringify({ reply: fullContent }),
+      JSON.stringify({ reply, roomId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
