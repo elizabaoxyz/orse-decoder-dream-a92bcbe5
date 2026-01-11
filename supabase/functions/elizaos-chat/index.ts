@@ -59,7 +59,7 @@ async function sendMessage(apiKey: string, roomId: string, text: string): Promis
 
   const respText = await response.text();
   console.log('Message response status:', response.status);
-  console.log('Message response:', respText.slice(0, 500));
+  console.log('Message response:', respText.slice(0, 1000));
 
   if (!response.ok) {
     // If room not found, clear cache and throw to retry
@@ -69,34 +69,62 @@ async function sendMessage(apiKey: string, roomId: string, text: string): Promis
     throw new Error(`Failed to send message: ${response.status} - ${respText}`);
   }
 
-  // Parse the response - could be various formats
+  // Parse the response - Eliza returns message objects
   try {
     const data = JSON.parse(respText);
+    console.log('Parsed data type:', typeof data, Array.isArray(data) ? 'array' : 'object');
     
-    // Try various response structures
-    const reply = data.text || 
-                  data.content || 
-                  data.message || 
-                  data.reply ||
-                  data.response ||
-                  data.data?.text ||
-                  data.data?.content ||
-                  data.messages?.[0]?.text ||
-                  data.messages?.[0]?.content;
-    
-    if (reply) {
-      return reply;
+    // Extract text from content object or direct fields
+    const extractText = (obj: any): string | null => {
+      if (!obj) return null;
+      if (typeof obj === 'string') return obj;
+      
+      // Content might be an object with text field
+      if (obj.content) {
+        if (typeof obj.content === 'string') return obj.content;
+        if (obj.content.text) return obj.content.text;
+      }
+      if (obj.text) return obj.text;
+      if (obj.message) return typeof obj.message === 'string' ? obj.message : obj.message.text;
+      return null;
+    };
+
+    // If it's an array, get the assistant's message (usually the last one)
+    if (Array.isArray(data)) {
+      // Filter for agent/assistant messages and get the last one
+      const agentMessages = data.filter(msg => msg.agentId || msg.role === 'assistant');
+      if (agentMessages.length > 0) {
+        const lastMsg = agentMessages[agentMessages.length - 1];
+        const text = extractText(lastMsg);
+        if (text) return text;
+      }
+      // Fallback to last message
+      if (data.length > 0) {
+        const text = extractText(data[data.length - 1]);
+        if (text) return text;
+      }
     }
     
-    // If it's an array, get the last message
-    if (Array.isArray(data) && data.length > 0) {
-      const lastMsg = data[data.length - 1];
-      return lastMsg.text || lastMsg.content || JSON.stringify(lastMsg);
+    // Single object response
+    const text = extractText(data);
+    if (text) return text;
+    
+    // Try nested structures
+    if (data.data) {
+      const nestedText = extractText(data.data);
+      if (nestedText) return nestedText;
     }
     
-    console.log('Full response structure:', JSON.stringify(data));
-    return JSON.stringify(data);
-  } catch {
+    if (data.messages && Array.isArray(data.messages)) {
+      const lastMsg = data.messages[data.messages.length - 1];
+      const msgText = extractText(lastMsg);
+      if (msgText) return msgText;
+    }
+    
+    console.log('Could not extract text, full structure:', JSON.stringify(data));
+    return 'I received your message but could not parse the response.';
+  } catch (e) {
+    console.error('Parse error:', e);
     return respText;
   }
 }
