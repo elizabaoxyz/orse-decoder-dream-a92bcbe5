@@ -45,7 +45,7 @@ async function createRoom(apiKey: string, sessionId: string): Promise<string> {
   return roomId;
 }
 
-async function sendMessage(apiKey: string, roomId: string, text: string): Promise<string> {
+async function sendMessage(apiKey: string, roomId: string, text: string, retries = 2): Promise<string> {
   console.log('Sending message to room:', roomId);
   
   const response = await fetch(`${ELIZA_BASE_URL}/rooms/${roomId}/messages`, {
@@ -66,6 +66,14 @@ async function sendMessage(apiKey: string, roomId: string, text: string): Promis
     if (response.status === 404) {
       throw new Error('ROOM_NOT_FOUND');
     }
+    
+    // Retry on 500 errors (ElizaCloud transient issues like pool errors)
+    if (response.status === 500 && retries > 0) {
+      console.log(`Server error, retrying... (${retries} attempts left)`);
+      await new Promise(r => setTimeout(r, 1000)); // Wait 1 second
+      return sendMessage(apiKey, roomId, text, retries - 1);
+    }
+    
     throw new Error(`Failed to send message: ${response.status} - ${respText}`);
   }
 
@@ -74,42 +82,44 @@ async function sendMessage(apiKey: string, roomId: string, text: string): Promis
     const data = JSON.parse(respText);
     console.log('Parsed data type:', typeof data, Array.isArray(data) ? 'array' : 'object');
     
-    // Extract text from content object or direct fields
+    // Extract text from various response structures
     const extractText = (obj: any): string | null => {
       if (!obj) return null;
       if (typeof obj === 'string') return obj;
       
-      // Content might be an object with text field
-      if (obj.content) {
-        if (typeof obj.content === 'string') return obj.content;
-        if (obj.content.text) return obj.content.text;
-      }
+      // Handle {message: {content: {text: ...}}} structure
+      if (obj.message?.content?.text) return obj.message.content.text;
+      
+      // Handle {content: {text: ...}} structure
+      if (obj.content?.text) return obj.content.text;
+      if (typeof obj.content === 'string') return obj.content;
+      
+      // Direct fields
       if (obj.text) return obj.text;
-      if (obj.message) return typeof obj.message === 'string' ? obj.message : obj.message.text;
+      if (typeof obj.message === 'string') return obj.message;
+      
       return null;
     };
 
+    // Try single object first (most common response)
+    const text = extractText(data);
+    if (text) return text;
+
     // If it's an array, get the assistant's message (usually the last one)
     if (Array.isArray(data)) {
-      // Filter for agent/assistant messages and get the last one
       const agentMessages = data.filter(msg => msg.agentId || msg.role === 'assistant');
       if (agentMessages.length > 0) {
         const lastMsg = agentMessages[agentMessages.length - 1];
-        const text = extractText(lastMsg);
-        if (text) return text;
+        const msgText = extractText(lastMsg);
+        if (msgText) return msgText;
       }
-      // Fallback to last message
       if (data.length > 0) {
-        const text = extractText(data[data.length - 1]);
-        if (text) return text;
+        const msgText = extractText(data[data.length - 1]);
+        if (msgText) return msgText;
       }
     }
     
-    // Single object response
-    const text = extractText(data);
-    if (text) return text;
-    
-    // Try nested structures
+    // Try nested data structure
     if (data.data) {
       const nestedText = extractText(data.data);
       if (nestedText) return nestedText;
