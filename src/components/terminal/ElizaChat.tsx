@@ -19,6 +19,7 @@ const ElizaChat = () => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -257,7 +258,7 @@ const ElizaChat = () => {
       const { data, error } = await supabase.functions.invoke("elizaos-chat", {
         body: {
           message: userMessage,
-          conversationHistory: messages,
+          sessionId: sessionId,
         },
       });
 
