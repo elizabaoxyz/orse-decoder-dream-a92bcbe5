@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
+import { Copy, Check } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Sun, Moon, Globe } from "lucide-react";
 import {
@@ -37,10 +39,43 @@ const Header = () => {
 
   const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
 
+  const [copied, setCopied] = useState(false);
+  const caAddress: string = "Soon"; // Replace with actual CA address later
+
+  const handleCopyCA = async () => {
+    if (caAddress === "Soon") return; // Don't copy if still "Soon"
+    try {
+      await navigator.clipboard.writeText(caAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-3 md:px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
-      {/* Left - Logo */}
-      <span className="text-primary text-glow text-[10px] md:text-xs font-bold">ELIZABAO</span>
+      {/* Left - Logo & CA */}
+      <div className="flex items-center gap-2 md:gap-3">
+        <span className="text-primary text-glow text-[10px] md:text-xs font-bold">ELIZABAO</span>
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground text-[9px] md:text-[10px]">CA:</span>
+          <button
+            onClick={handleCopyCA}
+            className={`flex items-center gap-1 text-[9px] md:text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+              caAddress === "Soon" 
+                ? "text-muted-foreground cursor-default" 
+                : "text-primary hover:bg-primary/10 cursor-pointer"
+            }`}
+            title={caAddress === "Soon" ? "Coming soon" : "Click to copy"}
+          >
+            <span className="font-mono">{caAddress === "Soon" ? "Soon" : `${caAddress.slice(0, 4)}...${caAddress.slice(-4)}`}</span>
+            {caAddress !== "Soon" && (
+              copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />
+            )}
+          </button>
+        </div>
+      </div>
 
       {/* Right - Theme & Language | Social | Auth */}
       <div className="flex items-center gap-1.5 md:gap-2">
