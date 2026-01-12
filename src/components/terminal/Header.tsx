@@ -9,18 +9,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import polymarketLogo from "@/assets/polymarket-logo.jpg";
 
 // Twitter/X icon component
 const TwitterIcon = () => (
   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
-// Polymarket icon
-const PolymarketIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeWidth="2" stroke="currentColor" fill="none"/>
   </svg>
 );
 
@@ -97,10 +91,10 @@ const Header = () => {
           href="https://polymarket.com?via=elizabao"
           target="_blank"
           rel="noopener noreferrer"
-          className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+          className="p-1 hover:bg-primary/10 rounded transition-colors"
           title={t('polymarket')}
         >
-          <PolymarketIcon />
+          <img src={polymarketLogo} alt="Polymarket" className="w-4 h-4 rounded-sm" />
         </a>
 
         {/* Auth Section */}
