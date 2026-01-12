@@ -93,7 +93,7 @@ export const AsciiMouseEffect = () => {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none overflow-hidden"
+      className="absolute inset-0 pointer-events-none overflow-hidden z-10"
       aria-hidden="true"
     >
       {points.map((point, idx) => (

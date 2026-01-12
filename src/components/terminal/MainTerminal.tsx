@@ -73,10 +73,12 @@ const MainTerminal = () => {
   ];
 
   return (
-    <main className="flex-1 flex overflow-hidden">
+    <main className="flex-1 flex overflow-hidden relative">
+      {/* Global ASCII Mouse Effect - covers entire main area including sidebar */}
+      <AsciiMouseEffect />
+      
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        <AsciiMouseEffect />
+      <div className="flex-1 flex flex-col overflow-hidden relative z-0">
         <div className="flex-1 p-2 md:p-4 lg:p-6 flex flex-col min-h-0">
           <ElizaChat />
         </div>
@@ -97,7 +99,7 @@ const MainTerminal = () => {
 
       {/* Plugin Sidebar */}
       <aside 
-        className={`hidden md:flex flex-col border-l border-border bg-card/50 backdrop-blur-sm transition-all duration-300 ${
+        className={`hidden md:flex flex-col border-l border-border bg-card/30 backdrop-blur-sm transition-all duration-300 relative z-0 ${
           sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
         }`}
       >
