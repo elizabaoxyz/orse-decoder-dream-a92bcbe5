@@ -139,7 +139,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
   if (showWalletsOnly) {
     return (
       <div className="space-y-4">
-        <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
+        <div className="p-2 md:p-4 bg-card border border-border space-y-3">
           <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
             <Users className="w-4 h-4" />
             {t('whaleWalletsCount')} ({wallets.length})
@@ -150,7 +150,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                 <div
                   key={wallet.id}
                   onClick={() => setSelectedWallet(wallet)}
-                  className="p-3 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
+                  className="p-3 bg-muted/50 border border-border rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -231,7 +231,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
     <div className="space-y-4">
       {/* Main Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <div className="p-3 bg-card/50 border border-border/50 space-y-1">
+        <div className="p-3 bg-card border border-border rounded-lg space-y-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <DollarSign className="w-3 h-3" />
             {t('volume24h')}
@@ -241,32 +241,32 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
           </div>
         </div>
 
-        <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
+        <div className="p-2 md:p-3 bg-card border border-border rounded-lg space-y-1">
           <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Activity className="w-3 h-3" />
             {t('txs')}
           </div>
-          <div className="text-lg md:text-xl font-bold font-mono text-blue-400">
+          <div className="text-lg md:text-xl font-bold font-mono text-blue-500">
             {stats.totalTransactions}
           </div>
         </div>
 
-        <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
+        <div className="p-2 md:p-3 bg-card border border-border rounded-lg space-y-1">
           <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Users className="w-3 h-3" />
             {t('whales')}
           </div>
-          <div className="text-lg md:text-xl font-bold font-mono text-purple-400">
+          <div className="text-lg md:text-xl font-bold font-mono text-purple-500">
             {stats.activeWhales}
           </div>
         </div>
 
-        <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
+        <div className="p-2 md:p-3 bg-card border border-border rounded-lg space-y-1">
           <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Zap className="w-3 h-3" />
             {t('avg')}
           </div>
-          <div className="text-lg md:text-xl font-bold font-mono text-yellow-400">
+          <div className="text-lg md:text-xl font-bold font-mono text-amber-500">
             {formatValue(stats.avgTradeSize)}
           </div>
         </div>
@@ -274,7 +274,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
 
       {/* Buy/Sell & Yes/No Sentiment Bars */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-        <div className="p-3 bg-card/50 border border-border/50 space-y-2">
+        <div className="p-3 bg-card border border-border rounded-lg space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
               <TrendingUp className="w-3 h-3 text-primary" />
@@ -285,7 +285,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
               <TrendingDown className="w-3 h-3 text-red-500" />
             </span>
           </div>
-          <div className="h-4 bg-muted/30 rounded-full overflow-hidden flex">
+          <div className="h-4 bg-muted rounded-full overflow-hidden flex">
             <div 
               className="bg-primary/80 transition-all duration-500"
               style={{ width: `${buyPercent}%` }}
@@ -301,7 +301,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
           </div>
         </div>
 
-        <div className="p-3 bg-card/50 border border-border/50 space-y-2">
+        <div className="p-3 bg-card border border-border rounded-lg space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
               <Target className="w-3 h-3 text-blue-500" />
@@ -312,7 +312,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
               <Target className="w-3 h-3 text-orange-500" />
             </span>
           </div>
-          <div className="h-4 bg-muted/30 rounded-full overflow-hidden flex">
+          <div className="h-4 bg-muted rounded-full overflow-hidden flex">
             <div 
               className="bg-blue-500/80 transition-all duration-500"
               style={{ width: `${yesPercent}%` }}
@@ -331,7 +331,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
 
       {/* Top Buy/Sell */}
       <div className="grid grid-cols-2 gap-2 md:gap-3">
-        <div className="p-3 bg-primary/10 border border-primary/30 space-y-1">
+        <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg space-y-1">
           <div className="flex items-center gap-2 text-xs text-primary">
             <TrendingUp className="w-3 h-3" />
             {t('largestBuy')}
@@ -341,8 +341,8 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
           </div>
         </div>
 
-        <div className="p-3 bg-red-500/10 border border-red-500/30 space-y-1">
-          <div className="flex items-center gap-2 text-xs text-red-400">
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg space-y-1">
+          <div className="flex items-center gap-2 text-xs text-red-500">
             <TrendingDown className="w-3 h-3" />
             {t('largestSell')}
           </div>
@@ -354,7 +354,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
 
       {/* Whale Wallets List - hidden if showStatsOnly */}
       {!showStatsOnly && (
-        <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
+        <div className="p-2 md:p-4 bg-card border border-border rounded-lg space-y-3">
           <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
             <Users className="w-4 h-4" />
             {t('whaleWalletsCount')} ({wallets.length})
@@ -365,7 +365,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                 <div
                   key={wallet.id}
                   onClick={() => setSelectedWallet(wallet)}
-                  className="p-3 md:p-4 bg-background/50 border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
+                  className="p-3 md:p-4 bg-muted/50 border border-border rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2 md:mb-3">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
