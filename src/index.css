@@ -439,4 +439,23 @@
       display: none;
     }
   }
+
+  /* Slide-in animation from left */
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s ease-out;
+  }
+
+  /* Safe area for mobile top */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }

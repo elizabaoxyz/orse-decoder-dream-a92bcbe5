@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/terminal/Header";
 import DiagnosticsPanel from "@/components/terminal/DiagnosticsPanel";
 import MainTerminal from "@/components/terminal/MainTerminal";
 import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
-import MobileNav from "@/components/mobile/MobileNav";
+import MobileChatView from "@/components/mobile/MobileChatView";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Footer = () => (
@@ -21,50 +20,10 @@ const Footer = () => (
 
 const Index = () => {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState("home");
 
-  // Mobile view with tabs
+  // Mobile view - Full screen chat
   if (isMobile) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col scanlines noise crt-flicker">
-        {/* Fixed Header */}
-        <Header />
-
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto pb-20">
-          {activeTab === "home" && (
-            <MainTerminal />
-          )}
-
-          {activeTab === "whale" && (
-            <div className="terminal-panel relative min-h-full">
-              <AsciiMouseEffect />
-              <div className="terminal-header">🐋 WHALE_ANALYTICS</div>
-              <div className="p-3">
-                <WhaleStatsPanel showStatsOnly={true} />
-              </div>
-            </div>
-          )}
-
-          {activeTab === "wallets" && (
-            <div className="terminal-panel relative min-h-full">
-              <AsciiMouseEffect />
-              <div className="terminal-header">💼 WHALE_WALLETS</div>
-              <div className="p-3">
-                <WhaleStatsPanel showStatsOnly={false} showWalletsOnly={true} />
-              </div>
-            </div>
-          )}
-          
-          {/* Footer in mobile scroll area */}
-          <Footer />
-        </div>
-
-
-        {/* Fixed Bottom Navigation */}
-        <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
-    );
+    return <MobileChatView />;
   }
 
   // Desktop view
