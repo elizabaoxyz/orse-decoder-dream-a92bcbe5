@@ -50,18 +50,26 @@ const PluginCard = ({
     return (
       <>
         <div
-          className="group relative border border-border bg-card/50 p-2.5 cursor-pointer rounded-xl transition-all duration-200 hover:border-primary/50 hover:bg-card/80"
+          className="group relative border border-border bg-card/50 p-2.5 cursor-pointer rounded-2xl transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden"
           onClick={() => setIsOpen(true)}
         >
-          <div className="flex items-center justify-between gap-2">
+          {/* Breathing glow effect */}
+          <div 
+            className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            style={{
+              background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.1) 0%, transparent 70%)',
+              animation: 'breathe 3s ease-in-out infinite'
+            }}
+          />
+          <div className="relative flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <div 
-                className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"
-                style={{ animation: 'pulse 3s ease-in-out infinite' }}
+                className="w-2 h-2 rounded-full bg-green-500 shrink-0 shadow-sm shadow-green-500/50"
+                style={{ animation: 'pulse 2s ease-in-out infinite' }}
               />
-              <h3 className="text-foreground font-medium text-xs truncate group-hover:text-primary transition-colors">{title}</h3>
+              <h3 className="text-foreground font-medium text-xs truncate group-hover:text-primary transition-colors duration-300">{title}</h3>
             </div>
-            <span className="text-[8px] text-muted-foreground shrink-0">{toolCount} {t('tools')}</span>
+            <span className="text-[8px] text-muted-foreground shrink-0 group-hover:text-primary/70 transition-colors">{toolCount} {t('tools')}</span>
           </div>
         </div>
 
@@ -137,8 +145,12 @@ const PluginCard = ({
         )}
         <style>{`
           @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.2); }
+            0%, 100% { opacity: 0.6; transform: scale(1); box-shadow: 0 0 4px hsl(var(--primary) / 0.3); }
+            50% { opacity: 1; transform: scale(1.3); box-shadow: 0 0 8px hsl(var(--primary) / 0.5); }
+          }
+          @keyframes breathe {
+            0%, 100% { opacity: 0.3; transform: scale(0.95); }
+            50% { opacity: 0.6; transform: scale(1.05); }
           }
         `}</style>
       </>
