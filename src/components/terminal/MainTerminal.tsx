@@ -1,31 +1,13 @@
 import PluginCard from "./PluginCard";
 import AsciiMouseEffect from "./AsciiMouseEffect";
 import ElizaChat from "./ElizaChat";
-import agentAvatarBase from "@/assets/agent-avatar.jpg";
-import { cacheBust } from "@/lib/utils";
-import { Wifi, WifiOff, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-
-const agentAvatar = cacheBust(agentAvatarBase);
+import { ChevronLeft, ChevronRight, Plug } from "lucide-react";
+import { useState } from "react";
 
 const MainTerminal = () => {
   const { t } = useTranslation();
-  const [isConnected, setIsConnected] = useState(false);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('terminal-connection')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'whale_transactions' }, () => {})
-      .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const plugins = [
     {
@@ -91,13 +73,49 @@ const MainTerminal = () => {
   ];
 
   return (
-    <main className="flex-1 flex flex-col overflow-hidden">
-      <div className="terminal-panel flex-1 relative flex flex-col h-full">
+    <main className="flex-1 flex overflow-hidden">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         <AsciiMouseEffect />
         <div className="flex-1 p-2 md:p-4 lg:p-6 flex flex-col min-h-0">
           <ElizaChat />
         </div>
       </div>
+
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-6 h-16 bg-card border border-border rounded-l-lg hover:bg-muted transition-colors"
+        style={{ right: sidebarOpen ? '280px' : '0' }}
+      >
+        {sidebarOpen ? (
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+        )}
+      </button>
+
+      {/* Plugin Sidebar */}
+      <aside 
+        className={`hidden md:flex flex-col border-l border-border bg-card/50 backdrop-blur-sm transition-all duration-300 ${
+          sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
+        }`}
+      >
+        <div className="p-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-2">
+            <Plug className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium uppercase tracking-wider">
+              {t('pluginsMcpEnabled')} <span className="text-primary">{plugins.filter(p => p.enabled).length}</span>
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {plugins.map((plugin) => (
+            <PluginCard key={plugin.title} {...plugin} compact />
+          ))}
+        </div>
+      </aside>
     </main>
   );
 };
