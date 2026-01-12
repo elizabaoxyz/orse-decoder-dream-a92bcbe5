@@ -297,7 +297,7 @@ const resources = {
       pluginElizaOSPlatformDesc: '访问 ElizaOS 平台功能：积分、使用量、生成、对话和代理管理通过 MCP。',
       pluginElizaOSPlatformPricing: '使用您的积分余额（需要认证）',
       
-      pluginPolymarket: 'Polymarket',
+      pluginPolymarket: '预测市场',
       pluginPolymarketDesc: '完整的 Polymarket 预测市场集成。通过 CLOB API 访问市场、订单簿、价格历史、交易事件和下单。',
       pluginPolymarketPricing: '需要 CLOB_API_URL 环境变量',
       
