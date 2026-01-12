@@ -251,9 +251,9 @@ const MobileChatView = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-sm border-b border-border safe-area-top">
+      <header className="shrink-0 flex items-center justify-between px-4 py-2 bg-card/80 backdrop-blur-sm border-b border-border">
         {/* Left - Menu Button + Agent Info */}
         <div className="flex items-center gap-3">
           <button
@@ -391,7 +391,7 @@ const MobileChatView = () => {
         )}
       </div>
 
-      <div className="p-4 pb-10 mb-4 bg-card/80 backdrop-blur-sm border-t border-border">
+      <div className="shrink-0 p-3 pb-6 bg-card/80 backdrop-blur-sm border-t border-border safe-area-bottom">
         {/* Input Row */}
         <div className="flex items-center gap-3">
           {/* Plus button for media */}

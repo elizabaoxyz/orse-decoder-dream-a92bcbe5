@@ -135,10 +135,26 @@
     @apply border-border;
   }
 
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Kode Mono', 'Kode Mono Fallback', monospace;
     cursor: var(--app-cursor, url('/cursors/bao-cursor.png') 16 16), auto;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Safe area support for mobile */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   a, button, [role="button"], input[type="submit"], input[type="button"], .cursor-pointer {
