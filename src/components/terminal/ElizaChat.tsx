@@ -1,14 +1,23 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, Loader2 } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, Loader2, Send, Sparkles, Clock } from "lucide-react";
+import agentAvatarBase from "@/assets/agent-avatar.jpg";
+import { cacheBust } from "@/lib/utils";
+
+const agentAvatar = cacheBust(agentAvatarBase);
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   imageUrl?: string;
   videoUrl?: string;
+  timestamp: Date;
 }
+
+const formatTime = (date: Date) => {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 const ElizaChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,7 +59,6 @@ const ElizaChat = () => {
 
       if (error || data?.error) {
         console.error("TTS error:", error || data?.error);
-        // Fallback to browser TTS
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.onend = () => setIsSpeaking(false);
         speechSynthesis.speak(utterance);
@@ -148,7 +156,6 @@ const ElizaChat = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach(track => track.stop());
         
-        // Send to STT
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.webm');
         
@@ -200,6 +207,7 @@ const ElizaChat = () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
+    const timestamp = new Date();
     setInput("");
     setIsLoading(true);
 
@@ -207,19 +215,21 @@ const ElizaChat = () => {
     const imageMatch = userMessage.match(/^\/image\s+(.+)/i);
     if (imageMatch) {
       const prompt = imageMatch[1];
-      setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+      setMessages(prev => [...prev, { role: "user", content: userMessage, timestamp }]);
       
       const imageUrl = await generateImage(prompt);
       if (imageUrl) {
         setMessages(prev => [...prev, { 
           role: "assistant", 
           content: `Generated image for: "${prompt}"`,
-          imageUrl 
+          imageUrl,
+          timestamp: new Date()
         }]);
       } else {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: "Failed to generate image. Please try again." 
+          content: "Failed to generate image. Please try again.",
+          timestamp: new Date()
         }]);
       }
       setIsLoading(false);
@@ -230,7 +240,7 @@ const ElizaChat = () => {
     const videoMatch = userMessage.match(/^\/video\s+(.+)/i);
     if (videoMatch) {
       const prompt = videoMatch[1];
-      setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+      setMessages(prev => [...prev, { role: "user", content: userMessage, timestamp }]);
       
       toast.info("Video generation may take 30-60 seconds...");
       const videoUrl = await generateVideo(prompt);
@@ -238,12 +248,14 @@ const ElizaChat = () => {
         setMessages(prev => [...prev, { 
           role: "assistant", 
           content: `Generated video for: "${prompt}"`,
-          videoUrl 
+          videoUrl,
+          timestamp: new Date()
         }]);
       } else {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: "Failed to generate video. Please try again." 
+          content: "Failed to generate video. Please try again.",
+          timestamp: new Date()
         }]);
       }
       setIsLoading(false);
@@ -251,7 +263,7 @@ const ElizaChat = () => {
     }
 
     // Regular chat message
-    const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
+    const newMessages: Message[] = [...messages, { role: "user", content: userMessage, timestamp }];
     setMessages(newMessages);
 
     try {
@@ -276,9 +288,8 @@ const ElizaChat = () => {
       }
 
       const assistantReply = data.reply;
-      setMessages([...newMessages, { role: "assistant", content: assistantReply }]);
+      setMessages([...newMessages, { role: "assistant", content: assistantReply, timestamp: new Date() }]);
       
-      // Speak the response if TTS is enabled
       if (isTTSEnabled) {
         speakText(assistantReply);
       }
@@ -298,21 +309,41 @@ const ElizaChat = () => {
     }
   };
 
-  const getLoadingText = () => {
-    if (isGeneratingVideo) return " GENERATING_VIDEO (this may take a minute)";
-    if (isGeneratingImage) return " GENERATING_IMAGE";
-    return " PROCESSING_QUERY";
+  const quickCommands = [
+    { label: "/image", icon: ImageIcon, hint: "Generate image" },
+    { label: "/video", icon: Video, hint: "Generate video" },
+  ];
+
+  const insertCommand = (cmd: string) => {
+    setInput(cmd + " ");
+    inputRef.current?.focus();
   };
 
   return (
-    <div className="terminal-panel mt-4">
-      <div className="terminal-header flex items-center justify-between">
-        <span>meet ElizaBAO</span>
+    <div className="terminal-panel mt-4 overflow-hidden">
+      {/* Header */}
+      <div className="terminal-header flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <img 
+              src={agentAvatar} 
+              alt="ElizaBAO" 
+              className="w-8 h-8 rounded-full border-2 border-primary/50"
+            />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
+          </div>
+          <div>
+            <span className="font-bold text-sm">ElizaBAO</span>
+            <p className="text-[10px] text-muted-foreground">Powered by ElizaOS</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsTTSEnabled(!isTTSEnabled)}
-            className={`p-1 rounded transition-colors ${
-              isTTSEnabled ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            className={`p-1.5 rounded-lg transition-all ${
+              isTTSEnabled 
+                ? 'bg-primary/20 text-primary' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title={isTTSEnabled ? "Disable voice" : "Enable voice"}
           >
@@ -326,114 +357,161 @@ const ElizaChat = () => {
       </div>
       
       <div className="p-4 space-y-4">
-        {/* Agent Introduction */}
-        <div className="border border-border/30 rounded-lg p-3 bg-card/30 space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-mono text-primary">ONLINE</span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            ElizaBAO is an AI agent powered by <span className="text-primary">ElizaOS</span>. 
-            Use <span className="text-primary">/image [prompt]</span> or <span className="text-primary">/video [prompt]</span> to generate media.
-          </p>
-          <div className="flex flex-wrap gap-2 text-[10px]">
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Crypto Prices</span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Polymarket</span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">Weather</span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" /> Image
-            </span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
-              <Video className="w-3 h-3" /> Video
-            </span>
-            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
-              <Volume2 className="w-3 h-3" /> Voice
-            </span>
+        {/* Quick Commands */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {quickCommands.map((cmd) => (
+            <button
+              key={cmd.label}
+              onClick={() => insertCommand(cmd.label)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all border border-primary/20 hover:border-primary/40"
+            >
+              <cmd.icon className="w-3 h-3" />
+              <span>{cmd.label}</span>
+            </button>
+          ))}
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
+            <Sparkles className="w-3 h-3" />
+            <span>AI Powered</span>
           </div>
         </div>
 
         {/* Chat Messages */}
         <div 
           ref={messagesContainerRef}
-          className="h-48 overflow-y-auto space-y-3 font-mono text-xs scrollbar-none"
+          className="h-64 overflow-y-auto space-y-4 scrollbar-none pr-1"
         >
-          {messages.map((msg, idx) => (
-            <div key={idx} className="space-y-1">
-              <div className={`flex items-start gap-2 ${msg.role === "user" ? "text-primary" : "text-foreground"}`}>
-                <span className="shrink-0">
-                  {msg.role === "user" ? "[USER]:" : "[ELIZABAO]:"}
-                </span>
-                <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center space-y-3 py-8">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <img src={agentAvatar} alt="ElizaBAO" className="w-12 h-12 rounded-full" />
               </div>
-              {msg.imageUrl && (
-                <div className="ml-12 mt-2">
-                  <img 
-                    src={msg.imageUrl} 
-                    alt="Generated" 
-                    className="max-w-full max-h-48 rounded border border-border/50"
-                  />
+              <div>
+                <p className="text-sm font-medium text-foreground">Start a conversation</p>
+                <p className="text-xs mt-1">Ask about crypto, prediction markets, weather, or generate media</p>
+              </div>
+            </div>
+          )}
+          
+          {messages.map((msg, idx) => (
+            <div 
+              key={idx} 
+              className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""} animate-fade-in`}
+            >
+              {/* Avatar */}
+              <div className="shrink-0">
+                {msg.role === "assistant" ? (
+                  <img src={agentAvatar} alt="ElizaBAO" className="w-8 h-8 rounded-full border border-primary/30" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
+                    U
+                  </div>
+                )}
+              </div>
+              
+              {/* Message Bubble */}
+              <div className={`flex flex-col max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div 
+                  className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    msg.role === "user" 
+                      ? "bg-primary text-primary-foreground rounded-br-sm" 
+                      : "bg-muted/50 text-foreground rounded-bl-sm border border-border/50"
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                 </div>
-              )}
-              {msg.videoUrl && (
-                <div className="ml-12 mt-2">
-                  <video 
-                    src={msg.videoUrl} 
-                    controls
-                    className="max-w-full max-h-48 rounded border border-border/50"
-                  />
+                
+                {/* Media */}
+                {msg.imageUrl && (
+                  <div className="mt-2">
+                    <img 
+                      src={msg.imageUrl} 
+                      alt="Generated" 
+                      className="max-w-full max-h-52 rounded-xl border border-border/50 shadow-lg"
+                    />
+                  </div>
+                )}
+                {msg.videoUrl && (
+                  <div className="mt-2">
+                    <video 
+                      src={msg.videoUrl} 
+                      controls
+                      className="max-w-full max-h-52 rounded-xl border border-border/50 shadow-lg"
+                    />
+                  </div>
+                )}
+                
+                {/* Timestamp */}
+                <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+                  <Clock className="w-2.5 h-2.5" />
+                  <span>{formatTime(msg.timestamp)}</span>
                 </div>
-              )}
+              </div>
             </div>
           ))}
           
+          {/* Loading State */}
           {isLoading && (
-            <div className="text-muted-foreground animate-pulse">
-              <span className="text-primary">[ELIZABAO]:</span> 
-              {getLoadingText()}
-              <span className="inline-block w-2 h-4 bg-primary ml-1 animate-pulse" />
+            <div className="flex gap-3 animate-fade-in">
+              <img src={agentAvatar} alt="ElizaBAO" className="w-8 h-8 rounded-full border border-primary/30" />
+              <div className="bg-muted/50 rounded-2xl rounded-bl-sm px-4 py-3 border border-border/50">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {isGeneratingVideo ? "Generating video..." : isGeneratingImage ? "Generating image..." : "Thinking..."}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
           
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="flex items-center gap-2 border-t border-border/30 pt-4">
-          <span className="text-primary font-mono text-sm">&gt;&gt;</span>
-          
-          {/* Voice input button */}
-          <button
-            onClick={toggleRecording}
-            disabled={isLoading}
-            className={`p-1.5 rounded transition-colors ${
-              isRecording 
-                ? 'bg-red-500/20 text-red-500 animate-pulse' 
-                : 'text-muted-foreground hover:text-primary'
-            } disabled:opacity-30`}
-            title={isRecording ? "Stop recording" : "Voice input"}
-          >
-            {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-          </button>
-          
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            placeholder="/image or /video [prompt]..."
-            className="flex-1 bg-transparent border-none outline-none text-foreground font-mono text-sm placeholder:text-muted-foreground/50 disabled:opacity-50"
-            autoFocus
-          />
-          <button
-            onClick={sendMessage}
-            disabled={isLoading || !input.trim()}
-            className="text-primary hover:text-primary/80 font-mono text-xs uppercase tracking-wider disabled:opacity-30 transition-colors flex items-center gap-1"
-          >
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-            [SEND]
-          </button>
+        {/* Input Area */}
+        <div className="relative">
+          <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-3 py-2 focus-within:border-primary/50 transition-colors">
+            {/* Voice input button */}
+            <button
+              onClick={toggleRecording}
+              disabled={isLoading}
+              className={`p-2 rounded-xl transition-all ${
+                isRecording 
+                  ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                  : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+              } disabled:opacity-30`}
+              title={isRecording ? "Stop recording" : "Voice input"}
+            >
+              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+            
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              placeholder="Type a message or use /image, /video..."
+              className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground/50 disabled:opacity-50"
+              autoFocus
+            />
+            
+            <button
+              onClick={sendMessage}
+              disabled={isLoading || !input.trim()}
+              className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
