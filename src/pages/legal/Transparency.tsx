@@ -14,11 +14,6 @@ const Transparency = () => {
       title: "shawmakesmagic Post",
       description: "Public reference to Eliza Bao",
       url: "https://x.com/shawmakesmagic/status/1892115084383572318"
-    },
-    {
-      title: "ElizaOS",
-      description: "ElizaOS Official Website",
-      url: "https://elizaos.ai/"
     }
   ];
 
