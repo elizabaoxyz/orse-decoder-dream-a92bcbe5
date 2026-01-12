@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
-  Menu, X, Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, 
-  Loader2, Send, Clock, BarChart3, Wallet, ChevronRight
+  Menu, X, Mic, MicOff, ImageIcon, Video, 
+  Loader2, Send, Clock, BarChart3, Wallet, Plus
 } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
@@ -41,11 +41,10 @@ const MobileChatView = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isTTSEnabled, setIsTTSEnabled] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [showMediaMenu, setShowMediaMenu] = useState(false);
   
   // Menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,7 +54,6 @@ const MobileChatView = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -66,46 +64,6 @@ const MobileChatView = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Text-to-Speech function
-  const speakText = async (text: string) => {
-    if (!isTTSEnabled || !text) return;
-    
-    setIsSpeaking(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("elizaos-tts", {
-        body: { text },
-      });
-
-      if (error || data?.error) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
-        return;
-      }
-
-      if (data?.audioBase64) {
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
-          { type: data.contentType || 'audio/mpeg' }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        if (audioRef.current) audioRef.current.pause();
-        audioRef.current = new Audio(audioUrl);
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
-      } else if (data?.audioUrl) {
-        if (audioRef.current) audioRef.current.pause();
-        audioRef.current = new Audio(data.audioUrl);
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
-      }
-    } catch (error) {
-      console.error("TTS error:", error);
-      setIsSpeaking(false);
-    }
-  };
 
   // Generate image
   const generateImage = async (prompt: string) => {
@@ -260,8 +218,6 @@ const MobileChatView = () => {
 
       const assistantReply = data.reply;
       setMessages([...newMessages, { role: "assistant", content: assistantReply, timestamp: new Date() }]);
-      
-      if (isTTSEnabled) speakText(assistantReply);
     } catch (error) {
       toast.error("Connection failed");
     } finally {
@@ -417,49 +373,53 @@ const MobileChatView = () => {
         )}
       </div>
 
-      {/* Input Area */}
       <div className="p-4 pb-10 mb-4 bg-card/80 backdrop-blur-sm border-t border-border">
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2 mb-2">
-          <button
-            onClick={() => setInput("/image ")}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs bg-primary/10 text-primary rounded-full border border-primary/20"
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            Image
-          </button>
-          <button
-            onClick={() => setInput("/video ")}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs bg-primary/10 text-primary rounded-full border border-primary/20"
-          >
-            <Video className="w-3.5 h-3.5" />
-            Video
-          </button>
-          <button
-            onClick={() => setIsTTSEnabled(!isTTSEnabled)}
-            className={`ml-auto p-1.5 rounded-full transition-all ${
-              isTTSEnabled ? 'bg-primary/20 text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            {isTTSEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </button>
-        </div>
-
         {/* Input Row */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleRecording}
-            disabled={isLoading}
-            className={`p-3 rounded-full transition-all ${
-              isRecording 
-                ? 'bg-red-500 text-white animate-pulse' 
-                : 'bg-primary/10 text-primary hover:bg-primary/20'
-            } disabled:opacity-30`}
-          >
-            {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-          </button>
+        <div className="flex items-center gap-3">
+          {/* Plus button for media */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMediaMenu(!showMediaMenu)}
+              className={`p-2.5 rounded-full transition-all ${
+                showMediaMenu 
+                  ? 'bg-primary text-primary-foreground rotate-45' 
+                  : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            
+            {/* Media Menu Popup */}
+            {showMediaMenu && (
+              <div className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-xl shadow-xl overflow-hidden min-w-[140px]">
+                <button
+                  onClick={() => {
+                    setInput("/image ");
+                    setShowMediaMenu(false);
+                    inputRef.current?.focus();
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  <span>Image</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setInput("/video ");
+                    setShowMediaMenu(false);
+                    inputRef.current?.focus();
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors border-t border-border/50"
+                >
+                  <Video className="w-5 h-5 text-primary" />
+                  <span>Video</span>
+                </button>
+              </div>
+            )}
+          </div>
           
-          <div className="flex-1 flex items-center bg-muted/30 rounded-full border border-border/50 px-4 py-2 focus-within:border-primary/50">
+          {/* Text Input */}
+          <div className="flex-1 flex items-center bg-muted/30 rounded-full border border-border/50 px-4 py-2.5 focus-within:border-primary/50 transition-colors">
             <input
               ref={inputRef}
               type="text"
@@ -467,20 +427,43 @@ const MobileChatView = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isLoading}
-              placeholder="Type a message..."
+              placeholder="Message..."
               className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground/50"
             />
           </div>
           
-          <button
-            onClick={sendMessage}
-            disabled={isLoading || !input.trim()}
-            className="p-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-all"
-          >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </button>
+          {/* Voice / Send Button */}
+          {input.trim() ? (
+            <button
+              onClick={sendMessage}
+              disabled={isLoading}
+              className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-all"
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            </button>
+          ) : (
+            <button
+              onClick={toggleRecording}
+              disabled={isLoading}
+              className={`p-2.5 rounded-full transition-all ${
+                isRecording 
+                  ? 'bg-red-500 text-white animate-pulse' 
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+              } disabled:opacity-30`}
+            >
+              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Click outside to close media menu */}
+      {showMediaMenu && (
+        <div 
+          className="fixed inset-0 z-30" 
+          onClick={() => setShowMediaMenu(false)}
+        />
+      )}
 
       {/* Slide-out Menu */}
       {isMenuOpen && (
