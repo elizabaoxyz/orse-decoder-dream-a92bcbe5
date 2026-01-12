@@ -15,18 +15,6 @@ const Header = () => {
         >
           TWITTER
         </a>
-        <Link
-          to="/legal/transparency"
-          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
-        >
-          HISTORY
-        </Link>
-        <Link
-          to="/about"
-          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
-        >
-          ABOUT
-        </Link>
       </div>
     </header>
   );
