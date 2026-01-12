@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Menu, X, Mic, MicOff, ImageIcon, Video, 
-  Loader2, Send, Clock, BarChart3, Wallet, Plus
+  Loader2, Send, Clock, BarChart3, Wallet, Plus,
+  LogIn, Settings, Coins, LogOut, User
 } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 import polymarketIcon from "@/assets/polymarket-icon.jpg";
+import { useAuth } from "@/hooks/useAuth";
 
 const agentAvatar = cacheBust(agentAvatarBase);
 
@@ -48,7 +51,10 @@ const MobileChatView = () => {
   
   // Menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeMenuTab, setActiveMenuTab] = useState<"analytics" | "wallets">("analytics");
+  const [activeMenuTab, setActiveMenuTab] = useState<"analytics" | "wallets" | "account">("analytics");
+  
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -492,7 +498,7 @@ const MobileChatView = () => {
             <div className="flex border-b border-border">
               <button
                 onClick={() => setActiveMenuTab("analytics")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
                   activeMenuTab === "analytics" 
                     ? "text-primary border-b-2 border-primary" 
                     : "text-muted-foreground"
@@ -503,7 +509,7 @@ const MobileChatView = () => {
               </button>
               <button
                 onClick={() => setActiveMenuTab("wallets")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
                   activeMenuTab === "wallets" 
                     ? "text-primary border-b-2 border-primary" 
                     : "text-muted-foreground"
@@ -511,6 +517,17 @@ const MobileChatView = () => {
               >
                 <Wallet className="w-4 h-4" />
                 Wallets
+              </button>
+              <button
+                onClick={() => setActiveMenuTab("account")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+                  activeMenuTab === "account" 
+                    ? "text-primary border-b-2 border-primary" 
+                    : "text-muted-foreground"
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Account
               </button>
             </div>
 
@@ -521,6 +538,78 @@ const MobileChatView = () => {
               )}
               {activeMenuTab === "wallets" && (
                 <WhaleStatsPanel showStatsOnly={false} showWalletsOnly={true} />
+              )}
+              {activeMenuTab === "account" && (
+                <div className="space-y-3">
+                  {user ? (
+                    <>
+                      {/* User Info */}
+                      <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                        <p className="text-xs text-muted-foreground mb-1">Logged in as</p>
+                        <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
+                      </div>
+                      
+                      {/* Settings */}
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          navigate('/settings');
+                        }}
+                        className="w-full flex items-center gap-3 p-4 bg-card rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                      >
+                        <Settings className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Settings</span>
+                      </button>
+                      
+                      {/* Credits */}
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          navigate('/credits');
+                        }}
+                        className="w-full flex items-center gap-3 p-4 bg-card rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                      >
+                        <Coins className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Credits</span>
+                      </button>
+                      
+                      {/* Sign Out */}
+                      <button
+                        onClick={async () => {
+                          await signOut();
+                          setIsMenuOpen(false);
+                          toast.success("Signed out successfully");
+                        }}
+                        className="w-full flex items-center gap-3 p-4 bg-card rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="text-sm font-medium">Sign Out</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Not logged in */}
+                      <div className="text-center py-6">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Sign in to access settings, credits, and more features
+                        </p>
+                        <button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            navigate('/auth');
+                          }}
+                          className="w-full flex items-center justify-center gap-2 p-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                        >
+                          <LogIn className="w-5 h-5" />
+                          Sign In / Sign Up
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
