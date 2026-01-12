@@ -8,6 +8,14 @@ const Header = () => {
       </div>
       <div className="flex items-center gap-1.5 md:gap-3">
         <a
+          href="https://polymarket.com?via=elizabao"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
+        >
+          POLYMARKET
+        </a>
+        <a
           href="https://x.com/elizabaoxyz"
           target="_blank"
           rel="noopener noreferrer"
