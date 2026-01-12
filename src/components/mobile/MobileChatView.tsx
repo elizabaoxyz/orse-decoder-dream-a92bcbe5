@@ -419,7 +419,7 @@ const MobileChatView = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-card/80 backdrop-blur-sm border-t border-border safe-area-bottom">
+      <div className="p-4 pb-6 bg-card/80 backdrop-blur-sm border-t border-border safe-area-bottom">
         {/* Quick Actions */}
         <div className="flex items-center gap-2 mb-2">
           <button
