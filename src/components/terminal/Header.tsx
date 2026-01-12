@@ -48,8 +48,17 @@ const Header = () => {
       {/* Left - Logo */}
       <span className="text-primary text-glow text-[10px] md:text-xs font-bold">ELIZABAO</span>
 
-      {/* Right - Language | Social | Auth */}
+      {/* Right - Theme & Language | Social | Auth */}
       <div className="flex items-center gap-1.5 md:gap-2">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 md:p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+          title={theme === 'dark' ? t('light') : t('dark')}
+        >
+          {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+        </button>
+
         {/* Language Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger className="p-1.5 md:p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors flex items-center gap-1">
