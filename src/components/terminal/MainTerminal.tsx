@@ -132,7 +132,7 @@ const MainTerminal = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border border-border/50">
-              <img src={androidAppIcon} alt="Android" className="w-8 h-8 rounded-lg object-cover" />
+              <img src={androidAppIcon} alt="Android" className="w-6 h-6 rounded object-contain" />
               <div className="flex-1">
                 <p className="text-xs font-medium text-foreground">Android App</p>
                 <p className="text-[9px] text-muted-foreground">Coming Soon</p>
