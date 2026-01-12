@@ -99,6 +99,22 @@ const resources = {
       addressCopied: 'Address copied!',
       transparencyHistory: 'Transparency / History',
       
+      // Whale Detail Modal
+      totalVolume: 'TOTAL_VOLUME',
+      tradeCount: 'TRADE_COUNT',
+      avgTrade: 'AVG_TRADE',
+      tradingBehaviorAnalysis: 'TRADING_BEHAVIOR_ANALYSIS',
+      buyVsSell: 'Buy vs Sell',
+      yesVsNo: 'YES vs NO',
+      firstActive: 'First Active',
+      preferredMarkets: 'PREFERRED_MARKETS',
+      top: 'Top',
+      trades: 'trades',
+      avgLabel: 'Avg',
+      recentTransactions: 'RECENT_TRANSACTIONS',
+      noTradingRecords: 'No trading records',
+      unableToLoadData: 'Unable to load data',
+      
       // Diagnostics Panel
       elizaOSCloudDeploy: 'ElizaOSCloud Deploy',
       plugins: 'Plugins',
@@ -267,6 +283,22 @@ const resources = {
       largestSell: '最大卖出',
       addressCopied: '地址已复制！',
       transparencyHistory: '透明度 / 历史',
+      
+      // Whale Detail Modal
+      totalVolume: '总交易量',
+      tradeCount: '交易次数',
+      avgTrade: '平均交易',
+      tradingBehaviorAnalysis: '交易行为分析',
+      buyVsSell: '买入 vs 卖出',
+      yesVsNo: 'YES vs NO',
+      firstActive: '首次活跃',
+      preferredMarkets: '常用市场',
+      top: '前',
+      trades: '笔交易',
+      avgLabel: '平均',
+      recentTransactions: '最近交易',
+      noTradingRecords: '暂无交易记录',
+      unableToLoadData: '无法加载数据',
       
       // Diagnostics Panel
       elizaOSCloudDeploy: 'ElizaOS云部署',
@@ -437,6 +469,22 @@ const resources = {
       addressCopied: 'Đã sao chép địa chỉ!',
       transparencyHistory: 'Minh bạch / Lịch sử',
       
+      // Whale Detail Modal
+      totalVolume: 'TỔNG_KHỐI_LƯỢNG',
+      tradeCount: 'SỐ_GIAO_DỊCH',
+      avgTrade: 'GIAO_DỊCH_TB',
+      tradingBehaviorAnalysis: 'PHÂN_TÍCH_HÀNH_VI_GIAO_DỊCH',
+      buyVsSell: 'Mua vs Bán',
+      yesVsNo: 'CÓ vs KHÔNG',
+      firstActive: 'Hoạt động đầu tiên',
+      preferredMarkets: 'THỊ_TRƯỜNG_ƯA_THÍCH',
+      top: 'Top',
+      trades: 'giao dịch',
+      avgLabel: 'TB',
+      recentTransactions: 'GIAO_DỊCH_GẦN_ĐÂY',
+      noTradingRecords: 'Không có bản ghi giao dịch',
+      unableToLoadData: 'Không thể tải dữ liệu',
+      
       // Diagnostics Panel
       elizaOSCloudDeploy: 'Triển khai ElizaOS Cloud',
       plugins: 'Plugin',
@@ -605,6 +653,22 @@ const resources = {
       largestSell: 'การขายใหญ่สุด',
       addressCopied: 'คัดลอกที่อยู่แล้ว!',
       transparencyHistory: 'ความโปร่งใส / ประวัติ',
+      
+      // Whale Detail Modal
+      totalVolume: 'ปริมาณรวม',
+      tradeCount: 'จำนวนการซื้อขาย',
+      avgTrade: 'การซื้อขายเฉลี่ย',
+      tradingBehaviorAnalysis: 'การวิเคราะห์พฤติกรรมการซื้อขาย',
+      buyVsSell: 'ซื้อ vs ขาย',
+      yesVsNo: 'ใช่ vs ไม่',
+      firstActive: 'เปิดใช้งานครั้งแรก',
+      preferredMarkets: 'ตลาดที่ชื่นชอบ',
+      top: 'ท็อป',
+      trades: 'การซื้อขาย',
+      avgLabel: 'เฉลี่ย',
+      recentTransactions: 'การทำธุรกรรมล่าสุด',
+      noTradingRecords: 'ไม่มีบันทึกการซื้อขาย',
+      unableToLoadData: 'ไม่สามารถโหลดข้อมูลได้',
       
       // Diagnostics Panel
       elizaOSCloudDeploy: 'การปรับใช้ ElizaOS Cloud',
