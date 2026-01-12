@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, Loader2, Send, Clock } from "lucide-react";
+import { Mic, MicOff, ImageIcon, Video, Loader2, Send, Clock, Plus, X } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const agentAvatar = cacheBust(agentAvatarBase);
 
@@ -24,18 +29,16 @@ const ElizaChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isTTSEnabled, setIsTTSEnabled] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -46,51 +49,6 @@ const ElizaChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Text-to-Speech function
-  const speakText = async (text: string) => {
-    if (!isTTSEnabled || !text) return;
-    
-    setIsSpeaking(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("elizaos-tts", {
-        body: { text },
-      });
-
-      if (error || data?.error) {
-        console.error("TTS error:", error || data?.error);
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
-        return;
-      }
-
-      if (data?.audioBase64) {
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
-          { type: data.contentType || 'audio/mpeg' }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        audioRef.current = new Audio(audioUrl);
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
-      } else if (data?.audioUrl) {
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        audioRef.current = new Audio(data.audioUrl);
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
-      }
-    } catch (error) {
-      console.error("TTS error:", error);
-      setIsSpeaking(false);
-    }
-  };
 
   // Generate image
   const generateImage = async (prompt: string) => {
@@ -289,10 +247,6 @@ const ElizaChat = () => {
 
       const assistantReply = data.reply;
       setMessages([...newMessages, { role: "assistant", content: assistantReply, timestamp: new Date() }]);
-      
-      if (isTTSEnabled) {
-        speakText(assistantReply);
-      }
     } catch (error) {
       console.error("Chat error:", error);
       toast.error("Connection failed");
@@ -309,69 +263,33 @@ const ElizaChat = () => {
     }
   };
 
-  const quickCommands = [
-    { label: "/image", icon: ImageIcon, hint: "Generate image" },
-    { label: "/video", icon: Video, hint: "Generate video" },
-  ];
-
   const insertCommand = (cmd: string) => {
     setInput(cmd + " ");
+    setShowAttachMenu(false);
     inputRef.current?.focus();
   };
 
   return (
     <div className="terminal-panel mt-4 overflow-hidden">
-      {/* Header */}
+      {/* Header - Clean and minimal */}
       <div className="terminal-header px-4">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img 
-                src={agentAvatar} 
-                alt="ElizaBAO" 
-                className="w-8 h-8 rounded-full border-2 border-primary/50"
-              />
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
-            </div>
-            <div>
-              <span className="font-bold text-sm">ELIZABAO</span>
-              <p className="text-[10px] text-muted-foreground uppercase">Powered by ElizaOS</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <img 
+              src={agentAvatar} 
+              alt="ElizaBAO" 
+              className="w-8 h-8 rounded-full border-2 border-primary/50"
+            />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsTTSEnabled(!isTTSEnabled)}
-              className={`p-1.5 rounded-lg transition-all ${
-                isTTSEnabled 
-                  ? 'bg-primary/20 text-primary' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
-              title={isTTSEnabled ? "Disable voice" : "Enable voice"}
-            >
-              {isTTSEnabled ? (
-                <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-              ) : (
-                <VolumeX className="w-4 h-4" />
-              )}
-            </button>
+          <div>
+            <span className="font-bold text-sm">ELIZABAO</span>
+            <p className="text-[10px] text-muted-foreground uppercase">Powered by ElizaOS</p>
           </div>
         </div>
       </div>
       
       <div className="p-4 space-y-4">
-        {/* Quick Commands */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {quickCommands.map((cmd) => (
-            <button
-              key={cmd.label}
-              onClick={() => insertCommand(cmd.label)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all border border-primary/20 hover:border-primary/40"
-            >
-              <cmd.icon className="w-3 h-3" />
-              <span>{cmd.label}</span>
-            </button>
-          ))}
-        </div>
 
         {/* Chat Messages */}
         <div 
@@ -469,22 +387,43 @@ const ElizaChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
+        {/* Input Area - ChatGPT Style */}
         <div className="relative">
-          <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-3 py-2 focus-within:border-primary/50 transition-colors">
-            {/* Voice input button */}
-            <button
-              onClick={toggleRecording}
-              disabled={isLoading}
-              className={`p-2 rounded-xl transition-all ${
-                isRecording 
-                  ? 'bg-red-500/20 text-red-500 animate-pulse' 
-                  : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
-              } disabled:opacity-30`}
-              title={isRecording ? "Stop recording" : "Voice input"}
-            >
-              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
+          <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-2 py-2 focus-within:border-primary/50 transition-colors">
+            {/* Attachment Menu (Image/Video) */}
+            <Popover open={showAttachMenu} onOpenChange={setShowAttachMenu}>
+              <PopoverTrigger asChild>
+                <button
+                  disabled={isLoading}
+                  className="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30"
+                  title="Attach media"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent 
+                side="top" 
+                align="start" 
+                className="w-auto p-2 bg-popover border-border"
+              >
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => insertCommand("/image")}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    <span>Generate Image</span>
+                  </button>
+                  <button
+                    onClick={() => insertCommand("/video")}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <Video className="w-4 h-4 text-primary" />
+                    <span>Generate Video</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
             
             <input
               ref={inputRef}
@@ -493,22 +432,38 @@ const ElizaChat = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isLoading}
-              placeholder="Type a message or use /image, /video..."
+              placeholder="Message ElizaBAO..."
               className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground/50 disabled:opacity-50"
               autoFocus
             />
             
-            <button
-              onClick={sendMessage}
-              disabled={isLoading || !input.trim()}
-              className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </button>
+            {/* Voice or Send button */}
+            {input.trim() ? (
+              <button
+                onClick={sendMessage}
+                disabled={isLoading}
+                className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={toggleRecording}
+                disabled={isLoading}
+                className={`p-2 rounded-xl transition-all ${
+                  isRecording 
+                    ? 'bg-red-500 text-white animate-pulse' 
+                    : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                } disabled:opacity-30`}
+                title={isRecording ? "Stop recording" : "Voice input"}
+              >
+                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
