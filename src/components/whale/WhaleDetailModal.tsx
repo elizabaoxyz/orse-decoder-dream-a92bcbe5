@@ -38,13 +38,13 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
 
   return (
     <Dialog open={!!walletAddress} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-terminal-background border-terminal-border">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-terminal-foreground">
-            <Wallet className="w-5 h-5 text-terminal-accent" />
+          <DialogTitle className="flex items-center gap-3 text-foreground">
+            <Wallet className="w-5 h-5 text-primary" />
             <span className="font-mono">{walletAddress ? truncateAddress(walletAddress) : ''}</span>
             {analytics?.label && (
-              <span className="text-sm bg-terminal-accent/20 text-terminal-accent px-2 py-0.5 rounded">
+              <span className="text-sm bg-primary/20 text-primary px-2 py-0.5 rounded">
                 {analytics.label}
               </span>
             )}
@@ -54,7 +54,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
         {loading ? (
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-terminal-surface/30 animate-pulse rounded" />
+              <div key={i} className="h-20 bg-muted animate-pulse rounded" />
             ))}
           </div>
         ) : analytics ? (
@@ -65,40 +65,40 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                 icon={<BarChart3 className="w-4 h-4" />}
                 label={t('totalVolume')}
                 value={formatValue(analytics.total_volume)}
-                color="text-terminal-accent"
+                color="text-primary"
               />
               <StatCard
                 icon={<Activity className="w-4 h-4" />}
                 label={t('tradeCount')}
                 value={analytics.total_trades.toString()}
-                color="text-blue-400"
+                color="text-blue-500"
               />
               <StatCard
                 icon={<TrendingUp className="w-4 h-4" />}
                 label={t('avgTrade')}
                 value={formatValue(analytics.avg_trade_size)}
-                color="text-purple-400"
+                color="text-purple-500"
               />
               <StatCard
                 icon={<Clock className="w-4 h-4" />}
                 label={t('winRate')}
                 value={analytics.win_rate ? `${analytics.win_rate.toFixed(1)}%` : t('nA')}
-                color={analytics.win_rate && analytics.win_rate >= 50 ? 'text-primary' : 'text-red-400'}
+                color={analytics.win_rate && analytics.win_rate >= 50 ? 'text-primary' : 'text-red-500'}
               />
             </div>
 
             {/* Trading Behavior */}
-            <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-terminal-foreground mb-3">{t('tradingBehaviorAnalysis')}</h3>
+            <div className="p-4 bg-muted/50 border border-border rounded-lg">
+              <h3 className="text-sm font-semibold text-foreground mb-3">{t('tradingBehaviorAnalysis')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="flex justify-between text-xs text-terminal-muted mb-1">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>{t('buyVsSell')}</span>
                     <span>{analytics.buy_count} / {analytics.sell_count}</span>
                   </div>
-                  <div className="h-2 bg-terminal-surface rounded-full overflow-hidden">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-primary to-orange-400"
+                      className="h-full bg-gradient-to-r from-primary to-orange-500"
                       style={{ 
                         width: `${analytics.buy_count + analytics.sell_count > 0 
                           ? (analytics.buy_count / (analytics.buy_count + analytics.sell_count)) * 100 
@@ -108,15 +108,15 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                   </div>
                   <div className="flex justify-between text-xs mt-1">
                     <span className="text-primary">{t('buy')}</span>
-                    <span className="text-red-400">{t('sell')}</span>
+                    <span className="text-red-500">{t('sell')}</span>
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs text-terminal-muted mb-1">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>{t('yesVsNo')}</span>
                     <span>{analytics.yes_count} / {analytics.no_count}</span>
                   </div>
-                  <div className="h-2 bg-terminal-surface rounded-full overflow-hidden">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
                       style={{ 
@@ -127,91 +127,91 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                     />
                   </div>
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-blue-400">{t('yes')}</span>
-                    <span className="text-orange-400">{t('no')}</span>
+                    <span className="text-blue-500">{t('yes')}</span>
+                    <span className="text-orange-500">{t('no')}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex justify-between text-xs text-terminal-muted mt-4 pt-3 border-t border-terminal-border/30">
+              <div className="flex justify-between text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
                 <span>{t('firstActive')}: {formatDistanceToNow(new Date(analytics.first_seen), { addSuffix: true })}</span>
                 <span>{t('lastActive')}: {formatDistanceToNow(new Date(analytics.last_active), { addSuffix: true })}</span>
               </div>
             </div>
 
             {/* Preferred Markets */}
-            <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-terminal-foreground mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-terminal-accent" />
+            <div className="p-4 bg-muted/50 border border-border rounded-lg">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
                 {t('preferredMarkets')} ({t('top')} {analytics.preferred_markets.length})
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {analytics.preferred_markets.map((market, idx) => (
                   <div 
                     key={idx}
-                    className="p-3 bg-terminal-background/50 border border-terminal-border/20 rounded hover:border-terminal-accent/30 transition-all"
+                    className="p-3 bg-card border border-border rounded-lg hover:border-primary/50 transition-all"
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-sm text-terminal-foreground line-clamp-1 flex-1">
+                      <p className="text-sm text-foreground line-clamp-1 flex-1">
                         {market.market_title}
                       </p>
-                      <span className="text-terminal-accent font-bold text-sm whitespace-nowrap">
+                      <span className="text-primary font-bold text-sm whitespace-nowrap">
                         {formatValue(market.total_volume)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-terminal-muted">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{market.trade_count} {t('trades')}</span>
                       <span>•</span>
                       <span>{t('avgLabel')} {formatValue(market.avg_trade_size)}</span>
                       <span>•</span>
-                      <span className={market.dominant_side === 'buy' ? 'text-primary' : 'text-red-400'}>
+                      <span className={market.dominant_side === 'buy' ? 'text-primary' : 'text-red-500'}>
                         {market.dominant_side === 'buy' ? t('buy') : t('sell')}
                       </span>
-                      <span className={market.dominant_outcome === 'YES' ? 'text-blue-400' : 'text-orange-400'}>
+                      <span className={market.dominant_outcome === 'YES' ? 'text-blue-500' : 'text-orange-500'}>
                         {market.dominant_outcome}
                       </span>
                     </div>
                   </div>
                 ))}
                 {analytics.preferred_markets.length === 0 && (
-                  <p className="text-center text-terminal-muted py-4">{t('noTradingRecords')}</p>
+                  <p className="text-center text-muted-foreground py-4">{t('noTradingRecords')}</p>
                 )}
               </div>
             </div>
 
             {/* Recent Transactions */}
-            <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-terminal-foreground mb-3 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-400" />
+            <div className="p-4 bg-muted/50 border border-border rounded-lg">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-500" />
                 {t('recentTransactions')}
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {analytics.recent_transactions.map((tx) => (
                   <div 
                     key={tx.id}
-                    className="p-2 bg-terminal-background/50 border border-terminal-border/20 rounded flex items-center justify-between"
+                    className="p-2 bg-card border border-border rounded-lg flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
                         tx.side.toLowerCase() === 'buy' 
                           ? 'bg-primary/20 text-primary' 
-                          : 'bg-red-500/20 text-red-400'
+                          : 'bg-red-500/20 text-red-500'
                       }`}>
                         {tx.side.toLowerCase() === 'buy' ? t('buy') : t('sell')}
                       </span>
                       <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
                         tx.outcome === 'YES' 
-                          ? 'bg-blue-500/20 text-blue-400' 
-                          : 'bg-orange-500/20 text-orange-400'
+                          ? 'bg-blue-500/20 text-blue-500' 
+                          : 'bg-orange-500/20 text-orange-500'
                       }`}>
                         {tx.outcome}
                       </span>
-                      <span className="text-xs text-terminal-muted line-clamp-1 max-w-[200px]">
+                      <span className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
                         {tx.market_title}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs">
-                      <span className="text-terminal-accent font-bold">{formatValue(tx.total_value)}</span>
-                      <span className="text-terminal-muted">
+                      <span className="text-primary font-bold">{formatValue(tx.total_value)}</span>
+                      <span className="text-muted-foreground">
                         {formatDistanceToNow(new Date(tx.timestamp), { addSuffix: true })}
                       </span>
                     </div>
@@ -221,7 +221,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-terminal-muted">
+          <div className="text-center py-8 text-muted-foreground">
             {t('unableToLoadData')}
           </div>
         )}
@@ -241,8 +241,8 @@ const StatCard = ({
   value: string; 
   color: string;
 }) => (
-  <div className="p-3 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
-    <div className="flex items-center gap-2 text-terminal-muted mb-1">
+  <div className="p-3 bg-muted/50 border border-border rounded-lg">
+    <div className="flex items-center gap-2 text-muted-foreground mb-1">
       {icon}
       <span className="text-xs">{label}</span>
     </div>
