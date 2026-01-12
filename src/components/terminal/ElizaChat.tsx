@@ -272,9 +272,9 @@ const ElizaChat = () => {
   };
 
   return (
-    <div className="terminal-panel mt-4 overflow-hidden">
+    <div className="terminal-panel flex-1 flex flex-col overflow-hidden min-h-0">
       {/* Header - Clean and minimal */}
-      <div className="terminal-header px-4">
+      <div className="terminal-header px-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative">
             <img 
@@ -291,12 +291,12 @@ const ElizaChat = () => {
         </div>
       </div>
       
-      <div className="p-4 space-y-4">
+      <div className="flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
 
-        {/* Chat Messages */}
+        {/* Chat Messages - Flexible height */}
         <div 
           ref={messagesContainerRef}
-          className="h-64 overflow-y-auto space-y-4 scrollbar-none pr-1"
+          className="flex-1 overflow-y-auto space-y-4 scrollbar-none pr-1 min-h-0 mb-4"
         >
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center space-y-3 py-8">

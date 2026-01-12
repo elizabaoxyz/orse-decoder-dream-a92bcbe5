@@ -91,12 +91,10 @@ const MainTerminal = () => {
   ];
 
   return (
-    <main className="flex-1 flex flex-col overflow-y-auto">
-      <div className="terminal-panel flex-1 relative">
+    <main className="flex-1 flex flex-col overflow-hidden">
+      <div className="terminal-panel flex-1 relative flex flex-col h-full">
         <AsciiMouseEffect />
-        
-        <div className="p-4 md:p-6 lg:p-8 h-full">
-          {/* Eliza Chat Interface - Full Focus */}
+        <div className="flex-1 p-2 md:p-4 lg:p-6 flex flex-col min-h-0">
           <ElizaChat />
         </div>
       </div>
