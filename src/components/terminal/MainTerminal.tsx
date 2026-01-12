@@ -92,69 +92,12 @@ const MainTerminal = () => {
 
   return (
     <main className="flex-1 flex flex-col overflow-y-auto">
-      {/* Terminal Primary */}
       <div className="terminal-panel flex-1 relative">
         <AsciiMouseEffect />
         
-        <div className="p-4 md:p-8 lg:p-12 space-y-6 md:space-y-8">
-          {/* Hero Section */}
-          <div className="flex items-center gap-4 md:gap-6">
-            {/* Agent Avatar */}
-            <a
-              href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 group"
-            >
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg animate-pulse" />
-                <div className="relative z-10 p-[2px] rounded-full bg-gradient-to-br from-primary to-emerald-400">
-                  <div className="rounded-full bg-background p-0.5">
-                    <img 
-                      src={agentAvatar}
-                      alt="ElizaBAO Agent" 
-                      className="w-14 h-14 md:w-20 md:h-20 object-contain rounded-full"
-                    />
-                  </div>
-                </div>
-                <div className="absolute -bottom-1 -right-1 flex items-center gap-1 bg-card border border-border px-1.5 py-0.5 rounded-full">
-                  {isConnected ? (
-                    <Wifi className="w-2.5 h-2.5 text-green-400" />
-                  ) : (
-                    <WifiOff className="w-2.5 h-2.5 text-red-400" />
-                  )}
-                </div>
-              </div>
-            </a>
-
-            {/* Title & Subtitle */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tight">
-                ElizaBAO<span className="text-primary">_</span>
-              </h1>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                Powered by ElizaOS
-              </p>
-            </div>
-          </div>
-
-          {/* Eliza Chat Interface */}
+        <div className="p-4 md:p-6 lg:p-8 h-full">
+          {/* Eliza Chat Interface - Full Focus */}
           <ElizaChat />
-
-          {/* Plugins Section */}
-          <div className="space-y-3">
-            <div className="text-[10px] md:text-xs text-muted-foreground">
-              <span className="text-foreground">{t('pluginsMcpEnabled')}</span>{" "}
-              <span className="text-primary">{plugins.filter(p => p.enabled).length}</span>
-            </div>
-
-            {/* Plugin Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {plugins.map((plugin) => (
-                <PluginCard key={plugin.title} {...plugin} />
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </main>
