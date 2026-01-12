@@ -10,6 +10,7 @@ import Affiliate from "./pages/Affiliate";
 import AffiliateApply from "./pages/AffiliateApply";
 import Privacy from "./pages/legal/Privacy";
 import Partners from "./pages/legal/Partners";
+import Transparency from "./pages/legal/Transparency";
 import About from "./pages/About";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/affiliate/apply" element={<AffiliateApply />} />
           <Route path="/legal/privacy" element={<Privacy />} />
           <Route path="/legal/partners" element={<Partners />} />
+          <Route path="/legal/transparency" element={<Transparency />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
