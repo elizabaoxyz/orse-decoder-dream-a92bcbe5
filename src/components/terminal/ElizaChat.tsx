@@ -333,8 +333,8 @@ const ElizaChat = () => {
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
           </div>
           <div>
-            <span className="font-bold text-sm">ElizaBAO</span>
-            <p className="text-[10px] text-muted-foreground">Powered by ElizaOS</p>
+            <span className="font-bold text-sm">ELIZABAO</span>
+            <p className="text-[10px] text-muted-foreground uppercase">Powered by ElizaOS</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
