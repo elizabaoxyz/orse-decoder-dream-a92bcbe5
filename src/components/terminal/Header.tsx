@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-3 md:px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
@@ -24,7 +26,7 @@ const Header = () => {
           rel="noopener noreferrer"
           className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
         >
-          TWITTER
+          {t('twitter')}
         </a>
         {user ? (
           <>
@@ -32,13 +34,13 @@ const Header = () => {
               to="/settings"
               className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
             >
-              SETTINGS
+              {t('settings')}
             </Link>
             <button
               onClick={() => signOut()}
               className="border border-primary px-1.5 md:px-2 py-0.5 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[9px] md:text-xs"
             >
-              SIGN OUT
+              {t('signOut')}
             </button>
           </>
         ) : (
@@ -46,7 +48,7 @@ const Header = () => {
             to="/auth"
             className="border border-primary px-1.5 md:px-2 py-0.5 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[9px] md:text-xs"
           >
-            SIGN IN
+            {t('signIn')}
           </Link>
         )}
       </div>
