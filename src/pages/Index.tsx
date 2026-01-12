@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Header from "@/components/terminal/Header";
 import DiagnosticsPanel from "@/components/terminal/DiagnosticsPanel";
 import MainTerminal from "@/components/terminal/MainTerminal";
@@ -7,6 +8,17 @@ import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 import MobileNav from "@/components/mobile/MobileNav";
 import FloatingChatButton from "@/components/mobile/FloatingChatButton";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+const Footer = () => (
+  <footer className="border-t border-border bg-card/50 px-4 py-3 text-center">
+    <Link
+      to="/legal/transparency"
+      className="text-muted-foreground hover:text-primary transition-colors text-xs uppercase tracking-widest"
+    >
+      Transparency / History
+    </Link>
+  </footer>
+);
 
 const Index = () => {
   const isMobile = useIsMobile();
@@ -20,7 +32,7 @@ const Index = () => {
         <Header />
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto pb-16">
+        <div className="flex-1 overflow-y-auto pb-20">
           {activeTab === "home" && (
             <MainTerminal />
           )}
@@ -44,6 +56,9 @@ const Index = () => {
               </div>
             </div>
           )}
+          
+          {/* Footer in mobile scroll area */}
+          <Footer />
         </div>
 
         {/* Floating Chat Button */}
@@ -80,6 +95,9 @@ const Index = () => {
           <WhaleStatsPanel />
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
