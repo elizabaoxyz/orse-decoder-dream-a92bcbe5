@@ -40,7 +40,7 @@ const Header = () => {
   const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
 
   const [copied, setCopied] = useState(false);
-  const caAddress: string = "Soon"; // Replace with actual CA address later
+  const caAddress: string = "CZQe93LL4f8wuHmTzLABELgZHRwkPZAbHwN9BKerpump";
 
   const handleCopyCA = async () => {
     if (caAddress === "Soon") return; // Don't copy if still "Soon"
