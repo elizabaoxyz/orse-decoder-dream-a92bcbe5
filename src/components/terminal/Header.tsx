@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Globe } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +10,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Twitter/X icon component
+const TwitterIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+// Polymarket icon
+const PolymarketIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeWidth="2" stroke="currentColor" fill="none"/>
+  </svg>
+);
+
 const languages = [
   { code: 'en', name: 'EN', flag: '🇺🇸' },
-  { code: 'zh', name: '中', flag: '🇨🇳' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
   { code: 'vi', name: 'VI', flag: '🇻🇳' },
   { code: 'th', name: 'ไทย', flag: '🇹🇭' },
 ];
@@ -31,26 +45,51 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-3 md:px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
-      <div className="flex items-center gap-2">
-        <span className="text-primary text-glow text-[10px] md:text-xs">ELIZABAO</span>
+      {/* Left - Logo + Social Links */}
+      <div className="flex items-center gap-3">
+        <span className="text-primary text-glow text-[10px] md:text-xs font-bold">ELIZABAO</span>
+        
+        {/* Social Links Group */}
+        <div className="hidden sm:flex items-center gap-1 border-l border-border/50 pl-3">
+          <a
+            href="https://x.com/elizabaoxyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+            title="Twitter"
+          >
+            <TwitterIcon />
+          </a>
+          <a
+            href="https://polymarket.com?via=elizabao"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+            title={t('polymarket')}
+          >
+            <PolymarketIcon />
+          </a>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 md:gap-3">
+
+      {/* Right - Settings Group */}
+      <div className="flex items-center gap-1.5 md:gap-2">
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs flex items-center gap-1"
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="p-1.5 md:p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+          title={theme === 'dark' ? t('light') : t('dark')}
         >
-          {theme === 'dark' ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+          {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
         </button>
 
         {/* Language Selector */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs flex items-center gap-1">
-            <span>{currentLang.flag}</span>
-            <span className="hidden md:inline">{currentLang.name}</span>
+          <DropdownMenuTrigger className="p-1.5 md:p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors flex items-center gap-1">
+            <Globe className="w-3.5 h-3.5" />
+            <span className="hidden md:inline text-[10px]">{currentLang.flag}</span>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover border-border min-w-[120px]">
+          <DropdownMenuContent align="end" className="bg-popover border-border min-w-[140px]">
             {languages.map((lang) => (
               <DropdownMenuItem
                 key={lang.code}
@@ -59,38 +98,27 @@ const Header = () => {
               >
                 <span className="mr-2">{lang.flag}</span>
                 <span>{lang.name}</span>
+                {i18n.language === lang.code && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <a
-          href="https://polymarket.com?via=elizabao"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
-        >
-          {t('polymarket')}
-        </a>
-        <a
-          href="https://x.com/elizabaoxyz"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
-        >
-          {t('twitter')}
-        </a>
+        {/* Divider */}
+        <div className="w-px h-4 bg-border/50 mx-1 hidden sm:block" />
+
+        {/* Auth Section */}
         {user ? (
           <>
             <Link
               to="/settings"
-              className="border border-border px-1.5 md:px-2 py-0.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors text-[9px] md:text-xs"
+              className="px-2 md:px-3 py-1 text-[9px] md:text-[10px] text-muted-foreground hover:text-primary transition-colors"
             >
               {t('settings')}
             </Link>
             <button
               onClick={() => signOut()}
-              className="border border-primary px-1.5 md:px-2 py-0.5 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[9px] md:text-xs"
+              className="px-2 md:px-3 py-1 text-[9px] md:text-[10px] bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded transition-colors"
             >
               {t('signOut')}
             </button>
@@ -98,7 +126,7 @@ const Header = () => {
         ) : (
           <Link
             to="/auth"
-            className="border border-primary px-1.5 md:px-2 py-0.5 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[9px] md:text-xs"
+            className="px-3 md:px-4 py-1.5 text-[9px] md:text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 rounded transition-colors font-medium"
           >
             {t('signIn')}
           </Link>
