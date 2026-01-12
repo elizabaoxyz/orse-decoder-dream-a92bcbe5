@@ -13,12 +13,12 @@ const Transparency = () => {
     {
       title: "shawmakesmagic Post",
       description: "Public reference to Eliza Bao",
-      url: "https://x.com/shawmakesmagic"
+      url: "https://x.com/shawmakesmagic/status/1892115084383572318"
     },
     {
-      title: "ElizaOS Acknowledgment",
-      description: "Recognition from the ElizaOS founder",
-      url: "https://elizaos.ai"
+      title: "ElizaOS",
+      description: "ElizaOS Official Website",
+      url: "https://elizaos.ai/"
     }
   ];
 
@@ -167,23 +167,6 @@ const Transparency = () => {
               </div>
             </section>
 
-            {/* Token Clarification */}
-            <section>
-              <h2 className="text-xl font-bold mb-4 text-primary border-b border-border pb-2">Token Position</h2>
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p>
-                  Any token associated with Elizabao is positioned as a signal, not a utility or investment product.
-                </p>
-                <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>No guaranteed returns</li>
-                  <li>No revenue sharing</li>
-                  <li>No governance promises</li>
-                </ul>
-                <p>
-                  Token holders should not expect financial outcomes tied to project performance.
-                </p>
-              </div>
-            </section>
 
             {/* Closing */}
             <section className="bg-background border border-border p-6 mt-8">
