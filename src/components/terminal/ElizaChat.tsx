@@ -377,13 +377,13 @@ const ElizaChat = () => {
           className="h-64 overflow-y-auto space-y-4 scrollbar-none pr-1"
         >
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center space-y-3 py-8">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <img src={agentAvatar} alt="ElizaBAO" className="w-12 h-12 rounded-full" />
+            <div className="flex items-start gap-3 py-4">
+              <div className="shrink-0">
+                <img src={agentAvatar} alt="ElizaBAO" className="w-10 h-10 rounded-full border border-primary/30" />
               </div>
-              <div>
+              <div className="text-left">
                 <p className="text-sm font-medium text-foreground">Start a conversation</p>
-                <p className="text-xs mt-1">Ask about crypto, prediction markets, weather, or generate media</p>
+                <p className="text-xs mt-1 text-muted-foreground">Ask about crypto, prediction markets, weather, or generate media</p>
               </div>
             </div>
           )}
