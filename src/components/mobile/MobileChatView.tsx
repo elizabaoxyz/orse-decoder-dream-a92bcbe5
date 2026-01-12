@@ -21,7 +21,7 @@ const TwitterIcon = () => (
 
 // Polymarket icon component
 const PolymarketIcon = () => (
-  <img src={polymarketIcon} alt="Polymarket" className="w-5 h-5 rounded" />
+  <img src={polymarketIcon} alt="Polymarket" className="w-7 h-7 rounded" />
 );
 
 interface Message {
