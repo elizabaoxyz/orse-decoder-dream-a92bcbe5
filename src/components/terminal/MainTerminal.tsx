@@ -124,17 +124,29 @@ const MainTerminal = () => {
         <div className="p-3 border-t border-border shrink-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">{t('comingSoon')}</p>
           <div className="space-y-2">
-            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border border-border/50">
-              <img src={iosAppIcon} alt="iOS" className="w-8 h-8 rounded-lg object-cover" />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-foreground">iOS App</p>
+            <div className="group flex items-center gap-2 p-2.5 bg-muted/30 rounded-2xl border border-border/50 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden relative">
+              <div 
+                className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.1) 0%, transparent 70%)'
+                }}
+              />
+              <img src={iosAppIcon} alt="iOS" className="w-8 h-8 rounded-xl object-cover relative z-10 transition-transform duration-300 group-hover:scale-110" />
+              <div className="flex-1 relative z-10">
+                <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">iOS App</p>
                 <p className="text-[9px] text-muted-foreground">Coming Soon</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border border-border/50">
-              <img src={androidAppIcon} alt="Android" className="w-6 h-6 rounded object-contain" />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-foreground">Android App</p>
+            <div className="group flex items-center gap-2 p-2.5 bg-muted/30 rounded-2xl border border-border/50 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden relative">
+              <div 
+                className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.1) 0%, transparent 70%)'
+                }}
+              />
+              <img src={androidAppIcon} alt="Android" className="w-6 h-6 rounded-xl object-contain relative z-10 transition-transform duration-300 group-hover:scale-110" />
+              <div className="flex-1 relative z-10">
+                <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">Android App</p>
                 <p className="text-[9px] text-muted-foreground">Coming Soon</p>
               </div>
             </div>
