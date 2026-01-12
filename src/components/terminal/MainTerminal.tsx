@@ -144,7 +144,7 @@ const MainTerminal = () => {
                   background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.1) 0%, transparent 70%)'
                 }}
               />
-              <img src={androidAppIcon} alt="Android" className="w-6 h-6 rounded-xl object-contain relative z-10 transition-transform duration-300 group-hover:scale-110" />
+              <img src={androidAppIcon} alt="Android" className="w-4 h-4 rounded object-contain relative z-10 transition-transform duration-300 group-hover:scale-110" />
               <div className="flex-1 relative z-10">
                 <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">Android App</p>
                 <p className="text-[9px] text-muted-foreground">Coming Soon</p>
