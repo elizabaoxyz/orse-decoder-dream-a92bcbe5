@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Users, Activity, DollarSign, Target, Zap, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhaleDetailModal } from './WhaleDetailModal';
+import { useTranslation } from 'react-i18next';
+
 interface WhaleStatsPanelProps {
   showStatsOnly?: boolean;
   showWalletsOnly?: boolean;
@@ -12,8 +14,8 @@ interface WhaleWallet {
   id: string;
   wallet_address: string;
   label: string | null;
-  username: string | null;      // @username for URL linking
-  display_name: string | null;  // Display name shown on profile
+  username: string | null;
+  display_name: string | null;
   total_volume: number | null;
   win_rate: number | null;
   last_active: string | null;
@@ -39,6 +41,7 @@ interface WhaleStatsData {
 }
 
 export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false }: WhaleStatsPanelProps) => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<WhaleStatsData>({
     totalVolume24h: 0,
     totalTransactions: 0,
@@ -73,7 +76,6 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         .order('total_volume', { ascending: false });
 
       if (walletData) {
-        // Filter out "unknown" labels and limit to 15
         const filteredWallets = walletData
           .filter(w => w.label && w.label.toLowerCase() !== 'unknown')
           .slice(0, 15);
@@ -123,7 +125,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
   const copyAddress = async (address: string) => {
     await navigator.clipboard.writeText(address);
     setCopiedAddress(address);
-    toast.success('Address copied!');
+    toast.success(t('addressCopied'));
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
@@ -140,7 +142,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
           <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
             <Users className="w-4 h-4" />
-            WHALE_WALLETS ({wallets.length})
+            {t('whaleWalletsCount')} ({wallets.length})
           </div>
           {wallets.length > 0 ? (
             <div className="grid grid-cols-1 gap-2">
@@ -213,7 +215,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
             </div>
           ) : (
             <div className="text-sm text-muted-foreground text-center py-8">
-              No whale wallets tracked yet.
+              {t('noWhaleWallets')}
             </div>
           )}
         </div>
@@ -232,7 +234,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-3 bg-card/50 border border-border/50 space-y-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <DollarSign className="w-3 h-3" />
-            24H_VOLUME
+            {t('volume24h')}
           </div>
           <div className="text-xl font-bold font-mono text-primary">
             {formatValue(stats.totalVolume24h)}
@@ -242,7 +244,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
           <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Activity className="w-3 h-3" />
-            TXS
+            {t('txs')}
           </div>
           <div className="text-lg md:text-xl font-bold font-mono text-blue-400">
             {stats.totalTransactions}
@@ -252,7 +254,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
           <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Users className="w-3 h-3" />
-            WHALES
+            {t('whales')}
           </div>
           <div className="text-lg md:text-xl font-bold font-mono text-purple-400">
             {stats.activeWhales}
@@ -262,7 +264,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-2 md:p-3 bg-card/50 border border-border/50 space-y-1">
           <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-muted-foreground">
             <Zap className="w-3 h-3" />
-            AVG
+            {t('avg')}
           </div>
           <div className="text-lg md:text-xl font-bold font-mono text-yellow-400">
             {formatValue(stats.avgTradeSize)}
@@ -276,10 +278,10 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
               <TrendingUp className="w-3 h-3 text-primary" />
-              BUY_PRESSURE
+              {t('buyPressure')}
             </span>
             <span className="text-muted-foreground flex items-center gap-1">
-              SELL_PRESSURE
+              {t('sellPressure')}
               <TrendingDown className="w-3 h-3 text-red-500" />
             </span>
           </div>
@@ -303,10 +305,10 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
               <Target className="w-3 h-3 text-blue-500" />
-              YES_OUTCOME
+              {t('yesOutcome')}
             </span>
             <span className="text-muted-foreground flex items-center gap-1">
-              NO_OUTCOME
+              {t('noOutcome')}
               <Target className="w-3 h-3 text-orange-500" />
             </span>
           </div>
@@ -332,7 +334,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-3 bg-primary/10 border border-primary/30 space-y-1">
           <div className="flex items-center gap-2 text-xs text-primary">
             <TrendingUp className="w-3 h-3" />
-            LARGEST_BUY
+            {t('largestBuy')}
           </div>
           <div className="text-lg font-bold font-mono text-primary">
             {formatValue(stats.topBuy)}
@@ -342,7 +344,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-3 bg-red-500/10 border border-red-500/30 space-y-1">
           <div className="flex items-center gap-2 text-xs text-red-400">
             <TrendingDown className="w-3 h-3" />
-            LARGEST_SELL
+            {t('largestSell')}
           </div>
           <div className="text-lg font-bold font-mono text-red-500">
             {formatValue(stats.topSell)}
@@ -355,7 +357,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
         <div className="p-2 md:p-4 bg-card/50 border border-border/50 space-y-3">
           <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
             <Users className="w-4 h-4" />
-            WHALE_WALLETS ({wallets.length})
+            {t('whaleWalletsCount')} ({wallets.length})
           </div>
           {wallets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
@@ -406,7 +408,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                     </button>
                   </div>
                   <div className="flex justify-between items-center mb-2 md:mb-3">
-                    <span className="text-[10px] md:text-xs text-muted-foreground">VOLUME:</span>
+                    <span className="text-[10px] md:text-xs text-muted-foreground">{t('volumeLabel')}:</span>
                     <span className="font-mono text-xs md:text-sm font-bold text-primary">
                       {formatValue(wallet.total_volume || 0)}
                     </span>
@@ -429,7 +431,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
             </div>
           ) : (
             <div className="text-sm text-muted-foreground text-center py-8">
-              No whale wallets tracked yet. Click SYNC to fetch data.
+              {t('noWhaleWallets')}
             </div>
           )}
         </div>
