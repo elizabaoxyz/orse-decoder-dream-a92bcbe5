@@ -67,6 +67,7 @@ const resources = {
       transactions: 'TRANSACTIONS',
       liveFeed: 'LIVE FEED',
       whaleWallets: 'WHALE WALLETS',
+      whaleWalletsCount: 'WHALE_WALLETS',
       noWhaleWallets: 'No whale wallets tracked yet.',
       noWhaleTransactions: 'No whale transactions. Click SYNC to fetch data.',
       loadingWhaleData: 'Loading whale data...',
@@ -81,8 +82,22 @@ const resources = {
       lastSync: 'Last sync',
       autoEvery: 'Auto: every 2min',
       volume: 'Volume',
+      volumeLabel: 'VOLUME',
       lastActive: 'Last Active',
       ofWallets: 'wallets',
+      whaleAnalyticsDashboard: '🐋 WHALE_ANALYTICS_DASHBOARD',
+      volume24h: '24H_VOLUME',
+      txs: 'TXS',
+      whales: 'WHALES',
+      avg: 'AVG',
+      buyPressure: 'BUY_PRESSURE',
+      sellPressure: 'SELL_PRESSURE',
+      yesOutcome: 'YES_OUTCOME',
+      noOutcome: 'NO_OUTCOME',
+      largestBuy: 'LARGEST_BUY',
+      largestSell: 'LARGEST_SELL',
+      addressCopied: 'Address copied!',
+      transparencyHistory: 'Transparency / History',
       
       // Diagnostics Panel
       elizaOSCloudDeploy: 'ElizaOSCloud Deploy',
@@ -103,6 +118,27 @@ const resources = {
       mcpEndpoint: 'MCP Endpoint',
       configuration: 'Configuration',
       availableTools: 'Available Tools',
+      
+      // Plugin Titles & Descriptions
+      pluginCryptoPrices: 'Crypto Prices',
+      pluginCryptoPricesDesc: 'Real-time cryptocurrency price data from major exchanges. Get current prices, 24h changes, market cap, and volume for thousands of cryptocurrencies.',
+      pluginCryptoPricesPricing: 'Free tier available',
+      
+      pluginTimeTimezone: 'Time & Timezone',
+      pluginTimeTimezoneDesc: 'Get current time, convert between timezones, and perform date calculations. Perfect for scheduling and time-aware agents.',
+      pluginTimeTimezonePricing: 'Free to use',
+      
+      pluginElizaOSPlatform: 'ElizaOS Platform',
+      pluginElizaOSPlatformDesc: 'Access ElizaOS platform features: credits, usage, generations, conversations, and agent management via MCP.',
+      pluginElizaOSPlatformPricing: 'Uses your credit balance (requires authentication)',
+      
+      pluginPolymarket: 'Polymarket',
+      pluginPolymarketDesc: 'Full Polymarket prediction market integration. Access markets, order books, price history, trade events, and place orders via CLOB API.',
+      pluginPolymarketPricing: 'Requires CLOB_API_URL environment variable',
+      
+      pluginWeatherData: 'Weather Data',
+      pluginWeatherDataDesc: 'Current weather conditions and forecasts for locations worldwide. Temperature, humidity, wind, and more.',
+      pluginWeatherDataPricing: 'Free to use',
       
       // Settings
       settingsTitle: 'Settings',
@@ -196,6 +232,7 @@ const resources = {
       transactions: '笔交易',
       liveFeed: '实时动态',
       whaleWallets: '巨鲸钱包',
+      whaleWalletsCount: '巨鲸钱包',
       noWhaleWallets: '暂无追踪的巨鲸钱包',
       noWhaleTransactions: '暂无巨鲸交易。点击同步获取数据。',
       loadingWhaleData: '加载巨鲸数据中...',
@@ -210,8 +247,22 @@ const resources = {
       lastSync: '上次同步',
       autoEvery: '自动：每2分钟',
       volume: '交易量',
+      volumeLabel: '交易量',
       lastActive: '最后活跃',
       ofWallets: '个钱包',
+      whaleAnalyticsDashboard: '🐋 巨鲸分析仪表盘',
+      volume24h: '24小时交易量',
+      txs: '交易数',
+      whales: '巨鲸数',
+      avg: '平均值',
+      buyPressure: '买入压力',
+      sellPressure: '卖出压力',
+      yesOutcome: 'YES结果',
+      noOutcome: 'NO结果',
+      largestBuy: '最大买入',
+      largestSell: '最大卖出',
+      addressCopied: '地址已复制！',
+      transparencyHistory: '透明度 / 历史',
       
       // Diagnostics Panel
       elizaOSCloudDeploy: 'ElizaOS云部署',
@@ -232,6 +283,27 @@ const resources = {
       mcpEndpoint: 'MCP 端点',
       configuration: '配置',
       availableTools: '可用工具',
+      
+      // Plugin Titles & Descriptions
+      pluginCryptoPrices: '加密货币价格',
+      pluginCryptoPricesDesc: '来自主要交易所的实时加密货币价格数据。获取数千种加密货币的当前价格、24小时变化、市值和交易量。',
+      pluginCryptoPricesPricing: '免费版可用',
+      
+      pluginTimeTimezone: '时间与时区',
+      pluginTimeTimezoneDesc: '获取当前时间、在时区之间转换以及执行日期计算。非常适合调度和时间感知代理。',
+      pluginTimeTimezonePricing: '免费使用',
+      
+      pluginElizaOSPlatform: 'ElizaOS 平台',
+      pluginElizaOSPlatformDesc: '访问 ElizaOS 平台功能：积分、使用量、生成、对话和代理管理通过 MCP。',
+      pluginElizaOSPlatformPricing: '使用您的积分余额（需要认证）',
+      
+      pluginPolymarket: 'Polymarket',
+      pluginPolymarketDesc: '完整的 Polymarket 预测市场集成。通过 CLOB API 访问市场、订单簿、价格历史、交易事件和下单。',
+      pluginPolymarketPricing: '需要 CLOB_API_URL 环境变量',
+      
+      pluginWeatherData: '天气数据',
+      pluginWeatherDataDesc: '全球各地的当前天气状况和预报。温度、湿度、风力等。',
+      pluginWeatherDataPricing: '免费使用',
       
       // Settings
       settingsTitle: '设置',
@@ -325,6 +397,7 @@ const resources = {
       transactions: 'GIAO DỊCH',
       liveFeed: 'NGUỒN TRỰC TIẾP',
       whaleWallets: 'VÍ CÁ VOI',
+      whaleWalletsCount: 'VÍ_CÁ_VOI',
       noWhaleWallets: 'Chưa theo dõi ví cá voi nào.',
       noWhaleTransactions: 'Không có giao dịch cá voi. Nhấn ĐỒNG BỘ để lấy dữ liệu.',
       loadingWhaleData: 'Đang tải dữ liệu cá voi...',
@@ -339,8 +412,22 @@ const resources = {
       lastSync: 'Đồng bộ lần cuối',
       autoEvery: 'Tự động: mỗi 2 phút',
       volume: 'Khối lượng',
+      volumeLabel: 'KHỐI_LƯỢNG',
       lastActive: 'Hoạt động lần cuối',
       ofWallets: 'ví',
+      whaleAnalyticsDashboard: '🐋 BẢNG_PHÂN_TÍCH_CÁ_VOI',
+      volume24h: 'KHỐI_LƯỢNG_24H',
+      txs: 'GD',
+      whales: 'CÁ_VOI',
+      avg: 'TB',
+      buyPressure: 'ÁP_LỰC_MUA',
+      sellPressure: 'ÁP_LỰC_BÁN',
+      yesOutcome: 'KẾT_QUẢ_CÓ',
+      noOutcome: 'KẾT_QUẢ_KHÔNG',
+      largestBuy: 'MUA_LỚN_NHẤT',
+      largestSell: 'BÁN_LỚN_NHẤT',
+      addressCopied: 'Đã sao chép địa chỉ!',
+      transparencyHistory: 'Minh bạch / Lịch sử',
       
       // Diagnostics Panel
       elizaOSCloudDeploy: 'Triển khai ElizaOS Cloud',
@@ -361,6 +448,27 @@ const resources = {
       mcpEndpoint: 'Điểm cuối MCP',
       configuration: 'Cấu hình',
       availableTools: 'Công cụ có sẵn',
+      
+      // Plugin Titles & Descriptions
+      pluginCryptoPrices: 'Giá Tiền Điện Tử',
+      pluginCryptoPricesDesc: 'Dữ liệu giá tiền điện tử thời gian thực từ các sàn giao dịch lớn. Lấy giá hiện tại, thay đổi 24h, vốn hóa thị trường và khối lượng cho hàng nghìn loại tiền điện tử.',
+      pluginCryptoPricesPricing: 'Có bản miễn phí',
+      
+      pluginTimeTimezone: 'Thời Gian & Múi Giờ',
+      pluginTimeTimezoneDesc: 'Lấy thời gian hiện tại, chuyển đổi giữa các múi giờ và thực hiện tính toán ngày. Hoàn hảo cho lên lịch và các agent nhận biết thời gian.',
+      pluginTimeTimezonePricing: 'Miễn phí sử dụng',
+      
+      pluginElizaOSPlatform: 'Nền Tảng ElizaOS',
+      pluginElizaOSPlatformDesc: 'Truy cập các tính năng nền tảng ElizaOS: tín dụng, sử dụng, tạo nội dung, hội thoại và quản lý agent qua MCP.',
+      pluginElizaOSPlatformPricing: 'Sử dụng số dư tín dụng của bạn (yêu cầu xác thực)',
+      
+      pluginPolymarket: 'Polymarket',
+      pluginPolymarketDesc: 'Tích hợp đầy đủ thị trường dự đoán Polymarket. Truy cập thị trường, sổ lệnh, lịch sử giá, sự kiện giao dịch và đặt lệnh qua CLOB API.',
+      pluginPolymarketPricing: 'Yêu cầu biến môi trường CLOB_API_URL',
+      
+      pluginWeatherData: 'Dữ Liệu Thời Tiết',
+      pluginWeatherDataDesc: 'Điều kiện thời tiết hiện tại và dự báo cho các địa điểm trên toàn thế giới. Nhiệt độ, độ ẩm, gió và nhiều hơn nữa.',
+      pluginWeatherDataPricing: 'Miễn phí sử dụng',
       
       // Settings
       settingsTitle: 'Cài đặt',
@@ -454,6 +562,7 @@ const resources = {
       transactions: 'ธุรกรรม',
       liveFeed: 'ฟีดสด',
       whaleWallets: 'กระเป๋าปลาวาฬ',
+      whaleWalletsCount: 'กระเป๋า_ปลาวาฬ',
       noWhaleWallets: 'ยังไม่มีกระเป๋าปลาวาฬที่ติดตาม',
       noWhaleTransactions: 'ไม่มีธุรกรรมปลาวาฬ คลิก ซิงค์ เพื่อดึงข้อมูล',
       loadingWhaleData: 'กำลังโหลดข้อมูลปลาวาฬ...',
@@ -468,8 +577,22 @@ const resources = {
       lastSync: 'ซิงค์ล่าสุด',
       autoEvery: 'อัตโนมัติ: ทุก 2 นาที',
       volume: 'ปริมาณ',
+      volumeLabel: 'ปริมาณ',
       lastActive: 'ใช้งานล่าสุด',
       ofWallets: 'กระเป๋า',
+      whaleAnalyticsDashboard: '🐋 แดชบอร์ดวิเคราะห์ปลาวาฬ',
+      volume24h: 'ปริมาณ_24ชม',
+      txs: 'ธุรกรรม',
+      whales: 'ปลาวาฬ',
+      avg: 'เฉลี่ย',
+      buyPressure: 'แรงซื้อ',
+      sellPressure: 'แรงขาย',
+      yesOutcome: 'ผลลัพธ์_ใช่',
+      noOutcome: 'ผลลัพธ์_ไม่',
+      largestBuy: 'การซื้อใหญ่สุด',
+      largestSell: 'การขายใหญ่สุด',
+      addressCopied: 'คัดลอกที่อยู่แล้ว!',
+      transparencyHistory: 'ความโปร่งใส / ประวัติ',
       
       // Diagnostics Panel
       elizaOSCloudDeploy: 'การปรับใช้ ElizaOS Cloud',
@@ -490,6 +613,27 @@ const resources = {
       mcpEndpoint: 'จุดปลาย MCP',
       configuration: 'การกำหนดค่า',
       availableTools: 'เครื่องมือที่มี',
+      
+      // Plugin Titles & Descriptions
+      pluginCryptoPrices: 'ราคาคริปโต',
+      pluginCryptoPricesDesc: 'ข้อมูลราคาคริปโตเรียลไทม์จากตลาดหลัก รับราคาปัจจุบัน การเปลี่ยนแปลง 24 ชม. มูลค่าตลาด และปริมาณสำหรับคริปโตหลายพันสกุล',
+      pluginCryptoPricesPricing: 'มีแพ็คเกจฟรี',
+      
+      pluginTimeTimezone: 'เวลา & โซนเวลา',
+      pluginTimeTimezoneDesc: 'รับเวลาปัจจุบัน แปลงระหว่างโซนเวลา และคำนวณวันที่ เหมาะสำหรับการตั้งเวลาและ agent ที่รับรู้เวลา',
+      pluginTimeTimezonePricing: 'ใช้ฟรี',
+      
+      pluginElizaOSPlatform: 'แพลตฟอร์ม ElizaOS',
+      pluginElizaOSPlatformDesc: 'เข้าถึงฟีเจอร์แพลตฟอร์ม ElizaOS: เครดิต การใช้งาน การสร้าง การสนทนา และจัดการ agent ผ่าน MCP',
+      pluginElizaOSPlatformPricing: 'ใช้ยอดเครดิตของคุณ (ต้องยืนยันตัวตน)',
+      
+      pluginPolymarket: 'Polymarket',
+      pluginPolymarketDesc: 'การผสานรวมตลาดพยากรณ์ Polymarket แบบเต็ม เข้าถึงตลาด สมุดคำสั่ง ประวัติราคา เหตุการณ์การซื้อขาย และวางคำสั่งผ่าน CLOB API',
+      pluginPolymarketPricing: 'ต้องการตัวแปร CLOB_API_URL',
+      
+      pluginWeatherData: 'ข้อมูลสภาพอากาศ',
+      pluginWeatherDataDesc: 'สภาพอากาศปัจจุบันและพยากรณ์สำหรับสถานที่ทั่วโลก อุณหภูมิ ความชื้น ลม และอื่นๆ',
+      pluginWeatherDataPricing: 'ใช้ฟรี',
       
       // Settings
       settingsTitle: 'การตั้งค่า',

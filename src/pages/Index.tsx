@@ -6,19 +6,24 @@ import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 import MobileChatView from "@/components/mobile/MobileChatView";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
-const Footer = () => (
-  <footer className="border-t border-border bg-card/50 px-4 py-3 text-center">
-    <Link
-      to="/legal/transparency"
-      className="text-muted-foreground hover:text-primary transition-colors text-xs uppercase tracking-widest"
-    >
-      Transparency / History
-    </Link>
-  </footer>
-);
+const Footer = () => {
+  const { t } = useTranslation();
+  return (
+    <footer className="border-t border-border bg-card/50 px-4 py-3 text-center">
+      <Link
+        to="/legal/transparency"
+        className="text-muted-foreground hover:text-primary transition-colors text-xs uppercase tracking-widest"
+      >
+        {t('transparencyHistory')}
+      </Link>
+    </footer>
+  );
+};
 
 const Index = () => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   // Mobile view - Full screen chat
@@ -46,7 +51,7 @@ const Index = () => {
       {/* Whale Analytics Dashboard */}
       <div className="terminal-panel border-t border-border relative">
         <AsciiMouseEffect />
-        <div className="terminal-header">🐋 WHALE_ANALYTICS_DASHBOARD</div>
+        <div className="terminal-header">{t('whaleAnalyticsDashboard')}</div>
         <div className="p-4">
           <WhaleStatsPanel />
         </div>
