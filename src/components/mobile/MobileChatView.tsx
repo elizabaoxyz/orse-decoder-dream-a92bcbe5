@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Menu, X, Mic, MicOff, ImageIcon, Video, 
   Loader2, Send, Clock, BarChart3, Wallet, Plus,
-  LogIn, Settings, Coins, LogOut, User
+  LogIn, Settings, Coins, LogOut, User, Sun, Moon, Globe
 } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 import polymarketIcon from "@/assets/polymarket-icon.jpg";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 
 const agentAvatar = cacheBust(agentAvatarBase);
 
@@ -39,6 +41,13 @@ const formatTime = (date: Date) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+const languages = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+];
+
 const MobileChatView = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -54,6 +63,8 @@ const MobileChatView = () => {
   const [activeMenuTab, setActiveMenuTab] = useState<"analytics" | "wallets" | "account">("analytics");
   
   const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -541,11 +552,55 @@ const MobileChatView = () => {
               )}
               {activeMenuTab === "account" && (
                 <div className="space-y-3">
+                  {/* Theme Toggle */}
+                  <button
+                    onClick={toggleTheme}
+                    className="w-full flex items-center justify-between p-4 bg-card rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {theme === 'dark' ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-primary" />}
+                      <span className="text-sm font-medium">{t('theme')}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {theme === 'dark' ? t('dark') : t('light')}
+                    </span>
+                  </button>
+                  
+                  {/* Language Selector */}
+                  <div className="bg-card rounded-lg border border-border overflow-hidden">
+                    <div className="flex items-center gap-3 p-4 border-b border-border/50">
+                      <Globe className="w-5 h-5 text-primary" />
+                      <span className="text-sm font-medium">{t('language')}</span>
+                    </div>
+                    <div className="p-2">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            i18n.changeLanguage(lang.code);
+                            localStorage.setItem('language', lang.code);
+                          }}
+                          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                            i18n.language === lang.code 
+                              ? 'bg-primary/10 text-primary' 
+                              : 'hover:bg-muted/30 text-foreground'
+                          }`}
+                        >
+                          <span className="text-lg">{lang.flag}</span>
+                          <span className="text-sm">{lang.name}</span>
+                          {i18n.language === lang.code && (
+                            <span className="ml-auto text-primary">✓</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {user ? (
                     <>
                       {/* User Info */}
                       <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-                        <p className="text-xs text-muted-foreground mb-1">Logged in as</p>
+                        <p className="text-xs text-muted-foreground mb-1">{t('email')}</p>
                         <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
                       </div>
                       
@@ -558,7 +613,7 @@ const MobileChatView = () => {
                         className="w-full flex items-center gap-3 p-4 bg-card rounded-lg border border-border hover:bg-muted/30 transition-colors"
                       >
                         <Settings className="w-5 h-5 text-primary" />
-                        <span className="text-sm font-medium">Settings</span>
+                        <span className="text-sm font-medium">{t('settings')}</span>
                       </button>
                       
                       {/* Credits */}
@@ -570,7 +625,7 @@ const MobileChatView = () => {
                         className="w-full flex items-center gap-3 p-4 bg-card rounded-lg border border-border hover:bg-muted/30 transition-colors"
                       >
                         <Coins className="w-5 h-5 text-primary" />
-                        <span className="text-sm font-medium">Credits</span>
+                        <span className="text-sm font-medium">{t('credits')}</span>
                       </button>
                       
                       {/* Sign Out */}
@@ -578,12 +633,12 @@ const MobileChatView = () => {
                         onClick={async () => {
                           await signOut();
                           setIsMenuOpen(false);
-                          toast.success("Signed out successfully");
+                          toast.success(t('signOut'));
                         }}
                         className="w-full flex items-center gap-3 p-4 bg-card rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <LogOut className="w-5 h-5" />
-                        <span className="text-sm font-medium">Sign Out</span>
+                        <span className="text-sm font-medium">{t('signOut')}</span>
                       </button>
                     </>
                   ) : (
@@ -594,7 +649,7 @@ const MobileChatView = () => {
                           <User className="w-8 h-8 text-primary" />
                         </div>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Sign in to access settings, credits, and more features
+                          {t('noAccount')}
                         </p>
                         <button
                           onClick={() => {
@@ -604,7 +659,7 @@ const MobileChatView = () => {
                           className="w-full flex items-center justify-center gap-2 p-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
                         >
                           <LogIn className="w-5 h-5" />
-                          Sign In / Sign Up
+                          {t('signIn')} / {t('signUp')}
                         </button>
                       </div>
                     </>
