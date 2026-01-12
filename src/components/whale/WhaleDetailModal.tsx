@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { polymarketApi, WhaleAnalytics } from '@/lib/api/polymarket';
 import { formatDistanceToNow } from 'date-fns';
@@ -10,6 +11,7 @@ interface WhaleDetailModalProps {
 }
 
 export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalProps) => {
+  const { t } = useTranslation();
   const [analytics, setAnalytics] = useState<WhaleAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,37 +63,37 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <StatCard
                 icon={<BarChart3 className="w-4 h-4" />}
-                label="TOTAL_VOLUME"
+                label={t('totalVolume')}
                 value={formatValue(analytics.total_volume)}
                 color="text-terminal-accent"
               />
               <StatCard
                 icon={<Activity className="w-4 h-4" />}
-                label="TRADE_COUNT"
+                label={t('tradeCount')}
                 value={analytics.total_trades.toString()}
                 color="text-blue-400"
               />
               <StatCard
                 icon={<TrendingUp className="w-4 h-4" />}
-                label="AVG_TRADE"
+                label={t('avgTrade')}
                 value={formatValue(analytics.avg_trade_size)}
                 color="text-purple-400"
               />
               <StatCard
                 icon={<Clock className="w-4 h-4" />}
-                label="WIN_RATE"
-                value={analytics.win_rate ? `${analytics.win_rate.toFixed(1)}%` : 'N/A'}
+                label={t('winRate')}
+                value={analytics.win_rate ? `${analytics.win_rate.toFixed(1)}%` : t('nA')}
                 color={analytics.win_rate && analytics.win_rate >= 50 ? 'text-primary' : 'text-red-400'}
               />
             </div>
 
             {/* Trading Behavior */}
             <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-terminal-foreground mb-3">TRADING_BEHAVIOR_ANALYSIS</h3>
+              <h3 className="text-sm font-semibold text-terminal-foreground mb-3">{t('tradingBehaviorAnalysis')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="flex justify-between text-xs text-terminal-muted mb-1">
-                    <span>Buy vs Sell</span>
+                    <span>{t('buyVsSell')}</span>
                     <span>{analytics.buy_count} / {analytics.sell_count}</span>
                   </div>
                   <div className="h-2 bg-terminal-surface rounded-full overflow-hidden">
@@ -105,13 +107,13 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                     />
                   </div>
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-primary">BUY</span>
-                    <span className="text-red-400">SELL</span>
+                    <span className="text-primary">{t('buy')}</span>
+                    <span className="text-red-400">{t('sell')}</span>
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-terminal-muted mb-1">
-                    <span>YES vs NO</span>
+                    <span>{t('yesVsNo')}</span>
                     <span>{analytics.yes_count} / {analytics.no_count}</span>
                   </div>
                   <div className="h-2 bg-terminal-surface rounded-full overflow-hidden">
@@ -125,14 +127,14 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                     />
                   </div>
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-blue-400">YES</span>
-                    <span className="text-orange-400">NO</span>
+                    <span className="text-blue-400">{t('yes')}</span>
+                    <span className="text-orange-400">{t('no')}</span>
                   </div>
                 </div>
               </div>
               <div className="flex justify-between text-xs text-terminal-muted mt-4 pt-3 border-t border-terminal-border/30">
-                <span>First Active: {formatDistanceToNow(new Date(analytics.first_seen), { addSuffix: true })}</span>
-                <span>Last Active: {formatDistanceToNow(new Date(analytics.last_active), { addSuffix: true })}</span>
+                <span>{t('firstActive')}: {formatDistanceToNow(new Date(analytics.first_seen), { addSuffix: true })}</span>
+                <span>{t('lastActive')}: {formatDistanceToNow(new Date(analytics.last_active), { addSuffix: true })}</span>
               </div>
             </div>
 
@@ -140,7 +142,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
               <h3 className="text-sm font-semibold text-terminal-foreground mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-terminal-accent" />
-                PREFERRED_MARKETS (Top {analytics.preferred_markets.length})
+                {t('preferredMarkets')} ({t('top')} {analytics.preferred_markets.length})
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {analytics.preferred_markets.map((market, idx) => (
@@ -157,12 +159,12 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-terminal-muted">
-                      <span>{market.trade_count} trades</span>
+                      <span>{market.trade_count} {t('trades')}</span>
                       <span>•</span>
-                      <span>Avg {formatValue(market.avg_trade_size)}</span>
+                      <span>{t('avgLabel')} {formatValue(market.avg_trade_size)}</span>
                       <span>•</span>
                       <span className={market.dominant_side === 'buy' ? 'text-primary' : 'text-red-400'}>
-                        {market.dominant_side === 'buy' ? 'BUY' : 'SELL'}
+                        {market.dominant_side === 'buy' ? t('buy') : t('sell')}
                       </span>
                       <span className={market.dominant_outcome === 'YES' ? 'text-blue-400' : 'text-orange-400'}>
                         {market.dominant_outcome}
@@ -171,7 +173,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                   </div>
                 ))}
                 {analytics.preferred_markets.length === 0 && (
-                  <p className="text-center text-terminal-muted py-4">No trading records</p>
+                  <p className="text-center text-terminal-muted py-4">{t('noTradingRecords')}</p>
                 )}
               </div>
             </div>
@@ -180,7 +182,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
             <div className="p-4 bg-terminal-surface/20 border border-terminal-border/30 rounded-lg">
               <h3 className="text-sm font-semibold text-terminal-foreground mb-3 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-blue-400" />
-                RECENT_TRANSACTIONS
+                {t('recentTransactions')}
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {analytics.recent_transactions.map((tx) => (
@@ -194,7 +196,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
                           ? 'bg-primary/20 text-primary' 
                           : 'bg-red-500/20 text-red-400'
                       }`}>
-                        {tx.side.toUpperCase()}
+                        {tx.side.toLowerCase() === 'buy' ? t('buy') : t('sell')}
                       </span>
                       <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
                         tx.outcome === 'YES' 
@@ -220,7 +222,7 @@ export const WhaleDetailModal = ({ walletAddress, onClose }: WhaleDetailModalPro
           </div>
         ) : (
           <div className="text-center py-8 text-terminal-muted">
-            Unable to load data
+            {t('unableToLoadData')}
           </div>
         )}
       </DialogContent>
