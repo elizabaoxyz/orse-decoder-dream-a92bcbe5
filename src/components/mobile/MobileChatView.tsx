@@ -391,7 +391,7 @@ const MobileChatView = () => {
         )}
       </div>
 
-      <div className="shrink-0 p-3 pb-6 bg-card/80 backdrop-blur-sm border-t border-border safe-area-bottom">
+      <div className="shrink-0 p-4 pb-10 mb-2 bg-card/80 backdrop-blur-sm border-t border-border safe-area-bottom">
         {/* Input Row */}
         <div className="flex items-center gap-3">
           {/* Plus button for media */}
