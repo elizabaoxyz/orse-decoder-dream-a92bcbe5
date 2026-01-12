@@ -95,17 +95,16 @@ const MainTerminal = () => {
       {/* Terminal Primary */}
       <div className="terminal-panel flex-1 relative">
         <AsciiMouseEffect />
-        <div className="terminal-header">ElizaOS Cloud Agent ID : af4e609a-7ebc-4f59-8920-b5931a762102</div>
         
-        <div className="p-4 md:p-8 lg:p-12 space-y-4 md:space-y-6 lg:space-y-8">
-          {/* Mobile: Agent Card + Title Row */}
-          <div className="flex items-start gap-4">
-            {/* Agent Avatar - visible on mobile */}
+        <div className="p-4 md:p-8 lg:p-12 space-y-6 md:space-y-8">
+          {/* Hero Section */}
+          <div className="flex items-center gap-4 md:gap-6">
+            {/* Agent Avatar */}
             <a
               href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
               target="_blank"
               rel="noopener noreferrer"
-              className="block md:hidden shrink-0"
+              className="shrink-0 group"
             >
               <div className="relative">
                 <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg animate-pulse" />
@@ -113,8 +112,8 @@ const MainTerminal = () => {
                   <div className="rounded-full bg-background p-0.5">
                     <img 
                       src={agentAvatar}
-                      alt="Agent" 
-                      className="w-16 h-16 object-contain rounded-full"
+                      alt="ElizaBAO Agent" 
+                      className="w-14 h-14 md:w-20 md:h-20 object-contain rounded-full"
                     />
                   </div>
                 </div>
@@ -128,46 +127,33 @@ const MainTerminal = () => {
               </div>
             </a>
 
-            {/* Title & Info */}
+            {/* Title & Subtitle */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-5xl lg:text-7xl font-bold text-foreground tracking-tight glitch">
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tight">
                 ElizaBAO<span className="text-primary">_</span>
               </h1>
-              <div className="w-12 md:w-24 h-0.5 md:h-1 bg-primary mt-1 md:mt-2 pulse-glow" />
-              
-              {/* Mobile: Compact info */}
-              <div className="mt-2 md:hidden space-y-1">
-                <div className="flex items-center gap-2 text-[9px]">
-                  <span className="text-muted-foreground">ELIZABAO</span>
-                  <a
-                    href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-primary"
-                  >
-                    CHAT <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                </div>
-              </div>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                Powered by ElizaOS
+              </p>
             </div>
           </div>
 
-
-
-          {/* Eliza Chat Interface - Above plugins */}
+          {/* Eliza Chat Interface */}
           <ElizaChat />
 
-          {/* Enabled Plugins Count */}
-          <div className="text-[10px] md:text-xs text-muted-foreground">
-            <span className="text-foreground">{t('pluginsMcpEnabled')}</span>{" "}
-            <span className="text-primary">{plugins.filter(p => p.enabled).length}</span>
-          </div>
+          {/* Plugins Section */}
+          <div className="space-y-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">
+              <span className="text-foreground">{t('pluginsMcpEnabled')}</span>{" "}
+              <span className="text-primary">{plugins.filter(p => p.enabled).length}</span>
+            </div>
 
-          {/* Plugin Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            {plugins.map((plugin) => (
-              <PluginCard key={plugin.title} {...plugin} />
-            ))}
+            {/* Plugin Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {plugins.map((plugin) => (
+                <PluginCard key={plugin.title} {...plugin} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
