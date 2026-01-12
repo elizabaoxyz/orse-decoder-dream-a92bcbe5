@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, Loader2, Send, Sparkles, Clock } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, ImageIcon, Video, Loader2, Send, Clock } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 
@@ -369,10 +369,6 @@ const ElizaChat = () => {
               <span>{cmd.label}</span>
             </button>
           ))}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
-            <Sparkles className="w-3 h-3" />
-            <span>AI Powered</span>
-          </div>
         </div>
 
         {/* Chat Messages */}
