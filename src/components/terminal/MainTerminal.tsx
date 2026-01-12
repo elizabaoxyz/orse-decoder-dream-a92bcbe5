@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Plug } from "lucide-react";
 import { useState } from "react";
 import iosAppIcon from "@/assets/ios-app-icon.png";
-import androidAppIcon from "@/assets/android-app-icon.png";
+import androidAppIcon from "@/assets/android-app-icon.webp";
 
 const MainTerminal = () => {
   const { t } = useTranslation();
