@@ -1,6 +1,5 @@
 import PluginCard from "./PluginCard";
 import AsciiMouseEffect from "./AsciiMouseEffect";
-import ElizaChat from "./ElizaChat";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 import { Wifi, WifiOff, ExternalLink } from "lucide-react";
@@ -149,9 +148,6 @@ const MainTerminal = () => {
             </div>
           </div>
 
-
-          {/* Eliza Chat Interface - Above plugins */}
-          <ElizaChat />
 
           {/* Enabled Plugins Count */}
           <div className="text-[10px] md:text-xs text-muted-foreground">
