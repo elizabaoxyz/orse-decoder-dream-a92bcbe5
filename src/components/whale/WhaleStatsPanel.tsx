@@ -424,7 +424,7 @@ export const WhaleStatsPanel = ({ showStatsOnly = false, showWalletsOnly = false
                     className="w-full flex items-center justify-center gap-1.5 md:gap-2 p-2 md:p-2.5 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 transition-colors text-xs md:text-sm font-medium"
                   >
                     <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">VIEW ON </span>POLYMARKET
+                    {t('viewOnPolymarket')}
                   </a>
                 </div>
               ))}
