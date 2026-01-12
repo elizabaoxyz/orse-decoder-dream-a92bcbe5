@@ -136,6 +136,10 @@ const resources = {
       pluginPolymarketDesc: 'Full Polymarket prediction market integration. Access markets, order books, price history, trade events, and place orders via CLOB API.',
       pluginPolymarketPricing: 'Requires CLOB_API_URL environment variable',
       
+      // Header & Links
+      polymarket: 'POLYMARKET',
+      viewOnPolymarket: 'View on Polymarket',
+      
       pluginWeatherData: 'Weather Data',
       pluginWeatherDataDesc: 'Current weather conditions and forecasts for locations worldwide. Temperature, humidity, wind, and more.',
       pluginWeatherDataPricing: 'Free to use',
@@ -301,6 +305,10 @@ const resources = {
       pluginPolymarketDesc: '完整的 Polymarket 预测市场集成。通过 CLOB API 访问市场、订单簿、价格历史、交易事件和下单。',
       pluginPolymarketPricing: '需要 CLOB_API_URL 环境变量',
       
+      // Header & Links
+      polymarket: '预测市场',
+      viewOnPolymarket: '在预测市场查看',
+      
       pluginWeatherData: '天气数据',
       pluginWeatherDataDesc: '全球各地的当前天气状况和预报。温度、湿度、风力等。',
       pluginWeatherDataPricing: '免费使用',
@@ -462,9 +470,13 @@ const resources = {
       pluginElizaOSPlatformDesc: 'Truy cập các tính năng nền tảng ElizaOS: tín dụng, sử dụng, tạo nội dung, hội thoại và quản lý agent qua MCP.',
       pluginElizaOSPlatformPricing: 'Sử dụng số dư tín dụng của bạn (yêu cầu xác thực)',
       
-      pluginPolymarket: 'Polymarket',
+      pluginPolymarket: 'Thị Trường Dự Đoán',
       pluginPolymarketDesc: 'Tích hợp đầy đủ thị trường dự đoán Polymarket. Truy cập thị trường, sổ lệnh, lịch sử giá, sự kiện giao dịch và đặt lệnh qua CLOB API.',
       pluginPolymarketPricing: 'Yêu cầu biến môi trường CLOB_API_URL',
+      
+      // Header & Links
+      polymarket: 'THỊ TRƯỜNG DỰ ĐOÁN',
+      viewOnPolymarket: 'Xem trên Polymarket',
       
       pluginWeatherData: 'Dữ Liệu Thời Tiết',
       pluginWeatherDataDesc: 'Điều kiện thời tiết hiện tại và dự báo cho các địa điểm trên toàn thế giới. Nhiệt độ, độ ẩm, gió và nhiều hơn nữa.',
@@ -627,9 +639,13 @@ const resources = {
       pluginElizaOSPlatformDesc: 'เข้าถึงฟีเจอร์แพลตฟอร์ม ElizaOS: เครดิต การใช้งาน การสร้าง การสนทนา และจัดการ agent ผ่าน MCP',
       pluginElizaOSPlatformPricing: 'ใช้ยอดเครดิตของคุณ (ต้องยืนยันตัวตน)',
       
-      pluginPolymarket: 'Polymarket',
+      pluginPolymarket: 'ตลาดพยากรณ์',
       pluginPolymarketDesc: 'การผสานรวมตลาดพยากรณ์ Polymarket แบบเต็ม เข้าถึงตลาด สมุดคำสั่ง ประวัติราคา เหตุการณ์การซื้อขาย และวางคำสั่งผ่าน CLOB API',
       pluginPolymarketPricing: 'ต้องการตัวแปร CLOB_API_URL',
+      
+      // Header & Links
+      polymarket: 'ตลาดพยากรณ์',
+      viewOnPolymarket: 'ดูบน Polymarket',
       
       pluginWeatherData: 'ข้อมูลสภาพอากาศ',
       pluginWeatherDataDesc: 'สภาพอากาศปัจจุบันและพยากรณ์สำหรับสถานที่ทั่วโลก อุณหภูมิ ความชื้น ลม และอื่นๆ',
