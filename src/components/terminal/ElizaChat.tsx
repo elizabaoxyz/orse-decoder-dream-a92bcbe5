@@ -322,37 +322,39 @@ const ElizaChat = () => {
   return (
     <div className="terminal-panel mt-4 overflow-hidden">
       {/* Header */}
-      <div className="terminal-header flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <img 
-              src={agentAvatar} 
-              alt="ElizaBAO" 
-              className="w-8 h-8 rounded-full border-2 border-primary/50"
-            />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
+      <div className="terminal-header px-4">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <img 
+                src={agentAvatar} 
+                alt="ElizaBAO" 
+                className="w-8 h-8 rounded-full border-2 border-primary/50"
+              />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
+            </div>
+            <div>
+              <span className="font-bold text-sm">ELIZABAO</span>
+              <p className="text-[10px] text-muted-foreground uppercase">Powered by ElizaOS</p>
+            </div>
           </div>
-          <div>
-            <span className="font-bold text-sm">ELIZABAO</span>
-            <p className="text-[10px] text-muted-foreground uppercase">Powered by ElizaOS</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsTTSEnabled(!isTTSEnabled)}
+              className={`p-1.5 rounded-lg transition-all ${
+                isTTSEnabled 
+                  ? 'bg-primary/20 text-primary' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+              title={isTTSEnabled ? "Disable voice" : "Enable voice"}
+            >
+              {isTTSEnabled ? (
+                <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
+              ) : (
+                <VolumeX className="w-4 h-4" />
+              )}
+            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsTTSEnabled(!isTTSEnabled)}
-            className={`p-1.5 rounded-lg transition-all ${
-              isTTSEnabled 
-                ? 'bg-primary/20 text-primary' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-            title={isTTSEnabled ? "Disable voice" : "Enable voice"}
-          >
-            {isTTSEnabled ? (
-              <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-            ) : (
-              <VolumeX className="w-4 h-4" />
-            )}
-          </button>
         </div>
       </div>
       
@@ -377,13 +379,13 @@ const ElizaChat = () => {
           className="h-64 overflow-y-auto space-y-4 scrollbar-none pr-1"
         >
           {messages.length === 0 && (
-            <div className="flex items-start gap-3 py-4">
-              <div className="shrink-0">
-                <img src={agentAvatar} alt="ElizaBAO" className="w-10 h-10 rounded-full border border-primary/30" />
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center space-y-3 py-8">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <img src={agentAvatar} alt="ElizaBAO" className="w-12 h-12 rounded-full" />
               </div>
-              <div className="text-left">
+              <div>
                 <p className="text-sm font-medium text-foreground">Start a conversation</p>
-                <p className="text-xs mt-1 text-muted-foreground">Ask about crypto, prediction markets, weather, or generate media</p>
+                <p className="text-xs mt-1">Ask about crypto, prediction markets, weather, or generate media</p>
               </div>
             </div>
           )}
