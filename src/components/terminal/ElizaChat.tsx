@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Mic, MicOff, ImageIcon, Video, Loader2, Send, Clock, Plus, X } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import {
   Popover,
   PopoverContent,
@@ -25,6 +26,7 @@ const formatTime = (date: Date) => {
 };
 
 const ElizaChat = () => {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -59,14 +61,14 @@ const ElizaChat = () => {
       });
 
       if (error || data?.error) {
-        toast.error(data?.error || "Image generation failed");
+        toast.error(data?.error || t('imageGenerationFailed'));
         return null;
       }
 
       return data?.imageUrl;
     } catch (error) {
       console.error("Image generation error:", error);
-      toast.error("Image generation failed");
+      toast.error(t('imageGenerationFailed'));
       return null;
     } finally {
       setIsGeneratingImage(false);
@@ -82,14 +84,14 @@ const ElizaChat = () => {
       });
 
       if (error || data?.error) {
-        toast.error(data?.error || "Video generation failed");
+        toast.error(data?.error || t('videoGenerationFailed'));
         return null;
       }
 
       return data?.videoUrl;
     } catch (error) {
       console.error("Video generation error:", error);
-      toast.error("Video generation failed");
+      toast.error(t('videoGenerationFailed'));
       return null;
     } finally {
       setIsGeneratingVideo(false);
@@ -123,26 +125,26 @@ const ElizaChat = () => {
           });
 
           if (error || data?.error) {
-            toast.error("Voice recognition failed");
+            toast.error(t('voiceRecognitionFailed'));
             return;
           }
 
           if (data?.text) {
             setInput(data.text);
-            toast.success("Voice recognized!");
+            toast.success(t('voiceRecognized'));
           }
         } catch (error) {
           console.error("STT error:", error);
-          toast.error("Voice recognition failed");
+          toast.error(t('voiceRecognitionFailed'));
         }
       };
 
       mediaRecorder.start();
       setIsRecording(true);
-      toast.info("Recording... Click again to stop");
+      toast.info(t('recording'));
     } catch (error) {
       console.error("Microphone error:", error);
-      toast.error("Microphone access denied");
+      toast.error(t('microphoneAccessDenied'));
     }
   };
 
@@ -179,14 +181,14 @@ const ElizaChat = () => {
       if (imageUrl) {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: `Generated image for: "${prompt}"`,
+          content: `${t('generatedImageFor')}: "${prompt}"`,
           imageUrl,
           timestamp: new Date()
         }]);
       } else {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: "Failed to generate image. Please try again.",
+          content: t('failedToGenerate'),
           timestamp: new Date()
         }]);
       }
@@ -200,19 +202,19 @@ const ElizaChat = () => {
       const prompt = videoMatch[1];
       setMessages(prev => [...prev, { role: "user", content: userMessage, timestamp }]);
       
-      toast.info("Video generation may take 30-60 seconds...");
+      toast.info(t('videoGenerationTime'));
       const videoUrl = await generateVideo(prompt);
       if (videoUrl) {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: `Generated video for: "${prompt}"`,
+          content: `${t('generatedVideoFor')}: "${prompt}"`,
           videoUrl,
           timestamp: new Date()
         }]);
       } else {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: "Failed to generate video. Please try again.",
+          content: t('failedToGenerate'),
           timestamp: new Date()
         }]);
       }
@@ -234,7 +236,7 @@ const ElizaChat = () => {
 
       if (error) {
         console.error("ElizaOS chat error:", error);
-        toast.error("Failed to get response");
+        toast.error(t('failedToGetResponse'));
         return;
       }
 
@@ -249,7 +251,7 @@ const ElizaChat = () => {
       setMessages([...newMessages, { role: "assistant", content: assistantReply, timestamp: new Date() }]);
     } catch (error) {
       console.error("Chat error:", error);
-      toast.error("Connection failed");
+      toast.error(t('connectionFailed'));
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -284,7 +286,7 @@ const ElizaChat = () => {
           </div>
           <div>
             <span className="font-bold text-sm">ELIZABAO</span>
-            <p className="text-[10px] text-muted-foreground uppercase">Powered by ElizaOS</p>
+            <p className="text-[10px] text-muted-foreground uppercase">{t('poweredBy')}</p>
           </div>
         </div>
       </div>
@@ -302,8 +304,8 @@ const ElizaChat = () => {
                 <img src={agentAvatar} alt="ElizaBAO" className="w-12 h-12 rounded-full" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Start a conversation</p>
-                <p className="text-xs mt-1">Ask about crypto, prediction markets, weather, or generate media</p>
+                <p className="text-sm font-medium text-foreground">{t('startConversation')}</p>
+                <p className="text-xs mt-1">{t('askAbout')}</p>
               </div>
             </div>
           )}
@@ -377,7 +379,7 @@ const ElizaChat = () => {
                     <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {isGeneratingVideo ? "Generating video..." : isGeneratingImage ? "Generating image..." : "Thinking..."}
+                    {isGeneratingVideo ? t('generatingVideo') : isGeneratingImage ? t('generatingImage') : t('thinking')}
                   </span>
                 </div>
               </div>
@@ -412,14 +414,14 @@ const ElizaChat = () => {
                     className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
                   >
                     <ImageIcon className="w-4 h-4 text-primary" />
-                    <span>Generate Image</span>
+                    <span>{t('generateImage')}</span>
                   </button>
                   <button
                     onClick={() => insertCommand("/video")}
                     className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
                   >
                     <Video className="w-4 h-4 text-primary" />
-                    <span>Generate Video</span>
+                    <span>{t('generateVideo')}</span>
                   </button>
                 </div>
               </PopoverContent>
@@ -432,7 +434,7 @@ const ElizaChat = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isLoading}
-              placeholder="Message ElizaBAO..."
+              placeholder={t('messageElizaBAO')}
               className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground/50 disabled:opacity-50"
               autoFocus
             />

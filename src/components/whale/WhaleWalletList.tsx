@@ -4,10 +4,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WhaleDetailModal } from './WhaleDetailModal';
+import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_PAGE = 10;
 
 export const WhaleWalletList = () => {
+  const { t } = useTranslation();
   const [allWallets, setAllWallets] = useState<WhaleWallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -16,7 +18,6 @@ export const WhaleWalletList = () => {
   useEffect(() => {
     const fetchWallets = async () => {
       const data = await polymarketApi.getWhaleWallets();
-      // Filter out "unknown" labels
       const filteredWallets = data.filter(
         w => !w.label || w.label.toLowerCase() !== 'unknown'
       );
@@ -63,7 +64,7 @@ export const WhaleWalletList = () => {
       <div className="space-y-3">
         {allWallets.length === 0 ? (
           <div className="text-center py-8 text-terminal-muted">
-            <p>No whale wallets tracked yet.</p>
+            <p>{t('noWhaleWallets')}</p>
           </div>
         ) : (
           <>
@@ -92,13 +93,13 @@ export const WhaleWalletList = () => {
 
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-terminal-muted block text-xs mb-1">Volume</span>
+                    <span className="text-terminal-muted block text-xs mb-1">{t('volume')}</span>
                     <span className="text-terminal-accent font-bold">
                       {formatVolume(wallet.total_volume)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-terminal-muted block text-xs mb-1">Win Rate</span>
+                    <span className="text-terminal-muted block text-xs mb-1">{t('winRate')}</span>
                     <span className={`font-bold ${
                       (wallet.win_rate || 0) >= 60 ? 'text-primary' : 
                       (wallet.win_rate || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'
@@ -107,11 +108,11 @@ export const WhaleWalletList = () => {
                     </span>
                   </div>
                   <div>
-                    <span className="text-terminal-muted block text-xs mb-1">Last Active</span>
+                    <span className="text-terminal-muted block text-xs mb-1">{t('lastActive')}</span>
                     <span className="text-terminal-foreground/70">
                       {wallet.last_active 
                         ? formatDistanceToNow(new Date(wallet.last_active), { addSuffix: true })
-                        : 'N/A'
+                        : t('nA')
                       }
                     </span>
                   </div>
@@ -123,7 +124,7 @@ export const WhaleWalletList = () => {
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-terminal-border/30">
                 <span className="text-sm text-terminal-muted">
-                  {startIndex + 1}-{Math.min(endIndex, allWallets.length)} of {allWallets.length} wallets
+                  {startIndex + 1}-{Math.min(endIndex, allWallets.length)} / {allWallets.length} {t('ofWallets')}
                 </span>
                 
                 <div className="flex items-center gap-2">
@@ -139,12 +140,7 @@ export const WhaleWalletList = () => {
                   
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(page => {
-                        // Show first, last, current, and adjacent pages
-                        return page === 1 || 
-                               page === totalPages || 
-                               Math.abs(page - currentPage) <= 1;
-                      })
+                      .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
                       .map((page, index, arr) => (
                         <div key={page} className="flex items-center">
                           {index > 0 && arr[index - 1] !== page - 1 && (

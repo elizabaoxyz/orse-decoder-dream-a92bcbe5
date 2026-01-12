@@ -4,10 +4,12 @@ import { WhaleWalletList } from './WhaleWalletList';
 import { WhaleStats } from './WhaleStats';
 import { polymarketApi } from '@/lib/api/polymarket';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 type Tab = 'feed' | 'wallets';
 
 export const WhaleTracker = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('feed');
   const [syncing, setSyncing] = useState(false);
 
@@ -16,14 +18,13 @@ export const WhaleTracker = () => {
     try {
       const result = await polymarketApi.syncData();
       if (result.success) {
-        toast.success('Data synced successfully!');
-        // Force re-render by triggering a reload
+        toast.success(t('syncSuccess'));
         window.location.reload();
       } else {
-        toast.error(result.error || 'Failed to sync data');
+        toast.error(result.error || t('syncFailed'));
       }
     } catch (error) {
-      toast.error('Failed to sync data');
+      toast.error(t('syncFailed'));
     } finally {
       setSyncing(false);
     }
@@ -36,10 +37,10 @@ export const WhaleTracker = () => {
         <div>
           <h1 className="text-2xl font-bold text-terminal-foreground flex items-center gap-3">
             <span className="text-3xl">🐋</span>
-            POLYMARKET WHALE TRACKER
+            {t('polymarketWhaleTracker')}
           </h1>
           <p className="text-terminal-muted text-sm mt-1">
-            Real-time monitoring of large trades on Polymarket
+            {t('realTimeMonitoring')}
           </p>
         </div>
         <button
@@ -49,10 +50,10 @@ export const WhaleTracker = () => {
         >
           {syncing ? (
             <span className="flex items-center gap-2">
-              <span className="animate-spin">⟳</span> SYNCING...
+              <span className="animate-spin">⟳</span> {t('syncing')}
             </span>
           ) : (
-            '⟳ SYNC DATA'
+            `⟳ ${t('syncData')}`
           )}
         </button>
       </div>
@@ -70,7 +71,7 @@ export const WhaleTracker = () => {
               : 'border-transparent text-terminal-muted hover:text-terminal-foreground'
           }`}
         >
-          📊 LIVE FEED
+          📊 {t('liveFeed')}
         </button>
         <button
           onClick={() => setActiveTab('wallets')}
@@ -80,7 +81,7 @@ export const WhaleTracker = () => {
               : 'border-transparent text-terminal-muted hover:text-terminal-foreground'
           }`}
         >
-          👛 WHALE WALLETS
+          👛 {t('whaleWallets')}
         </button>
       </div>
 

@@ -6,9 +6,12 @@ import { cacheBust } from "@/lib/utils";
 import { Wifi, WifiOff, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+
 const agentAvatar = cacheBust(agentAvatarBase);
 
 const MainTerminal = () => {
+  const { t } = useTranslation();
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -156,7 +159,7 @@ const MainTerminal = () => {
 
           {/* Enabled Plugins Count */}
           <div className="text-[10px] md:text-xs text-muted-foreground">
-            <span className="text-foreground">Plugins MCP Enabled</span>{" "}
+            <span className="text-foreground">{t('pluginsMcpEnabled')}</span>{" "}
             <span className="text-primary">{plugins.filter(p => p.enabled).length}</span>
           </div>
 

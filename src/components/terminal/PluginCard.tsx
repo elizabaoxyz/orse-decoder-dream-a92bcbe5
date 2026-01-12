@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface PluginCardProps {
   title: string;
@@ -26,6 +27,7 @@ const PluginCard = ({
   serverKey,
   serverType = "sse",
 }: PluginCardProps) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const displayTools = tools.slice(0, 3);
@@ -69,7 +71,7 @@ const PluginCard = ({
           <h3 className="text-foreground font-medium text-sm truncate group-hover:text-primary transition-colors">{title}</h3>
           {enabled && (
             <span className="text-[9px] text-primary border border-primary/30 px-1.5 py-0.5 bg-primary/10 rounded shrink-0 group-hover:bg-primary/20 transition-all">
-              ON
+              {t('on')}
             </span>
           )}
         </div>
@@ -105,7 +107,7 @@ const PluginCard = ({
             />
             {version}
           </span>
-          <span className="font-mono opacity-70">{toolCount} tools</span>
+          <span className="font-mono opacity-70">{toolCount} {t('tools')}</span>
         </div>
       </div>
 
@@ -128,13 +130,13 @@ const PluginCard = ({
               <div>
                 <h3 className="text-foreground font-medium text-lg">{title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {version} • {toolCount} tools
+                  {version} • {toolCount} {t('tools')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {enabled && (
                   <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10">
-                    Enabled
+                    {t('enabled')}
                   </span>
                 )}
                 <button
@@ -157,7 +159,7 @@ const PluginCard = ({
               {endpoint && (
                 <div className="space-y-2">
                   <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
-                    MCP Endpoint
+                    {t('mcpEndpoint')}
                   </h4>
                   <code className="block text-xs text-primary bg-muted/30 p-3 border border-border break-all">
                     {endpoint}
@@ -169,7 +171,7 @@ const PluginCard = ({
               {endpoint && (
                 <div className="space-y-2">
                   <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
-                    Configuration
+                    {t('configuration')}
                   </h4>
                   <pre className="text-xs text-foreground/80 bg-muted/30 p-3 border border-border overflow-x-auto">
                     {JSON.stringify(configJson, null, 2)}
@@ -180,7 +182,7 @@ const PluginCard = ({
               {/* Available Tools */}
               <div className="space-y-2">
                 <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">
-                  Available Tools ({toolCount})
+                  {t('availableTools')} ({toolCount})
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {tools.map((tool) => (

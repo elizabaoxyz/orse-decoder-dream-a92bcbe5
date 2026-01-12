@@ -4,6 +4,7 @@ import AsciiMouseEffect from "./AsciiMouseEffect";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface WhaleActivity {
   wallet: string;
@@ -13,6 +14,7 @@ interface WhaleActivity {
 }
 
 const DiagnosticsPanel = () => {
+  const { t } = useTranslation();
   const [entropy, setEntropy] = useState(0.999);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [whaleActivities, setWhaleActivities] = useState<WhaleActivity[]>([]);
@@ -37,20 +39,20 @@ const DiagnosticsPanel = () => {
     if (data && data.length > 0) {
       setWhaleActivities(data.map(tx => ({
         wallet: tx.wallet_address,
-        market: tx.market_title || 'Unknown',
+        market: tx.market_title || t('unknown'),
         side: tx.side,
         amount: tx.total_value
       })));
     } else {
       setWhaleActivities([
-        { wallet: '0x1a2b...3c4d', market: 'Waiting for data...', side: 'BUY', amount: 0 }
+        { wallet: '0x1a2b...3c4d', market: t('loading'), side: 'BUY', amount: 0 }
       ]);
     }
-  }, []);
+  }, [t]);
 
   const handleSync = async () => {
     setIsSyncing(true);
-    toast.info('🔄 Syncing Polymarket data...');
+    toast.info(`🔄 ${t('syncingPolymarket')}`);
     
     try {
       const { data, error } = await supabase.functions.invoke('polymarket-sync');
@@ -60,15 +62,15 @@ const DiagnosticsPanel = () => {
       }
       
       if (data?.success) {
-        toast.success(`✅ Synced! Found ${data.transactions_found || 0} whale trades`);
+        toast.success(`✅ ${t('syncedFound')} ${data.transactions_found || 0} ${t('whaleTrades')}`);
         setLastSync(new Date().toLocaleTimeString());
         await fetchWhaleData();
       } else {
-        toast.error(`❌ Sync failed: ${data?.error || 'Unknown error'}`);
+        toast.error(`❌ ${t('syncFailed')}: ${data?.error || t('unknown')}`);
       }
     } catch (err) {
       console.error('Sync error:', err);
-      toast.error('❌ Failed to sync data');
+      toast.error(`❌ ${t('syncFailed')}`);
     } finally {
       setIsSyncing(false);
     }
@@ -99,7 +101,7 @@ const DiagnosticsPanel = () => {
           // Add to top of list
           setWhaleActivities(prev => [{
             wallet: newTx.wallet_address,
-            market: newTx.market_title || 'Unknown',
+            market: newTx.market_title || t('unknown'),
             side: newTx.side,
             amount: newTx.total_value
           }, ...prev.slice(0, 14)]);
@@ -128,7 +130,7 @@ const DiagnosticsPanel = () => {
       clearInterval(entropyTimer);
       window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [fetchWhaleData]);
+  }, [fetchWhaleData, t]);
 
   const formatWallet = (address: string) => {
     if (address.length > 10) {
@@ -173,7 +175,7 @@ const DiagnosticsPanel = () => {
       {/* ElizaOSCloud Deploy */}
       <div className="terminal-panel flex-shrink-0 relative">
         <AsciiMouseEffect />
-        <div className="terminal-header">ElizaOSCloud Deploy</div>
+        <div className="terminal-header">{t('elizaOSCloudDeploy')}</div>
         <div className="p-4">
           <a 
             href="https://www.elizacloud.ai/dashboard/chat?characterId=af4e609a-7ebc-4f59-8920-b5931a762102"
@@ -189,21 +191,21 @@ const DiagnosticsPanel = () => {
               <span className="text-foreground">MCP</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Plugins</span>
+              <span className="text-muted-foreground">{t('plugins')}</span>
               <span className="text-foreground">Polymarket</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">FREQ</span>
+              <span className="text-muted-foreground">{t('freq')}</span>
               <span className="text-foreground">145.8MHZ</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">ENTROPY</span>
+              <span className="text-muted-foreground">{t('entropy')}</span>
               <span className="text-foreground">{entropy.toFixed(3)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">REALTIME</span>
+              <span className="text-muted-foreground">{t('realtime')}</span>
               <span className={isConnected ? 'text-primary' : 'text-red-400'}>
-                {isConnected ? 'CONNECTED' : 'OFFLINE'}
+                {isConnected ? t('connected') : t('offline')}
               </span>
             </div>
           </div>
@@ -215,7 +217,7 @@ const DiagnosticsPanel = () => {
         <AsciiMouseEffect />
         <div className="terminal-header flex items-center justify-between gap-1">
           <span className="flex items-center gap-1">
-            WHALE_LIVE
+            {t('whaleLive')}
             {isConnected ? (
               <Wifi className="w-3 h-3 text-primary animate-pulse shrink-0" />
             ) : (
@@ -228,7 +230,7 @@ const DiagnosticsPanel = () => {
             className="flex items-center gap-1 shrink-0 px-1.5 py-0.5 text-[9px] bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-2.5 h-2.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            SYNC
+            {t('sync')}
           </button>
         </div>
         <div 
@@ -241,7 +243,7 @@ const DiagnosticsPanel = () => {
         >
           {lastSync && (
             <div className="text-[10px] text-muted-foreground mb-2 border-b border-border/30 pb-1">
-              Last sync: {lastSync} | Auto: every 2min
+              {t('lastSync')}: {lastSync} | {t('autoEvery')}
             </div>
           )}
           <div className="space-y-2 text-xs">
@@ -253,7 +255,7 @@ const DiagnosticsPanel = () => {
                 <div className="flex justify-between">
                   <span className="text-primary font-mono">{formatWallet(activity.wallet)}</span>
                   <span className={activity.side === 'BUY' || activity.side === 'buy' ? 'text-primary' : 'text-red-400'}>
-                    {activity.side.toUpperCase()}
+                    {activity.side === 'BUY' || activity.side === 'buy' ? t('buy') : t('sell')}
                   </span>
                 </div>
                 <div className="text-muted-foreground truncate" title={activity.market}>
