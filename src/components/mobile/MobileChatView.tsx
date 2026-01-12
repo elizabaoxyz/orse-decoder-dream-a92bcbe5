@@ -237,27 +237,28 @@ const MobileChatView = () => {
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-sm border-b border-border safe-area-top">
-        {/* Left - Menu Button */}
-        <button
-          onClick={() => setIsMenuOpen(true)}
-          className="p-2 -ml-2 text-foreground hover:bg-muted/50 rounded-lg transition-colors"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-
-        {/* Center - Agent Info */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <img 
-              src={agentAvatar} 
-              alt="ElizaBAO" 
-              className="w-9 h-9 rounded-full border-2 border-primary/50"
-            />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
-          </div>
-          <div>
-            <h1 className="font-bold text-sm text-foreground">ElizaBAO</h1>
-            <p className="text-[10px] text-primary">Online</p>
+        {/* Left - Menu Button + Agent Info */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMenuOpen(true)}
+            className="p-2 -ml-2 text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <img 
+                src={agentAvatar} 
+                alt="ElizaBAO" 
+                className="w-9 h-9 rounded-full border-2 border-primary/50"
+              />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
+            </div>
+            <div>
+              <h1 className="font-bold text-sm text-foreground">ElizaBAO</h1>
+              <p className="text-[10px] text-primary">Online</p>
+            </div>
           </div>
         </div>
 
