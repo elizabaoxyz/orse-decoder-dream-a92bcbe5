@@ -6,7 +6,6 @@ import MainTerminal from "@/components/terminal/MainTerminal";
 import WhaleStatsPanel from "@/components/whale/WhaleStatsPanel";
 import AsciiMouseEffect from "@/components/terminal/AsciiMouseEffect";
 import MobileNav from "@/components/mobile/MobileNav";
-import FloatingChatButton from "@/components/mobile/FloatingChatButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Footer = () => (
@@ -61,8 +60,6 @@ const Index = () => {
           <Footer />
         </div>
 
-        {/* Floating Chat Button */}
-        <FloatingChatButton />
 
         {/* Fixed Bottom Navigation */}
         <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
