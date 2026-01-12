@@ -45,44 +45,11 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-3 md:px-4 py-2 flex items-center justify-between text-xs uppercase tracking-widest">
-      {/* Left - Logo + Social Links */}
-      <div className="flex items-center gap-3">
-        <span className="text-primary text-glow text-[10px] md:text-xs font-bold">ELIZABAO</span>
-        
-        {/* Social Links Group */}
-        <div className="hidden sm:flex items-center gap-1 border-l border-border/50 pl-3">
-          <a
-            href="https://x.com/elizabaoxyz"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
-            title="Twitter"
-          >
-            <TwitterIcon />
-          </a>
-          <a
-            href="https://polymarket.com?via=elizabao"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
-            title={t('polymarket')}
-          >
-            <PolymarketIcon />
-          </a>
-        </div>
-      </div>
+      {/* Left - Logo */}
+      <span className="text-primary text-glow text-[10px] md:text-xs font-bold">ELIZABAO</span>
 
-      {/* Right - Settings Group */}
+      {/* Right - Language | Social | Auth */}
       <div className="flex items-center gap-1.5 md:gap-2">
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="p-1.5 md:p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
-          title={theme === 'dark' ? t('light') : t('dark')}
-        >
-          {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-        </button>
-
         {/* Language Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger className="p-1.5 md:p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors flex items-center gap-1">
@@ -105,7 +72,27 @@ const Header = () => {
         </DropdownMenu>
 
         {/* Divider */}
-        <div className="w-px h-4 bg-border/50 mx-1 hidden sm:block" />
+        <div className="w-px h-4 bg-border/50 mx-0.5" />
+
+        {/* Social Links */}
+        <a
+          href="https://x.com/elizabaoxyz"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+          title="Twitter"
+        >
+          <TwitterIcon />
+        </a>
+        <a
+          href="https://polymarket.com?via=elizabao"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+          title={t('polymarket')}
+        >
+          <PolymarketIcon />
+        </a>
 
         {/* Auth Section */}
         {user ? (
