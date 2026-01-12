@@ -13,6 +13,7 @@ export interface PluginCardProps {
   endpoint?: string;
   serverKey?: string;
   serverType?: string;
+  compact?: boolean;
 }
 
 const PluginCard = ({
@@ -26,6 +27,7 @@ const PluginCard = ({
   endpoint,
   serverKey,
   serverType = "sse",
+  compact = false,
 }: PluginCardProps) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -41,6 +43,100 @@ const PluginCard = ({
       },
     },
   };
+
+  // Compact version for sidebar
+  if (compact) {
+    return (
+      <>
+        <div
+          className="group relative border border-border bg-card/50 p-2.5 cursor-pointer rounded-xl transition-all duration-200 hover:border-primary/50 hover:bg-card/80"
+          onClick={() => setIsOpen(true)}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div 
+                className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"
+                style={{ animation: 'pulse 3s ease-in-out infinite' }}
+              />
+              <h3 className="text-foreground font-medium text-xs truncate group-hover:text-primary transition-colors">{title}</h3>
+            </div>
+            <span className="text-[8px] text-muted-foreground shrink-0">{toolCount} {t('tools')}</span>
+          </div>
+        </div>
+
+        {/* Modal - same as full version */}
+        {isOpen && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsOpen(false)}
+          >
+            <div 
+              className="bg-card border border-primary shadow-2xl shadow-primary/30 w-[90%] max-w-md rounded-2xl animate-bounce-in"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <div>
+                  <h3 className="text-foreground font-medium text-lg">{title}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {version} • {toolCount} {t('tools')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {enabled && (
+                    <span className="text-xs text-primary border border-primary/30 px-2 py-0.5 bg-primary/10 rounded">
+                      {t('enabled')}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted/50 rounded"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                {endpoint && (
+                  <div className="space-y-2">
+                    <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">{t('mcpEndpoint')}</h4>
+                    <code className="block text-xs text-primary bg-muted/30 p-3 border border-border rounded break-all">{endpoint}</code>
+                  </div>
+                )}
+                {endpoint && (
+                  <div className="space-y-2">
+                    <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">{t('configuration')}</h4>
+                    <pre className="text-xs text-foreground/80 bg-muted/30 p-3 border border-border rounded overflow-x-auto">{JSON.stringify(configJson, null, 2)}</pre>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <h4 className="text-foreground font-medium text-xs uppercase tracking-wide">{t('availableTools')} ({toolCount})</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tools.map((tool) => (
+                      <span key={tool} className="text-xs text-foreground/80 bg-muted/50 px-2 py-0.5 border border-border rounded">{tool}</span>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground/70 italic">{pricing}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        <style>{`
+          @keyframes bounce-in {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+          }
+        `}</style>
+      </>
+    );
+  }
 
   return (
     <>
