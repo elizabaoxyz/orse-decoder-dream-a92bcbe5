@@ -126,6 +126,7 @@ const resources = {
       
       // Main Terminal
       pluginsMcpEnabled: 'Plugins MCP Enabled',
+      comingSoon: 'Coming Soon',
       
       // Plugin Card
       enabled: 'Enabled',
@@ -311,6 +312,7 @@ const resources = {
       
       // Main Terminal
       pluginsMcpEnabled: '已启用 MCP 插件',
+      comingSoon: '即将推出',
       
       // Plugin Card
       enabled: '已启用',
@@ -496,6 +498,7 @@ const resources = {
       
       // Main Terminal
       pluginsMcpEnabled: 'Plugin MCP Đã Bật',
+      comingSoon: 'Sắp ra mắt',
       
       // Plugin Card
       enabled: 'Đã bật',
@@ -681,6 +684,7 @@ const resources = {
       
       // Main Terminal
       pluginsMcpEnabled: 'เปิดใช้งานปลั๊กอิน MCP',
+      comingSoon: 'เร็วๆ นี้',
       
       // Plugin Card
       enabled: 'เปิดใช้งาน',

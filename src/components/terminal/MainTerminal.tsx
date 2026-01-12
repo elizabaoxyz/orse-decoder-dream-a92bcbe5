@@ -117,6 +117,35 @@ const MainTerminal = () => {
             <PluginCard key={plugin.title} {...plugin} compact />
           ))}
         </div>
+
+        {/* Coming Soon Apps */}
+        <div className="p-3 border-t border-border shrink-0">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">{t('comingSoon')}</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border border-border/50">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-foreground">iOS App</p>
+                <p className="text-[9px] text-muted-foreground">Coming Soon</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border border-border/50">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.523 2.047a.75.75 0 0 0-.977.4l-1.91 4.39a9.75 9.75 0 0 0-5.272 0l-1.91-4.39a.75.75 0 0 0-1.377.6l1.793 4.12A9.752 9.752 0 0 0 2.25 15v.75c0 3.452 2.798 6.25 6.25 6.25h7c3.452 0 6.25-2.798 6.25-6.25V15a9.752 9.752 0 0 0-5.62-8.833l1.793-4.12a.75.75 0 0 0-.4-.977zM8 14.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm8 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-foreground">Android App</p>
+                <p className="text-[9px] text-muted-foreground">Coming Soon</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </aside>
     </main>
   );
