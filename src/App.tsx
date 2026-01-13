@@ -9,10 +9,6 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import "@/lib/i18n";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Affiliate from "./pages/Affiliate";
-import AffiliateApply from "./pages/AffiliateApply";
-import Privacy from "./pages/legal/Privacy";
-import Partners from "./pages/legal/Partners";
 import Transparency from "./pages/legal/Transparency";
 import About from "./pages/About";
 import Auth from "./pages/Auth";
@@ -36,10 +32,6 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/credits" element={<Credits />} />
-              <Route path="/affiliate" element={<Affiliate />} />
-              <Route path="/affiliate/apply" element={<AffiliateApply />} />
-              <Route path="/legal/privacy" element={<Privacy />} />
-              <Route path="/legal/partners" element={<Partners />} />
               <Route path="/legal/transparency" element={<Transparency />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
