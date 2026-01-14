@@ -20,11 +20,15 @@ const MarketsExplorer = () => {
     setError(null);
     try {
       const data = await polymarketClobApi.getMarkets(100, 0, activeFilter === 'active');
-      setMarkets(data);
-      setFilteredMarkets(data);
+      // Ensure we always have an array
+      const marketsArray = Array.isArray(data) ? data : [];
+      setMarkets(marketsArray);
+      setFilteredMarkets(marketsArray);
     } catch (err) {
       console.error('Failed to fetch markets:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch markets');
+      setMarkets([]);
+      setFilteredMarkets([]);
     } finally {
       setLoading(false);
     }
@@ -35,12 +39,15 @@ const MarketsExplorer = () => {
   }, [activeFilter]);
 
   useEffect(() => {
+    // Ensure markets is always an array before filtering
+    const marketsArray = Array.isArray(markets) ? markets : [];
+    
     if (searchQuery.trim() === '') {
-      setFilteredMarkets(markets);
+      setFilteredMarkets(marketsArray);
     } else {
       const query = searchQuery.toLowerCase();
       setFilteredMarkets(
-        markets.filter(
+        marketsArray.filter(
           (m) =>
             m.question?.toLowerCase().includes(query) ||
             m.description?.toLowerCase().includes(query) ||
@@ -112,13 +119,13 @@ const MarketsExplorer = () => {
       <div className="p-3 border-b border-border bg-muted/30 flex items-center gap-4 text-xs">
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{t('totalMarkets')}:</span>
-          <span className="text-foreground font-medium">{filteredMarkets.length}</span>
+          <span className="text-foreground font-medium">{Array.isArray(filteredMarkets) ? filteredMarkets.length : 0}</span>
         </div>
         <div className="flex items-center gap-2">
           <TrendingUp className="w-3 h-3 text-green-500" />
           <span className="text-muted-foreground">{t('activeMarkets')}:</span>
           <span className="text-foreground font-medium">
-            {filteredMarkets.filter((m) => m.active && !m.closed).length}
+            {Array.isArray(filteredMarkets) ? filteredMarkets.filter((m) => m.active && !m.closed).length : 0}
           </span>
         </div>
       </div>
