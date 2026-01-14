@@ -25,6 +25,7 @@ export interface ClobMarket {
   closed?: boolean;
   accepting_orders?: boolean;
   accepting_order_timestamp?: string;
+  enable_order_book?: boolean;
 }
 
 export interface SimplifiedMarket {

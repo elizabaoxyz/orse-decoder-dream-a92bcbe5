@@ -13,16 +13,30 @@ const MarketCard = ({ market }: MarketCardProps) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const yesToken = market.tokens?.find((t) => t.outcome === 'Yes');
-  const noToken = market.tokens?.find((t) => t.outcome === 'No');
+  // Handle both Yes/No markets and named outcome markets
+  const tokens = market.tokens || [];
+  const token1 = tokens[0];
+  const token2 = tokens[1];
+
+  // For Yes/No markets
+  const yesToken = tokens.find((t) => t.outcome?.toLowerCase() === 'yes');
+  const noToken = tokens.find((t) => t.outcome?.toLowerCase() === 'no');
+
+  // Use Yes/No if available, otherwise use first two tokens
+  const primaryToken = yesToken || token1;
+  const secondaryToken = noToken || token2;
+
+  const primaryPrice = primaryToken?.price ?? 0.5;
+  const secondaryPrice = secondaryToken?.price ?? 0.5;
 
   const yesPrice = yesToken?.price ?? 0.5;
   const noPrice = noToken?.price ?? 0.5;
 
-  const formatPrice = (price: number) => `${(price * 100).toFixed(1)}¢`;
+  const formatPrice = (price: number) => `${(price * 100).toFixed(0)}¢`;
   const formatPercent = (price: number) => `${(price * 100).toFixed(0)}%`;
 
-  const isActive = market.active && !market.closed;
+  const isActive = market.active && !market.closed && market.accepting_orders !== false;
+  const isYesNoMarket = !!yesToken;
 
   const getCategoryColor = (category?: string) => {
     switch (category?.toLowerCase()) {
@@ -73,29 +87,35 @@ const MarketCard = ({ market }: MarketCardProps) => {
         {/* Price bars */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-green-500 w-8">YES</span>
+            <span className="text-xs text-green-500 w-12 truncate" title={primaryToken?.outcome}>
+              {isYesNoMarket ? 'YES' : (primaryToken?.outcome?.slice(0, 8) || 'A')}
+            </span>
             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-500 rounded-full transition-all"
-                style={{ width: `${yesPrice * 100}%` }}
+                style={{ width: `${primaryPrice * 100}%` }}
               />
             </div>
             <span className="text-xs text-foreground font-mono w-10 text-right">
-              {formatPercent(yesPrice)}
+              {formatPercent(primaryPrice)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-red-500 w-8">NO</span>
-            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-red-500 rounded-full transition-all"
-                style={{ width: `${noPrice * 100}%` }}
-              />
+          {secondaryToken && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-500 w-12 truncate" title={secondaryToken?.outcome}>
+                {isYesNoMarket ? 'NO' : (secondaryToken?.outcome?.slice(0, 8) || 'B')}
+              </span>
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-red-500 rounded-full transition-all"
+                  style={{ width: `${secondaryPrice * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-foreground font-mono w-10 text-right">
+                {formatPercent(secondaryPrice)}
+              </span>
             </div>
-            <span className="text-xs text-foreground font-mono w-10 text-right">
-              {formatPercent(noPrice)}
-            </span>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -106,8 +126,8 @@ const MarketCard = ({ market }: MarketCardProps) => {
               ? format(new Date(market.end_date_iso), 'MMM d, yyyy')
               : 'No end date'}
           </div>
-          <span className={isActive ? 'text-green-500' : 'text-muted-foreground'}>
-            {isActive ? t('active') : t('closed')}
+          <span className={isActive ? 'text-green-500' : market.closed ? 'text-red-400' : 'text-muted-foreground'}>
+            {market.closed ? t('closed') : isActive ? t('active') : 'Paused'}
           </span>
         </div>
       </div>
@@ -155,15 +175,27 @@ const MarketCard = ({ market }: MarketCardProps) => {
                 {/* Prices */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
-                    <p className="text-xs text-green-500 mb-1">YES</p>
-                    <p className="text-2xl font-bold text-green-500">{formatPrice(yesPrice)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatPercent(yesPrice)}</p>
+                    <p className="text-xs text-green-500 mb-1 truncate" title={primaryToken?.outcome}>
+                      {isYesNoMarket ? 'YES' : primaryToken?.outcome || 'Option A'}
+                    </p>
+                    <p className="text-2xl font-bold text-green-500">{formatPrice(primaryPrice)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatPercent(primaryPrice)}</p>
+                    {primaryToken?.winner && (
+                      <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded mt-2 inline-block">Winner</span>
+                    )}
                   </div>
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-                    <p className="text-xs text-red-500 mb-1">NO</p>
-                    <p className="text-2xl font-bold text-red-500">{formatPrice(noPrice)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatPercent(noPrice)}</p>
-                  </div>
+                  {secondaryToken && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+                      <p className="text-xs text-red-500 mb-1 truncate" title={secondaryToken?.outcome}>
+                        {isYesNoMarket ? 'NO' : secondaryToken?.outcome || 'Option B'}
+                      </p>
+                      <p className="text-2xl font-bold text-red-500">{formatPrice(secondaryPrice)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{formatPercent(secondaryPrice)}</p>
+                      {secondaryToken?.winner && (
+                        <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded mt-2 inline-block">Winner</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Market Info */}
