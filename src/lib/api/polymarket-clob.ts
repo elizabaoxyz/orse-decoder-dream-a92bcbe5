@@ -82,7 +82,25 @@ export const polymarketClobApi = {
       throw new Error(data.error || 'Failed to fetch markets');
     }
 
-    return data.data || [];
+    // Handle different response formats - API might return array directly or wrapped in object
+    const markets = data.data;
+    if (Array.isArray(markets)) {
+      return markets;
+    }
+    // If it's an object with a data/markets property
+    if (markets?.data && Array.isArray(markets.data)) {
+      return markets.data;
+    }
+    if (markets?.markets && Array.isArray(markets.markets)) {
+      return markets.markets;
+    }
+    // If it's a single market object, wrap it
+    if (markets && typeof markets === 'object' && markets.condition_id) {
+      return [markets];
+    }
+    
+    console.warn('Unexpected markets response format:', markets);
+    return [];
   },
 
   // Get simplified markets
