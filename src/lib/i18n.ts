@@ -186,6 +186,25 @@ const resources = {
       no: 'NO',
       unknown: 'Unknown',
       nA: 'N/A',
+      
+      // Markets Explorer
+      marketsExplorer: 'Markets Explorer',
+      marketsExplorerDesc: 'Browse all Polymarket prediction markets in real-time',
+      marketsExplorerShort: 'Prediction Markets',
+      searchMarkets: 'Search markets...',
+      totalMarkets: 'Total Markets',
+      activeMarkets: 'Active Markets',
+      loadingMarkets: 'Loading markets...',
+      noMarketsFound: 'No markets found',
+      refresh: 'Refresh',
+      all: 'All',
+      active: 'Active',
+      closed: 'Closed',
+      status: 'Status',
+      endDate: 'End Date',
+      minOrderSize: 'Min Order Size',
+      description: 'Description',
+      back: 'Back',
     }
   },
   zh: {
@@ -372,6 +391,25 @@ const resources = {
       no: '否',
       unknown: '未知',
       nA: '暂无',
+      
+      // Markets Explorer
+      marketsExplorer: '市场浏览器',
+      marketsExplorerDesc: '实时浏览所有 Polymarket 预测市场',
+      marketsExplorerShort: '预测市场',
+      searchMarkets: '搜索市场...',
+      totalMarkets: '市场总数',
+      activeMarkets: '活跃市场',
+      loadingMarkets: '加载市场中...',
+      noMarketsFound: '未找到市场',
+      refresh: '刷新',
+      all: '全部',
+      active: '活跃',
+      closed: '已结束',
+      status: '状态',
+      endDate: '结束日期',
+      minOrderSize: '最小订单',
+      description: '描述',
+      back: '返回',
     }
   },
   vi: {
@@ -558,6 +596,25 @@ const resources = {
       no: 'KHÔNG',
       unknown: 'Không rõ',
       nA: 'N/A',
+      
+      // Markets Explorer
+      marketsExplorer: 'Khám Phá Thị Trường',
+      marketsExplorerDesc: 'Duyệt tất cả thị trường dự đoán Polymarket theo thời gian thực',
+      marketsExplorerShort: 'Thị Trường Dự Đoán',
+      searchMarkets: 'Tìm kiếm thị trường...',
+      totalMarkets: 'Tổng Thị Trường',
+      activeMarkets: 'Thị Trường Hoạt Động',
+      loadingMarkets: 'Đang tải thị trường...',
+      noMarketsFound: 'Không tìm thấy thị trường',
+      refresh: 'Làm mới',
+      all: 'Tất cả',
+      active: 'Hoạt động',
+      closed: 'Đã đóng',
+      status: 'Trạng thái',
+      endDate: 'Ngày kết thúc',
+      minOrderSize: 'Đơn hàng tối thiểu',
+      description: 'Mô tả',
+      back: 'Quay lại',
     }
   },
   th: {
@@ -744,6 +801,25 @@ const resources = {
       no: 'ไม่',
       unknown: 'ไม่ทราบ',
       nA: 'ไม่มี',
+      
+      // Markets Explorer
+      marketsExplorer: 'สำรวจตลาด',
+      marketsExplorerDesc: 'เรียกดูตลาดพยากรณ์ Polymarket ทั้งหมดแบบเรียลไทม์',
+      marketsExplorerShort: 'ตลาดพยากรณ์',
+      searchMarkets: 'ค้นหาตลาด...',
+      totalMarkets: 'ตลาดทั้งหมด',
+      activeMarkets: 'ตลาดที่ใช้งาน',
+      loadingMarkets: 'กำลังโหลดตลาด...',
+      noMarketsFound: 'ไม่พบตลาด',
+      refresh: 'รีเฟรช',
+      all: 'ทั้งหมด',
+      active: 'ใช้งาน',
+      closed: 'ปิด',
+      status: 'สถานะ',
+      endDate: 'วันสิ้นสุด',
+      minOrderSize: 'ขนาดคำสั่งขั้นต่ำ',
+      description: 'คำอธิบาย',
+      back: 'กลับ',
     }
   }
 };
