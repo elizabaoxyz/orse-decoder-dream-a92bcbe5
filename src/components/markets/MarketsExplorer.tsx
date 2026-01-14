@@ -19,9 +19,28 @@ const MarketsExplorer = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await polymarketClobApi.getMarkets(100, 0, activeFilter === 'active');
+      const data = await polymarketClobApi.getMarkets(500, 0, true);
       // Ensure we always have an array
-      const marketsArray = Array.isArray(data) ? data : [];
+      let marketsArray = Array.isArray(data) ? data : [];
+      
+      // Filter based on active filter selection
+      if (activeFilter === 'active') {
+        // Only show markets that are truly active (not closed, accepting orders)
+        marketsArray = marketsArray.filter(m => 
+          m.active && !m.closed && m.accepting_orders !== false
+        );
+      } else if (activeFilter === 'closed') {
+        marketsArray = marketsArray.filter(m => m.closed);
+      }
+      // 'all' shows everything
+      
+      // Sort by end date (upcoming first)
+      marketsArray.sort((a, b) => {
+        const dateA = a.end_date_iso ? new Date(a.end_date_iso).getTime() : 0;
+        const dateB = b.end_date_iso ? new Date(b.end_date_iso).getTime() : 0;
+        return dateB - dateA;
+      });
+      
       setMarkets(marketsArray);
       setFilteredMarkets(marketsArray);
     } catch (err) {
