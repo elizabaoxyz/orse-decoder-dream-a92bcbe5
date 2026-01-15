@@ -232,12 +232,42 @@ async function revokeBuilderApiKey(): Promise<{ success: boolean }> {
   return { success: true };
 }
 
-// Get markets with builder attribution info
-async function getMarketsWithBuilder(limit = 100, offset = 0): Promise<unknown[]> {
-  const url = new URL(`${CLOB_API_URL}/markets`);
+// Get markets - use Gamma API for better filtering of active markets
+async function getMarketsWithBuilder(limit = 100, offset = 0): Promise<unknown> {
+  // Use Gamma API for better market discovery
+  const GAMMA_API_URL = "https://gamma-api.polymarket.com";
+  const url = new URL(`${GAMMA_API_URL}/markets`);
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
   url.searchParams.set("active", "true");
+  url.searchParams.set("closed", "false");
+  url.searchParams.set("order", "volume24hr"); // Sort by volume for popular markets
+  url.searchParams.set("ascending", "false"); // Most active first
+
+  console.log("Fetching markets from Gamma API:", url.toString());
+
+  const response = await fetch(url.toString(), {
+    headers: { "Accept": "application/json" },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Markets fetch error:", response.status, errorText);
+    // Fall back to CLOB API if Gamma fails
+    console.log("Falling back to CLOB API...");
+    return await getMarketsFromClob(limit, offset);
+  }
+
+  const data = await response.json();
+  console.log("Fetched markets from Gamma:", Array.isArray(data) ? data.length : 'object response');
+  return data;
+}
+
+// Fallback to CLOB API for markets
+async function getMarketsFromClob(limit = 100, offset = 0): Promise<unknown> {
+  const url = new URL(`${CLOB_API_URL}/markets`);
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
 
   const response = await fetch(url.toString(), {
     headers: { "Accept": "application/json" },

@@ -26,12 +26,12 @@ import MarketBrowser from './MarketBrowser';
 import OrderBookView from './OrderBookView';
 
 interface SelectedMarket {
-  condition_id: string;
+  id: string;
   question: string;
   tokens: Array<{
     token_id: string;
     outcome: string;
-    price?: number;
+    price: number;
   }>;
 }
 
