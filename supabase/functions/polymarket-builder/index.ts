@@ -76,11 +76,25 @@ async function generateL2Signature(
 ): Promise<string> {
   const message = timestamp + method + requestPath + body;
   const encoder = new TextEncoder();
-  const keyData = base64Decode(secret);
+  
+  // Try to decode as base64, if it fails use the secret as-is
+  let keyData: Uint8Array;
+  try {
+    const decoded = base64Decode(secret);
+    keyData = new Uint8Array(decoded);
+  } catch {
+    // If not base64, use the raw secret string
+    keyData = encoder.encode(secret);
+  }
+  
+  // Create a new ArrayBuffer and copy data
+  const keyBuffer = new ArrayBuffer(keyData.length);
+  const keyView = new Uint8Array(keyBuffer);
+  keyView.set(keyData);
   
   const key = await crypto.subtle.importKey(
     "raw",
-    new Uint8Array(keyData).buffer,
+    keyBuffer as ArrayBuffer,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
@@ -103,6 +117,7 @@ async function createBuilderAuthHeaders(
     "POLY-ADDRESS": BUILDER_API_KEY,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
+    "POLY-API-KEY": BUILDER_API_KEY,
     "POLY-PASSPHRASE": BUILDER_PASSPHRASE,
     "Content-Type": "application/json",
     "Accept": "application/json",
