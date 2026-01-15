@@ -246,8 +246,26 @@ const BuilderLeaderboard = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     {/* Rank */}
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-background/50">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-background/50 shrink-0">
                       {getRankIcon(entry.rank)}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted shrink-0 border border-border">
+                      {entry.logo ? (
+                        <img 
+                          src={entry.logo} 
+                          alt={entry.name} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full flex items-center justify-center text-lg font-bold text-primary ${entry.logo ? 'hidden' : ''}`}>
+                        {entry.name.charAt(0).toUpperCase()}
+                      </div>
                     </div>
                     
                     {/* Builder Info */}
