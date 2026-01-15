@@ -189,15 +189,15 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
   };
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'No end date';
+    if (!dateStr) return t('noEndDate');
     const date = new Date(dateStr);
     const now = new Date();
     const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return 'Ended';
-    if (diffDays === 0) return 'Ends today';
-    if (diffDays === 1) return 'Ends tomorrow';
-    if (diffDays <= 7) return `${diffDays} days left`;
+    if (diffDays < 0) return t('ended');
+    if (diffDays === 0) return t('endsToday');
+    if (diffDays === 1) return t('endsTomorrow');
+    if (diffDays <= 7) return `${diffDays} ${t('daysLeft')}`;
     
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
@@ -212,7 +212,7 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search markets..."
+              placeholder={t('searchMarkets')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -225,7 +225,7 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
             className="gap-1"
           >
             <Filter className="w-3 h-3" />
-            Active
+            {t('active')}
           </Button>
           <Button
             variant="outline"
@@ -239,11 +239,11 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <BarChart3 className="w-3 h-3" />
-            {filteredMarkets.length} markets
+            {filteredMarkets.length} {t('markets')}
           </span>
           <span className="flex items-center gap-1 text-green-500">
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            {activeCount} accepting orders
+            {activeCount} {t('acceptingOrders')}
           </span>
         </div>
       </div>
@@ -267,8 +267,8 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
           ) : filteredMarkets.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No markets found</p>
-              <p className="text-xs mt-1">Try adjusting your search or filters</p>
+              <p>{t('noMarketsFound')}</p>
+              <p className="text-xs mt-1">{t('adjustFilters')}</p>
             </div>
           ) : (
             filteredMarkets.slice(0, 50).map((market) => {
@@ -294,15 +294,15 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
                           {hasWinner ? (
                             <Badge variant="secondary" className="text-xs gap-1 bg-amber-500/20 text-amber-500">
                               <Trophy className="w-3 h-3" />
-                              Resolved
+                              {t('resolved')}
                             </Badge>
                           ) : market.acceptingOrders ? (
                             <Badge variant="default" className="text-xs">
-                              Active
+                              {t('active')}
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-xs">
-                              Closed
+                              {t('closed')}
                             </Badge>
                           )}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -356,7 +356,7 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
                     {isSelected && (
                       <div className="mt-3 flex items-center justify-between">
                         <div className="text-xs text-muted-foreground">
-                          Min order: ${market.minimumOrderSize || 'N/A'} | Tick: {market.minimumTickSize || 'N/A'}
+                          {t('minOrder')}: ${market.minimumOrderSize || t('nA')} | {t('tick')}: {market.minimumTickSize || t('nA')}
                         </div>
                         <a
                           href={`https://polymarket.com/event/${market.slug || market.id}`}
@@ -365,7 +365,7 @@ const MarketBrowser = ({ onSelectMarket }: MarketBrowserProps) => {
                           className="flex items-center gap-1 text-xs text-primary hover:underline"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          View on Polymarket
+                          {t('viewOnPolymarket')}
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
