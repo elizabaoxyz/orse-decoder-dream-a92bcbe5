@@ -166,12 +166,12 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-hide bg-card border-border">
-        <DialogHeader className="pb-4 border-b border-border">
-          <div className="flex items-center gap-4">
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[85vh] overflow-y-auto scrollbar-hide bg-card border-border p-4 md:p-6">
+        <DialogHeader className="pb-3 md:pb-4 border-b border-border">
+          <div className="flex items-center gap-3 md:gap-4">
             {/* Avatar */}
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-muted border-2 border-border">
+            <div className="relative flex-shrink-0">
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-muted border-2 border-border">
                 {builder.logo ? (
                   <img 
                     src={builder.logo} 
@@ -182,28 +182,28 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary bg-primary/10">
+                  <div className="w-full h-full flex items-center justify-center text-xl md:text-2xl font-bold text-primary bg-primary/10">
                     {builder.name.charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               {builder.verified && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+                  <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 text-white" />
                 </div>
               )}
             </div>
 
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <DialogTitle className="text-xl font-bold">{builder.name}</DialogTitle>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <DialogTitle className="text-base md:text-xl font-bold truncate">{builder.name}</DialogTitle>
                 <Badge 
-                  className={`bg-gradient-to-r ${getRankColor(builder.rank)} text-black font-bold`}
+                  className={`bg-gradient-to-r ${getRankColor(builder.rank)} text-black font-bold text-xs`}
                 >
                   #{builder.rank}
                 </Badge>
                 {builder.verified && (
-                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-400">
+                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 text-xs hidden sm:inline-flex">
                     Verified
                   </Badge>
                 )}
@@ -212,7 +212,7 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
               {builder.address && (
                 <button 
                   onClick={copyAddress}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mt-1 transition-colors"
+                  className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-muted-foreground hover:text-foreground mt-1 transition-colors"
                 >
                   <Wallet className="w-3 h-3" />
                   <span className="font-mono">{builder.address.slice(0, 6)}...{builder.address.slice(-4)}</span>
@@ -249,39 +249,39 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
             </div>
 
             {/* Period Cards - Real Data Only */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 md:gap-4">
               {periodData.map((data, index) => (
                 <div 
                   key={data.period}
-                  className={`p-4 rounded-xl bg-gradient-to-br border ${getPeriodColor(data.period)} ${!data.found ? 'opacity-50' : ''}`}
+                  className={`p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br border ${getPeriodColor(data.period)} ${!data.found ? 'opacity-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getPeriodIconColor(data.period)}`}>
-                      {data.period === 'DAY' && <Clock className="w-4 h-4" />}
-                      {data.period === 'WEEK' && <Calendar className="w-4 h-4" />}
-                      {data.period === 'MONTH' && <TrendingUp className="w-4 h-4" />}
-                      {data.period === 'ALL' && <DollarSign className="w-4 h-4" />}
+                  <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
+                    <div className={`w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center ${getPeriodIconColor(data.period)}`}>
+                      {data.period === 'DAY' && <Clock className="w-3 h-3 md:w-4 md:h-4" />}
+                      {data.period === 'WEEK' && <Calendar className="w-3 h-3 md:w-4 md:h-4" />}
+                      {data.period === 'MONTH' && <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />}
+                      {data.period === 'ALL' && <DollarSign className="w-3 h-3 md:w-4 md:h-4" />}
                     </div>
-                    <span className="text-sm font-medium text-foreground">{data.label}</span>
+                    <span className="text-xs md:text-sm font-medium text-foreground">{data.label}</span>
                     {data.found && data.rank > 0 && (
-                      <Badge variant="outline" className="ml-auto text-xs">
+                      <Badge variant="outline" className="ml-auto text-[10px] md:text-xs px-1.5 py-0">
                         #{data.rank}
                       </Badge>
                     )}
                   </div>
                   
                   {data.found ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1 md:space-y-2">
                       <div>
                         <AnimatedNumber 
                           value={data.volume}
                           duration={1200}
                           delay={index * 100}
                           formatter={formatVolume}
-                          className="text-xl font-bold text-foreground block"
+                          className="text-base md:text-xl font-bold text-foreground block"
                         />
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" />
+                        <p className="text-[10px] md:text-xs text-muted-foreground flex items-center gap-1">
+                          <DollarSign className="w-2.5 h-2.5 md:w-3 md:h-3" />
                           Volume
                         </p>
                       </div>
@@ -291,17 +291,17 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
                           duration={1000}
                           delay={index * 100 + 100}
                           formatter={formatUsers}
-                          className="text-lg font-semibold text-foreground block"
+                          className="text-sm md:text-lg font-semibold text-foreground block"
                         />
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Users className="w-3 h-3" />
+                        <p className="text-[10px] md:text-xs text-muted-foreground flex items-center gap-1">
+                          <Users className="w-2.5 h-2.5 md:w-3 md:h-3" />
                           Active Users
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Not ranked in this period
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      Not ranked
                     </p>
                   )}
                 </div>
