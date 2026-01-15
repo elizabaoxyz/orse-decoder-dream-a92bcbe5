@@ -209,7 +209,7 @@ const BuilderLeaderboard = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 pb-8">
             {/* Stats Summary */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <Card className="bg-card/50 border-border">

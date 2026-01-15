@@ -163,7 +163,7 @@ const BuilderDashboard = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col">
         <div className="px-4 border-b border-border">
           <TabsList className="h-10 bg-transparent">
             <TabsTrigger value="overview" className="gap-1.5 data-[state=active]:bg-muted">
@@ -373,17 +373,17 @@ const BuilderDashboard = () => {
         </TabsContent>
 
         {/* Leaderboard Tab */}
-        <TabsContent value="leaderboard" className="flex-1 m-0 overflow-hidden">
+        <TabsContent value="leaderboard" className="flex-1 min-h-0 m-0 overflow-hidden">
           <BuilderLeaderboard />
         </TabsContent>
 
         {/* Markets Tab */}
-        <TabsContent value="markets" className="flex-1 m-0 overflow-hidden">
+        <TabsContent value="markets" className="flex-1 min-h-0 m-0 overflow-hidden">
           <MarketBrowser onSelectMarket={handleMarketSelect} />
         </TabsContent>
 
         {/* Order Book Tab */}
-        <TabsContent value="orderbook" className="flex-1 m-0 overflow-hidden">
+        <TabsContent value="orderbook" className="flex-1 min-h-0 m-0 overflow-hidden">
           <div className="h-full flex">
             {/* Token Selector Sidebar */}
             <div className="w-48 border-r border-border p-3 space-y-2">
