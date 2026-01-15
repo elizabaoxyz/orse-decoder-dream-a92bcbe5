@@ -19,18 +19,20 @@ const MarketsExplorer = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await polymarketClobApi.getMarkets(500, 0, true);
+      // For 'closed' filter, we need to fetch all markets; otherwise fetch active ones
+      const fetchActive = activeFilter !== 'closed';
+      const data = await polymarketClobApi.getMarkets(500, 0, fetchActive);
       // Ensure we always have an array
       let marketsArray = Array.isArray(data) ? data : [];
       
-      // Filter based on active filter selection
+      console.log('Fetched markets:', marketsArray.length, 'sample:', marketsArray[0]);
+      
+      // Filter based on active filter selection - use less strict criteria
       if (activeFilter === 'active') {
-        // Only show markets that are truly active (not closed, accepting orders)
-        marketsArray = marketsArray.filter(m => 
-          m.active && !m.closed && m.accepting_orders !== false
-        );
+        // Show markets that are not explicitly closed
+        marketsArray = marketsArray.filter(m => !m.closed);
       } else if (activeFilter === 'closed') {
-        marketsArray = marketsArray.filter(m => m.closed);
+        marketsArray = marketsArray.filter(m => m.closed === true);
       }
       // 'all' shows everything
       
