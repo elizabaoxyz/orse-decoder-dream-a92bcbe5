@@ -12,13 +12,15 @@ import {
   Clock,
   BarChart3,
   Layers,
-  Search
+  Search,
+  AlertCircle
 } from 'lucide-react';
 import { polymarketBuilderApi, BuilderTrade, BuilderStats, HealthCheckResponse } from '@/lib/api/polymarket-builder';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import MarketBrowser from './MarketBrowser';
 import OrderBookView from './OrderBookView';
@@ -36,10 +38,17 @@ interface SelectedMarket {
 const BuilderDashboard = () => {
   const { t } = useTranslation();
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
-  const [stats, setStats] = useState<BuilderStats | null>(null);
+  const [stats, setStats] = useState<BuilderStats>({
+    totalTrades: 0,
+    totalVolumeUsdc: '0.00',
+    totalFeesUsdc: '0.00',
+    uniqueMarkets: 0,
+    uniqueUsers: 0
+  });
   const [trades, setTrades] = useState<BuilderTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authPending, setAuthPending] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedMarket, setSelectedMarket] = useState<SelectedMarket | null>(null);
   const [selectedTokenId, setSelectedTokenId] = useState<string>('');
@@ -47,48 +56,48 @@ const BuilderDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
+    setAuthPending(false);
     
     try {
-      const [healthData, tradesData] = await Promise.all([
-        polymarketBuilderApi.healthCheck(),
-        polymarketBuilderApi.getBuilderTrades({ limit: 50 })
-      ]);
-
+      // Fetch health check first
+      const healthData = await polymarketBuilderApi.healthCheck();
       setHealth(healthData);
-      setTrades(tradesData.trades || []);
-
-      // Calculate stats from trades if we have any
-      if (tradesData.trades && tradesData.trades.length > 0) {
-        const uniqueMarkets = new Set(tradesData.trades.map(t => t.market));
-        const uniqueUsers = new Set(tradesData.trades.map(t => t.owner));
-        let totalVolume = 0;
-        let totalFees = 0;
+      
+      // Try to fetch trades
+      try {
+        const tradesData = await polymarketBuilderApi.getBuilderTrades({ limit: 50 });
+        setTrades(tradesData.trades || []);
         
-        for (const trade of tradesData.trades) {
-          totalVolume += parseFloat(trade.sizeUsdc || '0');
-          totalFees += parseFloat(trade.feeUsdc || '0');
-        }
+        // Calculate stats from trades
+        if (tradesData.trades && tradesData.trades.length > 0) {
+          const uniqueMarkets = new Set(tradesData.trades.map(t => t.market));
+          const uniqueUsers = new Set(tradesData.trades.map(t => t.owner));
+          let totalVolume = 0;
+          let totalFees = 0;
+          
+          for (const trade of tradesData.trades) {
+            totalVolume += parseFloat(trade.sizeUsdc || '0');
+            totalFees += parseFloat(trade.feeUsdc || '0');
+          }
 
-        setStats({
-          totalTrades: tradesData.trades.length,
-          totalVolumeUsdc: totalVolume.toFixed(2),
-          totalFeesUsdc: totalFees.toFixed(2),
-          uniqueMarkets: uniqueMarkets.size,
-          uniqueUsers: uniqueUsers.size
-        });
-      } else {
-        // Show zero stats - this is expected for new builder accounts awaiting approval
-        setStats({
-          totalTrades: 0,
-          totalVolumeUsdc: '0.00',
-          totalFeesUsdc: '0.00',
-          uniqueMarkets: 0,
-          uniqueUsers: 0
-        });
+          setStats({
+            totalTrades: tradesData.trades.length,
+            totalVolumeUsdc: totalVolume.toFixed(2),
+            totalFeesUsdc: totalFees.toFixed(2),
+            uniqueMarkets: uniqueMarkets.size,
+            uniqueUsers: uniqueUsers.size
+          });
+        } else {
+          // No trades - could be auth pending or just no activity
+          setAuthPending(true);
+        }
+      } catch (tradeErr) {
+        console.log('Trades fetch issue:', tradeErr);
+        setAuthPending(true);
       }
     } catch (err) {
       console.error('Failed to fetch builder data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(err instanceof Error ? err.message : 'Failed to connect to API');
     } finally {
       setLoading(false);
     }
@@ -100,7 +109,6 @@ const BuilderDashboard = () => {
 
   const handleMarketSelect = (market: SelectedMarket) => {
     setSelectedMarket(market);
-    // Auto-select first token (usually "Yes")
     if (market.tokens?.length > 0) {
       setSelectedTokenId(market.tokens[0].token_id);
     }
@@ -173,7 +181,36 @@ const BuilderDashboard = () => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="flex-1 overflow-y-auto m-0 p-4 space-y-4">
-          {error ? (
+          {loading ? (
+            // Loading skeleton
+            <div className="space-y-4">
+              <Card className="bg-card/50 border-border">
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-5 w-40" />
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i}>
+                        <Skeleton className="h-4 w-20 mb-2" />
+                        <Skeleton className="h-5 w-24" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {[...Array(5)].map((_, i) => (
+                  <Card key={i} className="bg-card/50 border-border">
+                    <CardContent className="pt-4">
+                      <Skeleton className="h-4 w-20 mb-2" />
+                      <Skeleton className="h-8 w-16" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
               <XCircle className="w-12 h-12 text-destructive mb-4" />
               <p className="text-destructive font-medium mb-2">Connection Error</p>
@@ -184,6 +221,24 @@ const BuilderDashboard = () => {
             </div>
           ) : (
             <>
+              {/* Auth Pending Notice */}
+              {authPending && (
+                <Card className="bg-amber-500/10 border-amber-500/30">
+                  <CardContent className="py-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-500">Builder API Pending Approval</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Your Builder API credentials are configured but may be awaiting approval from Polymarket. 
+                          Once approved, your trade data will appear automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Connection Status Card */}
               {health && (
                 <Card className="bg-card/50 border-border">
@@ -221,55 +276,53 @@ const BuilderDashboard = () => {
               )}
 
               {/* Stats Grid */}
-              {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <Card className="bg-card/50 border-border">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                        <Activity className="w-3 h-3" />
-                        Total Trades
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{stats.totalTrades}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-card/50 border-border">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                        <DollarSign className="w-3 h-3" />
-                        Volume (USDC)
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{formatUsd(stats.totalVolumeUsdc)}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-card/50 border-border">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                        <TrendingUp className="w-3 h-3" />
-                        Fees Earned
-                      </div>
-                      <p className="text-2xl font-bold text-green-500">{formatUsd(stats.totalFeesUsdc)}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-card/50 border-border">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                        <BarChart3 className="w-3 h-3" />
-                        Markets
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{stats.uniqueMarkets}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-card/50 border-border">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                        <Users className="w-3 h-3" />
-                        Users
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{stats.uniqueUsers}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <Card className="bg-card/50 border-border">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                      <Activity className="w-3 h-3" />
+                      Total Trades
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{stats.totalTrades}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card/50 border-border">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                      <DollarSign className="w-3 h-3" />
+                      Volume (USDC)
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{formatUsd(stats.totalVolumeUsdc)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card/50 border-border">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                      <TrendingUp className="w-3 h-3" />
+                      Fees Earned
+                    </div>
+                    <p className="text-2xl font-bold text-green-500">{formatUsd(stats.totalFeesUsdc)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card/50 border-border">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                      <BarChart3 className="w-3 h-3" />
+                      Markets
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{stats.uniqueMarkets}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card/50 border-border">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                      <Users className="w-3 h-3" />
+                      Users
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{stats.uniqueUsers}</p>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Recent Trades */}
               <Card className="bg-card/50 border-border">
@@ -277,15 +330,16 @@ const BuilderDashboard = () => {
                   <CardTitle className="text-sm font-medium">Recent Builder Trades</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : trades.length === 0 ? (
+                  {trades.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
                       <p>No trades yet</p>
-                      <p className="text-xs mt-1">Trades attributed to your builder will appear here</p>
+                      <p className="text-xs mt-1">
+                        {authPending 
+                          ? 'Waiting for Polymarket to approve your Builder API access'
+                          : 'Trades attributed to your builder will appear here'
+                        }
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
