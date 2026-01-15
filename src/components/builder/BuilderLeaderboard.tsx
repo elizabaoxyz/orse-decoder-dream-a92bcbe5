@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AnimatedNumber } from '@/hooks/useAnimatedCounter';
+import BuilderDetailModal from './BuilderDetailModal';
 
 interface LeaderboardEntry {
   rank: number;
@@ -45,6 +46,13 @@ const BuilderLeaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('WEEK');
+  const [selectedBuilder, setSelectedBuilder] = useState<LeaderboardEntry | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleBuilderClick = (builder: LeaderboardEntry) => {
+    setSelectedBuilder(builder);
+    setModalOpen(true);
+  };
 
   const fetchLeaderboard = async () => {
     setLoading(true);
@@ -304,15 +312,15 @@ const BuilderLeaderboard = () => {
                 <div className="grid grid-cols-3 gap-3 mb-6">
                   {/* 2nd Place */}
                   <div className="order-1 pt-6">
-                    <TopBuilderCard entry={leaderboard[1]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} />
+                    <TopBuilderCard entry={leaderboard[1]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} onClick={() => handleBuilderClick(leaderboard[1])} />
                   </div>
                   {/* 1st Place */}
                   <div className="order-2">
-                    <TopBuilderCard entry={leaderboard[0]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} isChampion />
+                    <TopBuilderCard entry={leaderboard[0]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} isChampion onClick={() => handleBuilderClick(leaderboard[0])} />
                   </div>
                   {/* 3rd Place */}
                   <div className="order-3 pt-8">
-                    <TopBuilderCard entry={leaderboard[2]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} />
+                    <TopBuilderCard entry={leaderboard[2]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} onClick={() => handleBuilderClick(leaderboard[2])} />
                   </div>
                 </div>
               )}
@@ -325,7 +333,8 @@ const BuilderLeaderboard = () => {
                 return (
                   <div 
                     key={entry.rank}
-                    className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${style.bg} ${style.border} ${style.glow}`}
+                    onClick={() => handleBuilderClick(entry)}
+                    className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] cursor-pointer ${style.bg} ${style.border} ${style.glow}`}
                   >
                     {/* Rank */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${style.badge}`}>
@@ -411,6 +420,13 @@ const BuilderLeaderboard = () => {
           )}
         </div>
       </div>
+
+      <BuilderDetailModal
+        builder={selectedBuilder}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        timePeriod={timePeriod}
+      />
     </div>
   );
 };
@@ -440,13 +456,15 @@ const TopBuilderCard = ({
   maxVolume, 
   formatVolume, 
   formatUsers,
-  isChampion = false 
+  isChampion = false,
+  onClick
 }: { 
   entry: LeaderboardEntry; 
   maxVolume: number;
   formatVolume: (v: number) => string;
   formatUsers: (v: number) => string;
   isChampion?: boolean;
+  onClick?: () => void;
 }) => {
   const volumePercent = (entry.totalVolume / maxVolume) * 100;
   
@@ -477,7 +495,10 @@ const TopBuilderCard = ({
   const colors = rankColors[entry.rank as 1 | 2 | 3] || rankColors[3];
 
   return (
-    <div className={`relative rounded-2xl border p-4 text-center transition-all hover:scale-105 ${colors.bg} ${colors.border} ${colors.glow}`}>
+    <div 
+      onClick={onClick}
+      className={`relative rounded-2xl border p-4 text-center transition-all hover:scale-105 cursor-pointer ${colors.bg} ${colors.border} ${colors.glow}`}
+    >
       {/* Crown for #1 */}
       {isChampion && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
