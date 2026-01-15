@@ -13,7 +13,8 @@ import {
   BarChart3,
   Layers,
   Search,
-  AlertCircle
+  AlertCircle,
+  Trophy
 } from 'lucide-react';
 import { polymarketBuilderApi, BuilderTrade, BuilderStats, HealthCheckResponse } from '@/lib/api/polymarket-builder';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import MarketBrowser from './MarketBrowser';
 import OrderBookView from './OrderBookView';
+import BuilderLeaderboard from './BuilderLeaderboard';
 
 interface SelectedMarket {
   id: string;
@@ -167,6 +169,10 @@ const BuilderDashboard = () => {
             <TabsTrigger value="overview" className="gap-1.5 data-[state=active]:bg-muted">
               <Activity className="w-3.5 h-3.5" />
               {t('overview')}
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="gap-1.5 data-[state=active]:bg-muted">
+              <Trophy className="w-3.5 h-3.5" />
+              {t('leaderboard')}
             </TabsTrigger>
             <TabsTrigger value="markets" className="gap-1.5 data-[state=active]:bg-muted">
               <Search className="w-3.5 h-3.5" />
@@ -364,6 +370,11 @@ const BuilderDashboard = () => {
               </Card>
             </>
           )}
+        </TabsContent>
+
+        {/* Leaderboard Tab */}
+        <TabsContent value="leaderboard" className="flex-1 m-0 overflow-hidden">
+          <BuilderLeaderboard />
         </TabsContent>
 
         {/* Markets Tab */}

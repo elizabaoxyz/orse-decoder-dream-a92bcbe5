@@ -252,6 +252,17 @@ const resources = {
       price: 'Price',
       size: 'Size',
       total: 'Total',
+      
+      // Leaderboard
+      leaderboard: 'Leaderboard',
+      topBuilders: 'Top Builders by Volume',
+      builders: 'Builders',
+      activeUsers: 'Active Users',
+      today: 'Today',
+      thisWeek: 'This Week',
+      thisMonth: 'This Month',
+      allTime: 'All Time',
+      viewOfficialLeaderboard: 'View Official Leaderboard',
     }
   },
   zh: {
@@ -504,6 +515,17 @@ const resources = {
       price: '价格',
       size: '数量',
       total: '累计',
+      
+      // Leaderboard
+      leaderboard: '排行榜',
+      topBuilders: '交易量排名',
+      builders: '开发者',
+      activeUsers: '活跃用户',
+      today: '今天',
+      thisWeek: '本周',
+      thisMonth: '本月',
+      allTime: '全部',
+      viewOfficialLeaderboard: '查看官方排行榜',
     }
   },
   vi: {
@@ -756,6 +778,17 @@ const resources = {
       price: 'Giá',
       size: 'Khối lượng',
       total: 'Tổng',
+      
+      // Leaderboard
+      leaderboard: 'Bảng xếp hạng',
+      topBuilders: 'Top Builders theo khối lượng',
+      builders: 'Builders',
+      activeUsers: 'Người dùng hoạt động',
+      today: 'Hôm nay',
+      thisWeek: 'Tuần này',
+      thisMonth: 'Tháng này',
+      allTime: 'Tất cả',
+      viewOfficialLeaderboard: 'Xem bảng xếp hạng chính thức',
     }
   },
   th: {
@@ -1008,6 +1041,17 @@ const resources = {
       price: 'ราคา',
       size: 'ขนาด',
       total: 'รวม',
+      
+      // Leaderboard
+      leaderboard: 'อันดับ',
+      topBuilders: 'Top Builders ตามปริมาณ',
+      builders: 'Builders',
+      activeUsers: 'ผู้ใช้งานที่ใช้งานอยู่',
+      today: 'วันนี้',
+      thisWeek: 'สัปดาห์นี้',
+      thisMonth: 'เดือนนี้',
+      allTime: 'ทั้งหมด',
+      viewOfficialLeaderboard: 'ดูอันดับอย่างเป็นทางการ',
     }
   }
 };
