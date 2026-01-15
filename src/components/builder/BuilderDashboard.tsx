@@ -221,23 +221,6 @@ const BuilderDashboard = () => {
             </div>
           ) : (
             <>
-              {/* Auth Pending Notice */}
-              {authPending && (
-                <Card className="bg-amber-500/10 border-amber-500/30">
-                  <CardContent className="py-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-amber-500">Builder API Pending Approval</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Your Builder API credentials are configured but may be awaiting approval from Polymarket. 
-                          Once approved, your trade data will appear automatically.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Connection Status Card */}
               {health && (
