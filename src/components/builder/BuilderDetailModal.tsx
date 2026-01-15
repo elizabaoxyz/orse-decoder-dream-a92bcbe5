@@ -6,36 +6,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ExternalLink,
   CheckCircle2,
-  TrendingUp,
-  TrendingDown,
   Users,
   DollarSign,
-  BarChart3,
-  Activity,
   Calendar,
   Wallet,
   Copy,
   Check,
+  Clock,
+  TrendingUp,
 } from 'lucide-react';
 import { AnimatedNumber } from '@/hooks/useAnimatedCounter';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from 'recharts';
 
 interface BuilderEntry {
   rank: number;
@@ -54,135 +40,77 @@ interface BuilderDetailModalProps {
   timePeriod: string;
 }
 
-interface BuilderHistoryData {
-  date: string;
+interface PeriodData {
+  period: string;
+  label: string;
   volume: number;
   users: number;
-}
-
-interface BuilderDetailData {
-  weeklyVolume: number;
-  monthlyVolume: number;
-  allTimeVolume: number;
-  weeklyUsers: number;
-  monthlyUsers: number;
-  allTimeUsers: number;
-  volumeChange: number;
-  usersChange: number;
-  avgTradeSize: number;
-  topMarkets: { name: string; volume: number }[];
-  history: BuilderHistoryData[];
+  rank: number;
+  found: boolean;
 }
 
 const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: BuilderDetailModalProps) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [detailData, setDetailData] = useState<BuilderDetailData | null>(null);
+  const [periodData, setPeriodData] = useState<PeriodData[]>([]);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (open && builder) {
       fetchBuilderDetails();
     }
-  }, [open, builder, timePeriod]);
+  }, [open, builder]);
 
   const fetchBuilderDetails = async () => {
     if (!builder) return;
     
     setLoading(true);
     try {
-      // Fetch real data from multiple time periods
-      const periods = ['DAY', 'WEEK', 'MONTH', 'ALL'];
+      // Fetch real data from all time periods
+      const periods = [
+        { key: 'DAY', label: 'Today' },
+        { key: 'WEEK', label: 'This Week' },
+        { key: 'MONTH', label: 'This Month' },
+        { key: 'ALL', label: 'All Time' },
+      ];
+
       const responses = await Promise.all(
-        periods.map(period =>
-          fetch(`https://data-api.polymarket.com/v1/builders/leaderboard?timePeriod=${period}&limit=100`)
-            .then(res => res.json())
-        )
+        periods.map(async (period) => {
+          try {
+            const res = await fetch(
+              `https://data-api.polymarket.com/v1/builders/leaderboard?timePeriod=${period.key}&limit=100`
+            );
+            if (!res.ok) throw new Error('Failed to fetch');
+            return { period: period.key, label: period.label, data: await res.json() };
+          } catch {
+            return { period: period.key, label: period.label, data: [] };
+          }
+        })
       );
 
       // Find this builder in each period's data
       const findBuilder = (data: any[]) => 
         data?.find((b: any) => 
           (b.builder || b.name) === builder.name || 
-          b.address === builder.address
+          (b.address && builder.address && b.address.toLowerCase() === builder.address.toLowerCase())
         );
 
-      const dayData = findBuilder(responses[0]);
-      const weekData = findBuilder(responses[1]);
-      const monthData = findBuilder(responses[2]);
-      const allData = findBuilder(responses[3]);
-
-      // Generate historical data based on real volume trends
-      const baseVolume = builder.totalVolume;
-      const history: BuilderHistoryData[] = [];
-      const days = 14;
-      
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        // Create realistic variance based on position
-        const variance = 0.15 + Math.random() * 0.2;
-        const trend = 1 - (i / days) * 0.3; // Slight upward trend
-        const dailyVolume = (baseVolume / days) * trend * (1 + (Math.random() - 0.5) * variance);
-        const dailyUsers = Math.floor(builder.activeUsers * (0.05 + Math.random() * 0.1) * trend);
-
-        history.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          volume: Math.round(dailyVolume),
-          users: Math.max(1, dailyUsers),
-        });
-      }
-
-      // Calculate changes
-      const weeklyVol = weekData?.volume || weekData?.totalVolume || builder.totalVolume;
-      const monthlyVol = monthData?.volume || monthData?.totalVolume || builder.totalVolume * 4;
-      const allTimeVol = allData?.volume || allData?.totalVolume || builder.totalVolume * 12;
-
-      const weeklyUsers = weekData?.activeUsers || weekData?.users || builder.activeUsers;
-      const monthlyUsers = monthData?.activeUsers || monthData?.users || builder.activeUsers * 2;
-      const allTimeUsers = allData?.activeUsers || allData?.users || builder.activeUsers * 5;
-
-      // Calculate percentage changes
-      const prevWeekEstimate = weeklyVol * 0.85;
-      const volumeChange = ((weeklyVol - prevWeekEstimate) / prevWeekEstimate) * 100;
-      const usersChange = ((builder.activeUsers - builder.activeUsers * 0.9) / (builder.activeUsers * 0.9)) * 100;
-
-      setDetailData({
-        weeklyVolume: parseFloat(String(weeklyVol)),
-        monthlyVolume: parseFloat(String(monthlyVol)),
-        allTimeVolume: parseFloat(String(allTimeVol)),
-        weeklyUsers,
-        monthlyUsers,
-        allTimeUsers,
-        volumeChange: Math.round(volumeChange * 10) / 10,
-        usersChange: Math.round(usersChange * 10) / 10,
-        avgTradeSize: builder.totalVolume / Math.max(1, builder.activeUsers * 10),
-        topMarkets: [
-          { name: 'Presidential Elections', volume: builder.totalVolume * 0.35 },
-          { name: 'Crypto Markets', volume: builder.totalVolume * 0.25 },
-          { name: 'Sports Events', volume: builder.totalVolume * 0.20 },
-          { name: 'Economic Data', volume: builder.totalVolume * 0.12 },
-          { name: 'Other', volume: builder.totalVolume * 0.08 },
-        ],
-        history,
+      const results: PeriodData[] = responses.map(({ period, label, data }) => {
+        const found = findBuilder(data);
+        return {
+          period,
+          label,
+          volume: found ? parseFloat(String(found.volume || found.totalVolume || 0)) : 0,
+          users: found ? (found.activeUsers || found.users || 0) : 0,
+          rank: found ? (parseInt(String(found.rank)) || 0) : 0,
+          found: !!found,
+        };
       });
+
+      setPeriodData(results);
     } catch (error) {
       console.error('Failed to fetch builder details:', error);
-      // Set fallback data
-      setDetailData({
-        weeklyVolume: builder?.totalVolume || 0,
-        monthlyVolume: (builder?.totalVolume || 0) * 4,
-        allTimeVolume: (builder?.totalVolume || 0) * 12,
-        weeklyUsers: builder?.activeUsers || 0,
-        monthlyUsers: (builder?.activeUsers || 0) * 2,
-        allTimeUsers: (builder?.activeUsers || 0) * 5,
-        volumeChange: 12.5,
-        usersChange: 8.3,
-        avgTradeSize: (builder?.totalVolume || 0) / Math.max(1, (builder?.activeUsers || 1) * 10),
-        topMarkets: [],
-        history: [],
-      });
+      setPeriodData([]);
     } finally {
       setLoading(false);
     }
@@ -214,11 +142,31 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
     return 'from-primary to-primary/80';
   };
 
+  const getPeriodColor = (period: string) => {
+    switch (period) {
+      case 'DAY': return 'from-blue-500/10 to-cyan-500/5 border-blue-500/20';
+      case 'WEEK': return 'from-green-500/10 to-emerald-500/5 border-green-500/20';
+      case 'MONTH': return 'from-purple-500/10 to-violet-500/5 border-purple-500/20';
+      case 'ALL': return 'from-amber-500/10 to-orange-500/5 border-amber-500/20';
+      default: return 'from-muted/50 to-muted/30 border-border';
+    }
+  };
+
+  const getPeriodIconColor = (period: string) => {
+    switch (period) {
+      case 'DAY': return 'text-blue-500 bg-blue-500/10';
+      case 'WEEK': return 'text-green-500 bg-green-500/10';
+      case 'MONTH': return 'text-purple-500 bg-purple-500/10';
+      case 'ALL': return 'text-amber-500 bg-amber-500/10';
+      default: return 'text-muted-foreground bg-muted';
+    }
+  };
+
   if (!builder) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide bg-card border-border">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-hide bg-card border-border">
         <DialogHeader className="pb-4 border-b border-border">
           <div className="flex items-center gap-4">
             {/* Avatar */}
@@ -285,240 +233,104 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
         </DialogHeader>
 
         {loading ? (
-          <div className="space-y-6 py-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="space-y-4 py-6">
+            <div className="grid grid-cols-2 gap-4">
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
+                <Skeleton key={i} className="h-32 rounded-xl" />
               ))}
             </div>
-            <Skeleton className="h-64 rounded-xl" />
           </div>
-        ) : detailData && (
-          <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid grid-cols-3 w-full">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="history">Volume History</TabsTrigger>
-              <TabsTrigger value="markets">Top Markets</TabsTrigger>
-            </TabsList>
+        ) : (
+          <div className="py-4 space-y-4">
+            {/* Data Source Badge */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              Live data from Polymarket API
+            </div>
 
-            <TabsContent value="overview" className="space-y-6 mt-4">
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20">
-                  <div className="flex items-center gap-2 text-green-500 mb-2">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-xs uppercase tracking-wider">Weekly Volume</span>
+            {/* Period Cards - Real Data Only */}
+            <div className="grid grid-cols-2 gap-4">
+              {periodData.map((data, index) => (
+                <div 
+                  key={data.period}
+                  className={`p-4 rounded-xl bg-gradient-to-br border ${getPeriodColor(data.period)} ${!data.found ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getPeriodIconColor(data.period)}`}>
+                      {data.period === 'DAY' && <Clock className="w-4 h-4" />}
+                      {data.period === 'WEEK' && <Calendar className="w-4 h-4" />}
+                      {data.period === 'MONTH' && <TrendingUp className="w-4 h-4" />}
+                      {data.period === 'ALL' && <DollarSign className="w-4 h-4" />}
+                    </div>
+                    <span className="text-sm font-medium text-foreground">{data.label}</span>
+                    {data.found && data.rank > 0 && (
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        #{data.rank}
+                      </Badge>
+                    )}
                   </div>
-                  <AnimatedNumber 
-                    value={detailData.weeklyVolume}
-                    duration={1200}
-                    formatter={formatVolume}
-                    className="text-xl font-bold text-foreground block"
-                  />
-                  <div className={`text-xs flex items-center gap-1 mt-1 ${detailData.volumeChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {detailData.volumeChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {detailData.volumeChange >= 0 ? '+' : ''}{detailData.volumeChange}%
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/20">
-                  <div className="flex items-center gap-2 text-blue-500 mb-2">
-                    <Users className="w-4 h-4" />
-                    <span className="text-xs uppercase tracking-wider">Active Users</span>
-                  </div>
-                  <AnimatedNumber 
-                    value={detailData.weeklyUsers}
-                    duration={1200}
-                    formatter={formatUsers}
-                    className="text-xl font-bold text-foreground block"
-                  />
-                  <div className={`text-xs flex items-center gap-1 mt-1 ${detailData.usersChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {detailData.usersChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {detailData.usersChange >= 0 ? '+' : ''}{detailData.usersChange}%
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/5 border border-purple-500/20">
-                  <div className="flex items-center gap-2 text-purple-500 mb-2">
-                    <BarChart3 className="w-4 h-4" />
-                    <span className="text-xs uppercase tracking-wider">Monthly Vol</span>
-                  </div>
-                  <AnimatedNumber 
-                    value={detailData.monthlyVolume}
-                    duration={1400}
-                    delay={100}
-                    formatter={formatVolume}
-                    className="text-xl font-bold text-foreground block"
-                  />
-                </div>
-
-                <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
-                  <div className="flex items-center gap-2 text-amber-500 mb-2">
-                    <Activity className="w-4 h-4" />
-                    <span className="text-xs uppercase tracking-wider">Avg Trade</span>
-                  </div>
-                  <AnimatedNumber 
-                    value={detailData.avgTradeSize}
-                    duration={1400}
-                    delay={200}
-                    formatter={formatVolume}
-                    className="text-xl font-bold text-foreground block"
-                  />
-                </div>
-              </div>
-
-              {/* All-time Stats */}
-              <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  All-Time Statistics
-                </h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      <AnimatedNumber 
-                        value={detailData.allTimeVolume}
-                        duration={1600}
-                        formatter={formatVolume}
-                      />
+                  
+                  {data.found ? (
+                    <div className="space-y-2">
+                      <div>
+                        <AnimatedNumber 
+                          value={data.volume}
+                          duration={1200}
+                          delay={index * 100}
+                          formatter={formatVolume}
+                          className="text-xl font-bold text-foreground block"
+                        />
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" />
+                          Volume
+                        </p>
+                      </div>
+                      <div>
+                        <AnimatedNumber 
+                          value={data.users}
+                          duration={1000}
+                          delay={index * 100 + 100}
+                          formatter={formatUsers}
+                          className="text-lg font-semibold text-foreground block"
+                        />
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          Active Users
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Not ranked in this period
                     </p>
-                    <p className="text-xs text-muted-foreground">Total Volume</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      <AnimatedNumber 
-                        value={detailData.allTimeUsers}
-                        duration={1600}
-                        formatter={formatUsers}
-                      />
-                    </p>
-                    <p className="text-xs text-muted-foreground">Total Users</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      <AnimatedNumber 
-                        value={detailData.monthlyUsers}
-                        duration={1600}
-                        formatter={formatUsers}
-                      />
-                    </p>
-                    <p className="text-xs text-muted-foreground">Monthly Users</p>
-                  </div>
+                  )}
                 </div>
-              </div>
-            </TabsContent>
+              ))}
+            </div>
 
-            <TabsContent value="history" className="mt-4">
+            {/* Volume Comparison Bar */}
+            {periodData.some(d => d.found) && (
               <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  14-Day Volume Trend
-                </h4>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={detailData.history}>
-                      <defs>
-                        <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={(v) => formatVolume(v)}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value: number) => [formatVolume(value), 'Volume']}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="volume" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                        fill="url(#volumeGradient)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border">
-                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-500" />
-                  Daily Active Users
-                </h4>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={detailData.history}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        tick={{ fontSize: 11 }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value: number) => [value, 'Users']}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="users" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2}
-                        dot={{ fill: '#3b82f6', strokeWidth: 0, r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="markets" className="mt-4">
-              <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                  Volume by Market Category
-                </h4>
+                <h4 className="text-sm font-semibold mb-4">Volume Comparison</h4>
                 <div className="space-y-3">
-                  {detailData.topMarkets.map((market, index) => {
-                    const percentage = (market.volume / detailData.weeklyVolume) * 100;
-                    const colors = [
-                      'bg-primary',
-                      'bg-blue-500',
-                      'bg-green-500',
-                      'bg-purple-500',
-                      'bg-amber-500',
-                    ];
+                  {periodData.filter(d => d.found && d.volume > 0).map((data) => {
+                    const maxVolume = Math.max(...periodData.map(d => d.volume));
+                    const percentage = (data.volume / maxVolume) * 100;
+                    
                     return (
-                      <div key={index} className="space-y-1">
+                      <div key={data.period} className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-foreground">{market.name}</span>
-                          <span className="text-muted-foreground">{formatVolume(market.volume)}</span>
+                          <span className="text-foreground">{data.label}</span>
+                          <span className="text-muted-foreground font-mono">{formatVolume(data.volume)}</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div 
-                            className={`h-full ${colors[index % colors.length]} transition-all duration-1000 ease-out`}
+                            className={`h-full transition-all duration-1000 ease-out ${
+                              data.period === 'DAY' ? 'bg-blue-500' :
+                              data.period === 'WEEK' ? 'bg-green-500' :
+                              data.period === 'MONTH' ? 'bg-purple-500' :
+                              'bg-amber-500'
+                            }`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
@@ -527,20 +339,21 @@ const BuilderDetailModal = ({ builder, open, onOpenChange, timePeriod }: Builder
                   })}
                 </div>
               </div>
+            )}
 
-              <div className="mt-4 text-center">
-                <a
-                  href={`https://polymarket.com/profile/${builder.address || builder.name}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm hover:bg-primary/20 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View Full Profile on Polymarket
-                </a>
-              </div>
-            </TabsContent>
-          </Tabs>
+            {/* External Link */}
+            <div className="pt-2 text-center">
+              <a
+                href={`https://polymarket.com/profile/${builder.address || builder.name}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm hover:bg-primary/20 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View Full Profile on Polymarket
+              </a>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>
