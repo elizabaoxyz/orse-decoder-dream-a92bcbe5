@@ -167,29 +167,30 @@ const BuilderLeaderboard = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         
-        <div className="relative p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+        <div className="relative p-4 md:p-6">
+          {/* Header Row - Stack on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 md:mb-6">
+            <div className="flex items-center gap-3 md:gap-4">
               <div className="relative">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
-                  <Trophy className="w-6 h-6 text-black" />
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                  <Trophy className="w-5 h-5 md:w-6 md:h-6 text-black" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-green-500 rounded-full border-2 border-background animate-pulse" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                <h2 className="text-lg md:text-2xl font-bold text-foreground tracking-tight">
                   Builder Leaderboard
                 </h2>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <p className="text-xs md:text-sm text-muted-foreground flex items-center gap-1 md:gap-2">
                   <Flame className="w-3 h-3 text-orange-500" />
-                  Live rankings from Polymarket
+                  Live from Polymarket
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Select value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
-                <SelectTrigger className="w-[130px] h-9 bg-card/50 border-border/50">
+                <SelectTrigger className="w-[110px] md:w-[130px] h-8 md:h-9 text-xs md:text-sm bg-card/50 border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,43 +205,43 @@ const BuilderLeaderboard = () => {
                 size="icon"
                 onClick={fetchLeaderboard}
                 disabled={loading}
-                className="h-9 w-9 bg-card/50"
+                className="h-8 w-8 md:h-9 md:w-9 bg-card/50"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="relative group">
+          {/* Stats Cards - Scrollable on mobile */}
+          <div className="flex gap-3 md:grid md:grid-cols-3 md:gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="relative group flex-shrink-0 w-[140px] md:w-auto">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
               <Card className="relative bg-card/80 backdrop-blur border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Users className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     </div>
                     <div>
                       <AnimatedNumber 
                         value={leaderboard.length} 
                         duration={1200}
-                        className="text-2xl font-bold text-foreground block"
+                        className="text-lg md:text-2xl font-bold text-foreground block"
                       />
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('builders')}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">{t('builders')}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
             
-            <div className="relative group">
+            <div className="relative group flex-shrink-0 w-[140px] md:w-auto">
               <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
               <Card className="relative bg-card/80 backdrop-blur border-green-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                      <DollarSign className="w-5 h-5 text-green-500" />
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-green-500" />
                     </div>
                     <div>
                       <AnimatedNumber 
@@ -248,22 +249,22 @@ const BuilderLeaderboard = () => {
                         duration={1800}
                         delay={200}
                         formatter={formatVolume}
-                        className="text-2xl font-bold text-foreground block"
+                        className="text-lg md:text-2xl font-bold text-foreground block"
                       />
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('totalVolume')}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">{t('totalVolume')}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
             
-            <div className="relative group">
+            <div className="relative group flex-shrink-0 w-[140px] md:w-auto">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
               <Card className="relative bg-card/80 backdrop-blur border-blue-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-blue-500" />
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Zap className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                     </div>
                     <div>
                       <AnimatedNumber 
@@ -271,9 +272,9 @@ const BuilderLeaderboard = () => {
                         duration={1500}
                         delay={400}
                         formatter={formatUsers}
-                        className="text-2xl font-bold text-foreground block"
+                        className="text-lg md:text-2xl font-bold text-foreground block"
                       />
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('activeUsers')}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">{t('activeUsers')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -285,17 +286,17 @@ const BuilderLeaderboard = () => {
 
       {/* Leaderboard Content */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
-        <div className="p-4 space-y-3 pb-8">
+        <div className="p-3 md:p-4 space-y-2 md:space-y-3 pb-8">
           {loading ? (
             [...Array(8)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <Skeleton className="w-10 h-10 rounded-full" />
-                <Skeleton className="w-12 h-12 rounded-full" />
+              <div key={i} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-card/50 border border-border/50">
+                <Skeleton className="w-8 h-8 md:w-10 md:h-10 rounded-full" />
+                <Skeleton className="w-10 h-10 md:w-12 md:h-12 rounded-full" />
                 <div className="flex-1">
-                  <Skeleton className="h-5 w-32 mb-2" />
-                  <Skeleton className="h-3 w-full max-w-[200px]" />
+                  <Skeleton className="h-4 md:h-5 w-24 md:w-32 mb-2" />
+                  <Skeleton className="h-3 w-full max-w-[120px] md:max-w-[200px]" />
                 </div>
-                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-6 md:h-8 w-16 md:w-24" />
               </div>
             ))
           ) : error ? (
@@ -309,9 +310,9 @@ const BuilderLeaderboard = () => {
             <>
               {/* Top 3 Podium */}
               {leaderboard.length >= 3 && (
-                <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-6">
                   {/* 2nd Place */}
-                  <div className="order-1 pt-6">
+                  <div className="order-1 pt-4 md:pt-6">
                     <TopBuilderCard entry={leaderboard[1]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} onClick={() => handleBuilderClick(leaderboard[1])} />
                   </div>
                   {/* 1st Place */}
@@ -319,7 +320,7 @@ const BuilderLeaderboard = () => {
                     <TopBuilderCard entry={leaderboard[0]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} isChampion onClick={() => handleBuilderClick(leaderboard[0])} />
                   </div>
                   {/* 3rd Place */}
-                  <div className="order-3 pt-8">
+                  <div className="order-3 pt-6 md:pt-8">
                     <TopBuilderCard entry={leaderboard[2]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} onClick={() => handleBuilderClick(leaderboard[2])} />
                   </div>
                 </div>
@@ -334,16 +335,16 @@ const BuilderLeaderboard = () => {
                   <div 
                     key={entry.rank}
                     onClick={() => handleBuilderClick(entry)}
-                    className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] cursor-pointer ${style.bg} ${style.border} ${style.glow}`}
+                    className={`relative flex items-center gap-2 md:gap-4 p-3 md:p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] cursor-pointer ${style.bg} ${style.border} ${style.glow}`}
                   >
                     {/* Rank */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${style.badge}`}>
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs md:text-sm flex-shrink-0 ${style.badge}`}>
                       #{entry.rank}
                     </div>
 
                     {/* Avatar */}
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted border-2 border-border">
+                    <div className="relative flex-shrink-0">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted border-2 border-border">
                         {entry.logo ? (
                           <img 
                             src={entry.logo} 
@@ -354,41 +355,45 @@ const BuilderLeaderboard = () => {
                             }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary bg-primary/10">
+                          <div className="w-full h-full flex items-center justify-center text-lg md:text-xl font-bold text-primary bg-primary/10">
                             {entry.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
                       {entry.verified && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
-                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+                          <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                         </div>
                       )}
                     </div>
                     
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-foreground truncate">
+                      <div className="flex items-center gap-1 md:gap-2 mb-1">
+                        <span className="font-semibold text-sm md:text-base text-foreground truncate">
                           {entry.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="hidden sm:flex items-center gap-3">
                         <Progress value={volumePercent} className="h-1.5 flex-1 max-w-[150px]" />
                         <span className="text-xs text-muted-foreground">
-                          {(volumePercent).toFixed(1)}% of leader
+                          {(volumePercent).toFixed(1)}%
                         </span>
+                      </div>
+                      {/* Mobile: Show volume inline */}
+                      <div className="sm:hidden text-xs text-muted-foreground">
+                        {formatVolume(entry.totalVolume)}
                       </div>
                     </div>
 
-                    {/* Stats */}
-                    <div className="text-right">
+                    {/* Stats - Hidden on mobile, shown on larger */}
+                    <div className="hidden sm:block text-right">
                       <AnimatedNumber 
                         value={entry.totalVolume} 
                         duration={1200}
                         delay={entry.rank * 50}
                         formatter={formatVolume}
-                        className="text-lg font-bold text-foreground block"
+                        className="text-base md:text-lg font-bold text-foreground block"
                       />
                       <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                         <Users className="w-3 h-3" />
@@ -398,6 +403,14 @@ const BuilderLeaderboard = () => {
                           delay={entry.rank * 50 + 100}
                           formatter={(v) => formatUsers(Math.round(v))}
                         /> users
+                      </p>
+                    </div>
+
+                    {/* Mobile Stats - Compact */}
+                    <div className="sm:hidden text-right flex-shrink-0">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {formatUsers(entry.activeUsers)}
                       </p>
                     </div>
                   </div>
@@ -497,23 +510,23 @@ const TopBuilderCard = ({
   return (
     <div 
       onClick={onClick}
-      className={`relative rounded-2xl border p-4 text-center transition-all hover:scale-105 cursor-pointer ${colors.bg} ${colors.border} ${colors.glow}`}
+      className={`relative rounded-xl md:rounded-2xl border p-2 md:p-4 text-center transition-all hover:scale-105 cursor-pointer ${colors.bg} ${colors.border} ${colors.glow}`}
     >
       {/* Crown for #1 */}
       {isChampion && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <Crown className="w-8 h-8 text-yellow-400 drop-shadow-lg" />
+        <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2">
+          <Crown className="w-6 h-6 md:w-8 md:h-8 text-yellow-400 drop-shadow-lg" />
         </div>
       )}
 
       {/* Rank Badge */}
-      <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r ${colors.gradient} text-black font-bold text-sm mb-3 ${isChampion ? 'mt-2' : ''}`}>
+      <div className={`inline-flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-r ${colors.gradient} text-black font-bold text-xs md:text-sm mb-2 md:mb-3 ${isChampion ? 'mt-1 md:mt-2' : ''}`}>
         #{entry.rank}
       </div>
 
       {/* Avatar */}
-      <div className="relative mx-auto mb-3">
-        <div className={`w-16 h-16 rounded-full overflow-hidden bg-muted border-2 ${colors.border} mx-auto`}>
+      <div className="relative mx-auto mb-2 md:mb-3">
+        <div className={`w-10 h-10 md:w-16 md:h-16 rounded-full overflow-hidden bg-muted border-2 ${colors.border} mx-auto`}>
           {entry.logo ? (
             <img 
               src={entry.logo} 
@@ -524,20 +537,20 @@ const TopBuilderCard = ({
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary bg-primary/10">
+            <div className="w-full h-full flex items-center justify-center text-lg md:text-2xl font-bold text-primary bg-primary/10">
               {entry.name.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
         {entry.verified && (
-          <div className="absolute -bottom-1 right-1/2 translate-x-1/2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
-            <CheckCircle2 className="w-3 h-3 text-white" />
+          <div className="absolute -bottom-1 right-1/2 translate-x-1/2 w-4 h-4 md:w-5 md:h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+            <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
           </div>
         )}
       </div>
 
       {/* Name */}
-      <h3 className="font-bold text-foreground truncate mb-1">{entry.name}</h3>
+      <h3 className="font-bold text-xs md:text-base text-foreground truncate mb-1">{entry.name}</h3>
 
       {/* Volume */}
       <AnimatedNumber 
@@ -545,22 +558,22 @@ const TopBuilderCard = ({
         duration={1500}
         delay={entry.rank * 100}
         formatter={formatVolume}
-        className={`text-xl font-bold ${colors.text} block`}
+        className={`text-sm md:text-xl font-bold ${colors.text} block`}
       />
 
       {/* Users */}
-      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
-        <Users className="w-3 h-3" />
+      <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
+        <Users className="w-2.5 h-2.5 md:w-3 md:h-3" />
         <AnimatedNumber 
           value={entry.activeUsers}
           duration={1200}
           delay={entry.rank * 100 + 100}
           formatter={(v) => formatUsers(Math.round(v))}
-        /> users
+        />
       </p>
 
-      {/* Volume Bar */}
-      <div className="mt-3">
+      {/* Volume Bar - Hidden on mobile */}
+      <div className="hidden md:block mt-3">
         <AnimatedProgress value={volumePercent} delay={entry.rank * 100 + 200} />
       </div>
     </div>
