@@ -15,7 +15,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Credits from "./pages/Credits";
 import Markets from "./pages/Markets";
-
+import Builder from "./pages/Builder";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -34,6 +34,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/credits" element={<Credits />} />
               <Route path="/markets" element={<Markets />} />
+              <Route path="/builder" element={<Builder />} />
               <Route path="/legal/transparency" element={<Transparency />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
