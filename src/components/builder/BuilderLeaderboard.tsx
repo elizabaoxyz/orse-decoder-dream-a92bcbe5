@@ -62,25 +62,27 @@ const BuilderLeaderboard = () => {
       
       const data = await response.json();
       
-      // Transform data to our format
+      // Transform data to our format - API returns: rank, builder, volume, activeUsers, verified, builderLogo
       const entries: LeaderboardEntry[] = (data || []).map((item: {
-        rank?: number;
+        rank?: number | string;
+        builder?: string;
         name?: string;
         address?: string;
-        totalVolume?: number;
         volume?: number;
+        totalVolume?: number;
         activeUsers?: number;
         users?: number;
         verified?: boolean;
+        builderLogo?: string;
         logo?: string;
       }, index: number) => ({
-        rank: item.rank || index + 1,
-        name: item.name || `Builder ${index + 1}`,
+        rank: parseInt(String(item.rank)) || index + 1,
+        name: item.builder || item.name || `Builder ${index + 1}`,
         address: item.address || '',
-        totalVolume: parseFloat(String(item.totalVolume || item.volume || 0)),
+        totalVolume: parseFloat(String(item.volume || item.totalVolume || 0)),
         activeUsers: item.activeUsers || item.users || 0,
         verified: item.verified || false,
-        logo: item.logo
+        logo: item.builderLogo || item.logo
       }));
       
       setLeaderboard(entries);
