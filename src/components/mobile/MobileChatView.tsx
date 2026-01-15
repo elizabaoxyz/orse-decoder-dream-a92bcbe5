@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { 
   Menu, X, Mic, MicOff, ImageIcon, Video, 
   Loader2, Send, Clock, BarChart3, Wallet, Plus,
-  LogIn, Settings, Coins, LogOut, User, Sun, Moon, Globe
+  LogIn, Settings, Coins, LogOut, User, Sun, Moon, Globe, Hammer
 } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
@@ -60,7 +60,7 @@ const MobileChatView = () => {
   
   // Menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeMenuTab, setActiveMenuTab] = useState<"analytics" | "wallets" | "account">("analytics");
+  const [activeMenuTab, setActiveMenuTab] = useState<"analytics" | "wallets" | "builder" | "account">("analytics");
   
   const { user, signOut } = useAuth();
   const { t, i18n } = useTranslation();
@@ -509,35 +509,46 @@ const MobileChatView = () => {
             <div className="flex border-b border-border">
               <button
                 onClick={() => setActiveMenuTab("analytics")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1 py-3 text-[10px] font-medium transition-colors ${
                   activeMenuTab === "analytics" 
                     ? "text-primary border-b-2 border-primary" 
                     : "text-muted-foreground"
                 }`}
               >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="w-3.5 h-3.5" />
                 Analytics
               </button>
               <button
                 onClick={() => setActiveMenuTab("wallets")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1 py-3 text-[10px] font-medium transition-colors ${
                   activeMenuTab === "wallets" 
                     ? "text-primary border-b-2 border-primary" 
                     : "text-muted-foreground"
                 }`}
               >
-                <Wallet className="w-4 h-4" />
+                <Wallet className="w-3.5 h-3.5" />
                 Wallets
               </button>
               <button
+                onClick={() => setActiveMenuTab("builder")}
+                className={`flex-1 flex items-center justify-center gap-1 py-3 text-[10px] font-medium transition-colors ${
+                  activeMenuTab === "builder" 
+                    ? "text-primary border-b-2 border-primary" 
+                    : "text-muted-foreground"
+                }`}
+              >
+                <Hammer className="w-3.5 h-3.5" />
+                Builder
+              </button>
+              <button
                 onClick={() => setActiveMenuTab("account")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1 py-3 text-[10px] font-medium transition-colors ${
                   activeMenuTab === "account" 
                     ? "text-primary border-b-2 border-primary" 
                     : "text-muted-foreground"
                 }`}
               >
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5" />
                 Account
               </button>
             </div>
@@ -549,6 +560,40 @@ const MobileChatView = () => {
               )}
               {activeMenuTab === "wallets" && (
                 <WhaleStatsPanel showStatsOnly={false} showWalletsOnly={true} />
+              )}
+              {activeMenuTab === "builder" && (
+                <div className="space-y-4">
+                  <div className="text-center py-6">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Hammer className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="font-bold text-lg text-foreground mb-2">Polymarket Builder</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      View builder leaderboard, markets, and order book data
+                    </p>
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        navigate('/builder');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 p-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      <Hammer className="w-5 h-5" />
+                      Open Builder Dashboard
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-card rounded-lg border border-border p-4 text-center">
+                      <p className="text-2xl font-bold text-foreground mb-1">100+</p>
+                      <p className="text-xs text-muted-foreground">Active Builders</p>
+                    </div>
+                    <div className="bg-card rounded-lg border border-border p-4 text-center">
+                      <p className="text-2xl font-bold text-foreground mb-1">$1B+</p>
+                      <p className="text-xs text-muted-foreground">Total Volume</p>
+                    </div>
+                  </div>
+                </div>
               )}
               {activeMenuTab === "account" && (
                 <div className="space-y-3">
