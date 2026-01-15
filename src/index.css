@@ -135,6 +135,15 @@
     @apply border-border;
   }
 
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   html {
     height: 100%;
     height: -webkit-fill-available;
