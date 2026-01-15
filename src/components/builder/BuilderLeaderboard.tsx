@@ -9,12 +9,15 @@ import {
   RefreshCw,
   ExternalLink,
   CheckCircle2,
-  Clock
+  Crown,
+  Flame,
+  Zap,
+  Star
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -47,7 +50,6 @@ const BuilderLeaderboard = () => {
     setError(null);
     
     try {
-      // Fetch from Polymarket Data API
       const url = new URL('https://data-api.polymarket.com/v1/builders/leaderboard');
       url.searchParams.set('timePeriod', timePeriod);
       url.searchParams.set('limit', '20');
@@ -62,7 +64,6 @@ const BuilderLeaderboard = () => {
       
       const data = await response.json();
       
-      // Transform data to our format - API returns: rank, builder, volume, activeUsers, verified, builderLogo
       const entries: LeaderboardEntry[] = (data || []).map((item: {
         rank?: number | string;
         builder?: string;
@@ -89,8 +90,6 @@ const BuilderLeaderboard = () => {
     } catch (err) {
       console.error('Leaderboard fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load leaderboard');
-      // Set mock data for demo
-      setLeaderboard(getMockLeaderboard());
     } finally {
       setLoading(false);
     }
@@ -99,16 +98,6 @@ const BuilderLeaderboard = () => {
   useEffect(() => {
     fetchLeaderboard();
   }, [timePeriod]);
-
-  const getMockLeaderboard = (): LeaderboardEntry[] => {
-    return [
-      { rank: 1, name: 'Polymarket Pro', address: '0x1234...abcd', totalVolume: 15420000, activeUsers: 8432, verified: true },
-      { rank: 2, name: 'TradeBot Alpha', address: '0x5678...efgh', totalVolume: 12300000, activeUsers: 6521, verified: true },
-      { rank: 3, name: 'Market Maker X', address: '0x9abc...ijkl', totalVolume: 9870000, activeUsers: 4312, verified: true },
-      { rank: 4, name: 'Prediction Pro', address: '0xdef0...mnop', totalVolume: 7650000, activeUsers: 3245, verified: false },
-      { rank: 5, name: 'Alpha Builder', address: '0x1357...qrst', totalVolume: 5430000, activeUsers: 2156, verified: false },
-    ];
-  };
 
   const formatVolume = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
@@ -121,199 +110,383 @@ const BuilderLeaderboard = () => {
     return value.toString();
   };
 
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Trophy className="w-5 h-5 text-yellow-500" />;
-      case 2:
-        return <Medal className="w-5 h-5 text-gray-400" />;
-      case 3:
-        return <Medal className="w-5 h-5 text-amber-600" />;
-      default:
-        return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">#{rank}</span>;
-    }
-  };
+  const maxVolume = leaderboard.length > 0 ? leaderboard[0].totalVolume : 1;
+  const totalVolume = leaderboard.reduce((sum, b) => sum + b.totalVolume, 0);
+  const totalUsers = leaderboard.reduce((sum, b) => sum + b.activeUsers, 0);
 
-  const getRankBg = (rank: number) => {
+  const getRankStyle = (rank: number) => {
     switch (rank) {
       case 1:
-        return 'bg-yellow-500/10 border-yellow-500/30';
+        return {
+          bg: 'bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-yellow-500/20',
+          border: 'border-yellow-500/50',
+          glow: 'shadow-lg shadow-yellow-500/20',
+          icon: <Crown className="w-6 h-6 text-yellow-400" />,
+          badge: 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black'
+        };
       case 2:
-        return 'bg-gray-500/10 border-gray-500/30';
+        return {
+          bg: 'bg-gradient-to-r from-gray-400/15 via-slate-400/10 to-gray-400/15',
+          border: 'border-gray-400/40',
+          glow: 'shadow-md shadow-gray-400/10',
+          icon: <Medal className="w-5 h-5 text-gray-300" />,
+          badge: 'bg-gradient-to-r from-gray-300 to-slate-400 text-black'
+        };
       case 3:
-        return 'bg-amber-600/10 border-amber-600/30';
+        return {
+          bg: 'bg-gradient-to-r from-amber-600/15 via-orange-600/10 to-amber-600/15',
+          border: 'border-amber-600/40',
+          glow: 'shadow-md shadow-amber-600/10',
+          icon: <Medal className="w-5 h-5 text-amber-500" />,
+          badge: 'bg-gradient-to-r from-amber-500 to-orange-600 text-black'
+        };
       default:
-        return 'bg-muted/30 border-border';
+        return {
+          bg: 'bg-card/60 hover:bg-card/80',
+          border: 'border-border/50',
+          glow: '',
+          icon: null,
+          badge: 'bg-muted text-muted-foreground'
+        };
     }
   };
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      {/* Header */}
-      <div className="p-4 border-b border-border bg-card/30 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Trophy className="w-5 h-5 text-yellow-500" />
-          <div>
-            <h2 className="font-semibold text-foreground">{t('leaderboard')}</h2>
-            <p className="text-xs text-muted-foreground">{t('topBuilders')}</p>
+      {/* Hero Header */}
+      <div className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        
+        <div className="relative p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                  <Trophy className="w-6 h-6 text-black" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                  Builder Leaderboard
+                </h2>
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Flame className="w-3 h-3 text-orange-500" />
+                  Live rankings from Polymarket
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Select value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
+                <SelectTrigger className="w-[130px] h-9 bg-card/50 border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DAY">{t('today')}</SelectItem>
+                  <SelectItem value="WEEK">{t('thisWeek')}</SelectItem>
+                  <SelectItem value="MONTH">{t('thisMonth')}</SelectItem>
+                  <SelectItem value="ALL">{t('allTime')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={fetchLeaderboard}
+                disabled={loading}
+                className="h-9 w-9 bg-card/50"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
-            <SelectTrigger className="w-[120px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="DAY">{t('today')}</SelectItem>
-              <SelectItem value="WEEK">{t('thisWeek')}</SelectItem>
-              <SelectItem value="MONTH">{t('thisMonth')}</SelectItem>
-              <SelectItem value="ALL">{t('allTime')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchLeaderboard}
-            disabled={loading}
-            className="gap-1"
-          >
-            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Card key={i} className="bg-card/50 border-border">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
+              <Card className="relative bg-card/80 backdrop-blur border-primary/20">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="w-8 h-8 rounded-full" />
-                    <div className="flex-1">
-                      <Skeleton className="h-4 w-32 mb-2" />
-                      <Skeleton className="h-3 w-24" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-primary" />
                     </div>
-                    <Skeleton className="h-6 w-20" />
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{leaderboard.length}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('builders')}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-8">
-            <p className="text-destructive mb-2">{error}</p>
-            <Button variant="outline" onClick={fetchLeaderboard}>
-              {t('tryAgain')}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3 pb-8">
-            {/* Stats Summary */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <Card className="bg-card/50 border-border">
-                <CardContent className="p-3 text-center">
-                  <Users className="w-4 h-4 mx-auto mb-1 text-primary" />
-                  <p className="text-lg font-bold">{leaderboard.length}</p>
-                  <p className="text-xs text-muted-foreground">{t('builders')}</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 border-border">
-                <CardContent className="p-3 text-center">
-                  <DollarSign className="w-4 h-4 mx-auto mb-1 text-green-500" />
-                  <p className="text-lg font-bold">
-                    {formatVolume(leaderboard.reduce((sum, b) => sum + b.totalVolume, 0))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{t('totalVolume')}</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 border-border">
-                <CardContent className="p-3 text-center">
-                  <TrendingUp className="w-4 h-4 mx-auto mb-1 text-blue-500" />
-                  <p className="text-lg font-bold">
-                    {formatUsers(leaderboard.reduce((sum, b) => sum + b.activeUsers, 0))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{t('activeUsers')}</p>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
+              <Card className="relative bg-card/80 backdrop-blur border-green-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{formatVolume(totalVolume)}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('totalVolume')}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
-
-            {/* Leaderboard List */}
-            {leaderboard.map((entry) => (
-              <Card 
-                key={entry.rank}
-                className={`border transition-colors hover:bg-muted/50 ${getRankBg(entry.rank)}`}
-              >
+            
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/10 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
+              <Card className="relative bg-card/80 backdrop-blur border-blue-500/20">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{formatUsers(totalUsers)}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('activeUsers')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Leaderboard Content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="p-4 space-y-3 pb-8">
+          {loading ? (
+            [...Array(8)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <Skeleton className="w-10 h-10 rounded-full" />
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-3 w-full max-w-[200px]" />
+                </div>
+                <Skeleton className="h-8 w-24" />
+              </div>
+            ))
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-destructive mb-4">{error}</p>
+              <Button variant="outline" onClick={fetchLeaderboard}>
+                {t('tryAgain')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Top 3 Podium */}
+              {leaderboard.length >= 3 && (
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {/* 2nd Place */}
+                  <div className="order-1 pt-6">
+                    <TopBuilderCard entry={leaderboard[1]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} />
+                  </div>
+                  {/* 1st Place */}
+                  <div className="order-2">
+                    <TopBuilderCard entry={leaderboard[0]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} isChampion />
+                  </div>
+                  {/* 3rd Place */}
+                  <div className="order-3 pt-8">
+                    <TopBuilderCard entry={leaderboard[2]} maxVolume={maxVolume} formatVolume={formatVolume} formatUsers={formatUsers} />
+                  </div>
+                </div>
+              )}
+
+              {/* Rest of Leaderboard */}
+              {leaderboard.slice(3).map((entry) => {
+                const style = getRankStyle(entry.rank);
+                const volumePercent = (entry.totalVolume / maxVolume) * 100;
+                
+                return (
+                  <div 
+                    key={entry.rank}
+                    className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${style.bg} ${style.border} ${style.glow}`}
+                  >
                     {/* Rank */}
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-background/50 shrink-0">
-                      {getRankIcon(entry.rank)}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${style.badge}`}>
+                      #{entry.rank}
                     </div>
 
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted shrink-0 border border-border">
-                      {entry.logo ? (
-                        <img 
-                          src={entry.logo} 
-                          alt={entry.name} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-full h-full flex items-center justify-center text-lg font-bold text-primary ${entry.logo ? 'hidden' : ''}`}>
-                        {entry.name.charAt(0).toUpperCase()}
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted border-2 border-border">
+                        {entry.logo ? (
+                          <img 
+                            src={entry.logo} 
+                            alt={entry.name} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary bg-primary/10">
+                            {entry.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
+                      {entry.verified && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Builder Info */}
+                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-foreground truncate">
                           {entry.name}
                         </span>
-                        {entry.verified && (
-                          <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        {entry.address}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <Progress value={volumePercent} className="h-1.5 flex-1 max-w-[150px]" />
+                        <span className="text-xs text-muted-foreground">
+                          {(volumePercent).toFixed(1)}% of leader
+                        </span>
+                      </div>
                     </div>
 
                     {/* Stats */}
-                    <div className="text-right shrink-0">
-                      <p className="font-bold text-foreground">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-foreground">
                         {formatVolume(entry.totalVolume)}
                       </p>
                       <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                         <Users className="w-3 h-3" />
-                        {formatUsers(entry.activeUsers)} {t('users')}
+                        {formatUsers(entry.activeUsers)} users
                       </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                );
+              })}
 
-            {/* Link to Official Leaderboard */}
-            <div className="pt-4 text-center">
-              <a
-                href="https://builders.polymarket.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-              >
-                {t('viewOfficialLeaderboard')}
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              {/* Footer Link */}
+              <div className="pt-6 text-center">
+                <a
+                  href="https://builders.polymarket.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {t('viewOfficialLeaderboard')}
+                </a>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Top 3 Builder Card Component
+const TopBuilderCard = ({ 
+  entry, 
+  maxVolume, 
+  formatVolume, 
+  formatUsers,
+  isChampion = false 
+}: { 
+  entry: LeaderboardEntry; 
+  maxVolume: number;
+  formatVolume: (v: number) => string;
+  formatUsers: (v: number) => string;
+  isChampion?: boolean;
+}) => {
+  const volumePercent = (entry.totalVolume / maxVolume) * 100;
+  
+  const rankColors = {
+    1: { 
+      gradient: 'from-yellow-400 via-amber-500 to-yellow-600',
+      bg: 'bg-gradient-to-b from-yellow-500/20 to-transparent',
+      border: 'border-yellow-500/50',
+      glow: 'shadow-xl shadow-yellow-500/30',
+      text: 'text-yellow-400'
+    },
+    2: { 
+      gradient: 'from-gray-300 via-slate-400 to-gray-500',
+      bg: 'bg-gradient-to-b from-gray-400/20 to-transparent',
+      border: 'border-gray-400/50',
+      glow: 'shadow-lg shadow-gray-400/20',
+      text: 'text-gray-300'
+    },
+    3: { 
+      gradient: 'from-amber-500 via-orange-500 to-amber-700',
+      bg: 'bg-gradient-to-b from-amber-500/20 to-transparent',
+      border: 'border-amber-500/50',
+      glow: 'shadow-lg shadow-amber-500/20',
+      text: 'text-amber-500'
+    }
+  };
+  
+  const colors = rankColors[entry.rank as 1 | 2 | 3] || rankColors[3];
+
+  return (
+    <div className={`relative rounded-2xl border p-4 text-center transition-all hover:scale-105 ${colors.bg} ${colors.border} ${colors.glow}`}>
+      {/* Crown for #1 */}
+      {isChampion && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <Crown className="w-8 h-8 text-yellow-400 drop-shadow-lg" />
+        </div>
+      )}
+
+      {/* Rank Badge */}
+      <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r ${colors.gradient} text-black font-bold text-sm mb-3 ${isChampion ? 'mt-2' : ''}`}>
+        #{entry.rank}
+      </div>
+
+      {/* Avatar */}
+      <div className="relative mx-auto mb-3">
+        <div className={`w-16 h-16 rounded-full overflow-hidden bg-muted border-2 ${colors.border} mx-auto`}>
+          {entry.logo ? (
+            <img 
+              src={entry.logo} 
+              alt={entry.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary bg-primary/10">
+              {entry.name.charAt(0).toUpperCase()}
             </div>
+          )}
+        </div>
+        {entry.verified && (
+          <div className="absolute -bottom-1 right-1/2 translate-x-1/2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+            <CheckCircle2 className="w-3 h-3 text-white" />
           </div>
         )}
+      </div>
+
+      {/* Name */}
+      <h3 className="font-bold text-foreground truncate mb-1">{entry.name}</h3>
+
+      {/* Volume */}
+      <p className={`text-xl font-bold ${colors.text}`}>
+        {formatVolume(entry.totalVolume)}
+      </p>
+
+      {/* Users */}
+      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
+        <Users className="w-3 h-3" />
+        {formatUsers(entry.activeUsers)} users
+      </p>
+
+      {/* Volume Bar */}
+      <div className="mt-3">
+        <Progress value={volumePercent} className="h-1" />
       </div>
     </div>
   );
