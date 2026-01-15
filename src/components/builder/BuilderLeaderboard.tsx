@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AnimatedNumber } from '@/hooks/useAnimatedCounter';
 
 interface LeaderboardEntry {
   rank: number;
@@ -213,7 +214,11 @@ const BuilderLeaderboard = () => {
                       <Users className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-foreground">{leaderboard.length}</p>
+                      <AnimatedNumber 
+                        value={leaderboard.length} 
+                        duration={1200}
+                        className="text-2xl font-bold text-foreground block"
+                      />
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('builders')}</p>
                     </div>
                   </div>
@@ -230,7 +235,13 @@ const BuilderLeaderboard = () => {
                       <DollarSign className="w-5 h-5 text-green-500" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-foreground">{formatVolume(totalVolume)}</p>
+                      <AnimatedNumber 
+                        value={totalVolume} 
+                        duration={1800}
+                        delay={200}
+                        formatter={formatVolume}
+                        className="text-2xl font-bold text-foreground block"
+                      />
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('totalVolume')}</p>
                     </div>
                   </div>
@@ -247,7 +258,13 @@ const BuilderLeaderboard = () => {
                       <Zap className="w-5 h-5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-foreground">{formatUsers(totalUsers)}</p>
+                      <AnimatedNumber 
+                        value={totalUsers} 
+                        duration={1500}
+                        delay={400}
+                        formatter={formatUsers}
+                        className="text-2xl font-bold text-foreground block"
+                      />
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">{t('activeUsers')}</p>
                     </div>
                   </div>
@@ -357,12 +374,21 @@ const BuilderLeaderboard = () => {
 
                     {/* Stats */}
                     <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">
-                        {formatVolume(entry.totalVolume)}
-                      </p>
+                      <AnimatedNumber 
+                        value={entry.totalVolume} 
+                        duration={1200}
+                        delay={entry.rank * 50}
+                        formatter={formatVolume}
+                        className="text-lg font-bold text-foreground block"
+                      />
                       <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                         <Users className="w-3 h-3" />
-                        {formatUsers(entry.activeUsers)} users
+                        <AnimatedNumber 
+                          value={entry.activeUsers}
+                          duration={1000}
+                          delay={entry.rank * 50 + 100}
+                          formatter={(v) => formatUsers(Math.round(v))}
+                        /> users
                       </p>
                     </div>
                   </div>
@@ -386,6 +412,25 @@ const BuilderLeaderboard = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Animated Progress Bar Component
+const AnimatedProgress = ({ value, delay = 0 }: { value: number; delay?: number }) => {
+  const [progress, setProgress] = useState(0);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setProgress(value);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  
+  return (
+    <Progress 
+      value={progress} 
+      className="h-1 transition-all duration-1000 ease-out" 
+    />
   );
 };
 
@@ -474,19 +519,28 @@ const TopBuilderCard = ({
       <h3 className="font-bold text-foreground truncate mb-1">{entry.name}</h3>
 
       {/* Volume */}
-      <p className={`text-xl font-bold ${colors.text}`}>
-        {formatVolume(entry.totalVolume)}
-      </p>
+      <AnimatedNumber 
+        value={entry.totalVolume}
+        duration={1500}
+        delay={entry.rank * 100}
+        formatter={formatVolume}
+        className={`text-xl font-bold ${colors.text} block`}
+      />
 
       {/* Users */}
       <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
         <Users className="w-3 h-3" />
-        {formatUsers(entry.activeUsers)} users
+        <AnimatedNumber 
+          value={entry.activeUsers}
+          duration={1200}
+          delay={entry.rank * 100 + 100}
+          formatter={(v) => formatUsers(Math.round(v))}
+        /> users
       </p>
 
       {/* Volume Bar */}
       <div className="mt-3">
-        <Progress value={volumePercent} className="h-1" />
+        <AnimatedProgress value={volumePercent} delay={entry.rank * 100 + 200} />
       </div>
     </div>
   );
