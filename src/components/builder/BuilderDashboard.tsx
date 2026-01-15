@@ -58,6 +58,7 @@ const BuilderDashboard = () => {
           uniqueUsers: uniqueUsers.size
         });
       } else {
+        // Show zero stats - this is expected for new builder accounts awaiting approval
         setStats({
           totalTrades: 0,
           totalVolumeUsdc: '0.00',

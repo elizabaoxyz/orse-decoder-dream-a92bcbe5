@@ -10,6 +10,7 @@ const CLOB_API_URL = "https://clob.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
 
 // Builder credentials from environment
+const BUILDER_ADDRESS = Deno.env.get("POLYMARKET_BUILDER_ADDRESS") || "";
 const BUILDER_API_KEY = Deno.env.get("POLYMARKET_BUILDER_API_KEY") || "";
 const BUILDER_SECRET = Deno.env.get("POLYMARKET_BUILDER_SECRET") || "";
 const BUILDER_PASSPHRASE = Deno.env.get("POLYMARKET_BUILDER_PASSPHRASE") || "";
@@ -114,7 +115,7 @@ async function createBuilderAuthHeaders(
   const signature = await generateL2Signature(BUILDER_SECRET, timestamp, method, requestPath, body);
 
   return {
-    "POLY-ADDRESS": BUILDER_API_KEY,
+    "POLY-ADDRESS": BUILDER_ADDRESS,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
     "POLY-API-KEY": BUILDER_API_KEY,
@@ -126,6 +127,17 @@ async function createBuilderAuthHeaders(
 
 // Get builder trades with attribution
 async function getBuilderTrades(params: TradeParams = {}): Promise<BuilderTradesPaginatedResponse> {
+  // Check if we have all required credentials
+  if (!BUILDER_ADDRESS || !BUILDER_API_KEY || !BUILDER_SECRET || !BUILDER_PASSPHRASE) {
+    console.log("Builder credentials not fully configured, returning empty trades");
+    return {
+      trades: [],
+      next_cursor: "",
+      limit: params.limit || 100,
+      count: 0
+    };
+  }
+
   const url = new URL(`${CLOB_API_URL}/builder/trades`);
   
   if (params.id) url.searchParams.set("id", params.id);
@@ -140,6 +152,7 @@ async function getBuilderTrades(params: TradeParams = {}): Promise<BuilderTrades
   const headers = await createBuilderAuthHeaders("GET", requestPath);
 
   console.log("Fetching builder trades from:", url.toString());
+  console.log("Using address:", BUILDER_ADDRESS.slice(0, 10) + "...");
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -149,6 +162,16 @@ async function getBuilderTrades(params: TradeParams = {}): Promise<BuilderTrades
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Builder trades error:", response.status, errorText);
+    // Return empty result instead of throwing for auth errors
+    if (response.status === 401) {
+      console.log("Auth failed - credentials may be invalid or not yet approved by Polymarket");
+      return {
+        trades: [],
+        next_cursor: "",
+        limit: params.limit || 100,
+        count: 0
+      };
+    }
     throw new Error(`Failed to fetch builder trades: ${response.status} - ${errorText}`);
   }
 
@@ -315,7 +338,7 @@ async function healthCheck(): Promise<{
   chainId: number;
   endpoint: string;
 }> {
-  const builderApiConfigured = !!(BUILDER_API_KEY && BUILDER_SECRET && BUILDER_PASSPHRASE);
+  const builderApiConfigured = !!(BUILDER_ADDRESS && BUILDER_API_KEY && BUILDER_SECRET && BUILDER_PASSPHRASE);
   
   let connected = false;
   try {
