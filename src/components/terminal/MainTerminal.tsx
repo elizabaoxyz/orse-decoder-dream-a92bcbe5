@@ -2,7 +2,7 @@ import PluginCard from "./PluginCard";
 import AsciiMouseEffect from "./AsciiMouseEffect";
 import ElizaChat from "./ElizaChat";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Plug, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plug, Hammer } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import iosAppIcon from "@/assets/ios-app-icon.png";
@@ -116,8 +116,8 @@ const MainTerminal = () => {
         </div>
         
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {/* Markets Explorer Card */}
-          <Link to="/markets">
+          {/* Builder Card */}
+          <Link to="/builder">
             <div className="group relative border border-border bg-card/50 p-2.5 cursor-pointer rounded-2xl transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden mb-2">
               <div 
                 className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
@@ -128,9 +128,9 @@ const MainTerminal = () => {
               />
               <div className="relative flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <TrendingUp className="w-4 h-4 text-primary shrink-0" />
+                  <Hammer className="w-4 h-4 text-primary shrink-0" />
                   <h3 className="text-foreground font-medium text-xs truncate group-hover:text-primary transition-colors duration-300">
-                    {t('marketsExplorerShort')}
+                    Builder
                   </h3>
                 </div>
                 <span className="text-[8px] text-primary shrink-0 bg-primary/10 px-1.5 py-0.5 rounded">NEW</span>
