@@ -143,32 +143,34 @@ const MainTerminal = () => {
           ))}
         </div>
 
+        {/* Polymarket Builder - Standalone Entry */}
+        <div className="p-3 border-t border-border shrink-0">
+          <Link to="/builder">
+            <div className="group flex items-center gap-2 p-2.5 bg-muted/30 rounded-2xl border border-border/50 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden relative">
+              <div 
+                className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.1) 0%, transparent 70%)'
+                }}
+              />
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center relative z-10 transition-transform duration-300 group-hover:scale-110">
+                <Hammer className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 relative z-10">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">Polymarket Builder</p>
+                  <span className="text-[7px] bg-primary/20 text-primary px-1 py-0.5 rounded">LIVE</span>
+                </div>
+                <p className="text-[9px] text-muted-foreground">Builder Dashboard</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Coming Soon Apps */}
         <div className="p-3 border-t border-border shrink-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">{t('comingSoon')}</p>
           <div className="space-y-2">
-            {/* Polymarket Builder */}
-            <Link to="/builder">
-              <div className="group flex items-center gap-2 p-2.5 bg-muted/30 rounded-2xl border border-border/50 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden relative">
-                <div 
-                  className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{
-                    background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.1) 0%, transparent 70%)'
-                  }}
-                />
-                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center relative z-10 transition-transform duration-300 group-hover:scale-110">
-                  <Hammer className="w-4 h-4 text-primary" />
-                </div>
-                <div className="flex-1 relative z-10">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">Polymarket Builder</p>
-                    <span className="text-[7px] bg-primary/20 text-primary px-1 py-0.5 rounded">LIVE</span>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground">Builder Dashboard</p>
-                </div>
-              </div>
-            </Link>
-            
             <div className="group flex items-center gap-2 p-2.5 bg-muted/30 rounded-2xl border border-border/50 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 overflow-hidden relative">
               <div 
                 className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
