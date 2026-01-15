@@ -82,7 +82,7 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
       <div className="h-full flex items-center justify-center text-muted-foreground">
         <div className="text-center">
           <Layers className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Select a market to view order book</p>
+          <p>{t('selectMarketToViewOrderBook')}</p>
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-primary" />
-            <h3 className="font-medium text-foreground">Order Book</h3>
+            <h3 className="font-medium text-foreground">{t('orderBook')}</h3>
           </div>
           <Button
             variant="outline"
@@ -105,7 +105,7 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
             className="gap-1"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('refresh')}
           </Button>
         </div>
         {marketQuestion && (
@@ -119,19 +119,19 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 p-4 border-b border-border">
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Last Price</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('lastPrice')}</p>
           <p className="font-mono text-sm font-medium text-foreground">
             {lastPrice ? `${(parseFloat(lastPrice) * 100).toFixed(1)}¢` : '-'}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Spread</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('spread')}</p>
           <p className="font-mono text-sm font-medium text-foreground">
             {calculateSpread() ? `${calculateSpread()}¢` : '-'}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Tick Size</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('tickSize')}</p>
           <p className="font-mono text-sm font-medium text-foreground">
             {tickSize || '-'}
           </p>
@@ -146,7 +146,7 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
           </div>
         ) : !orderBook ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>No order book data</p>
+            <p>{t('noOrderBookData')}</p>
           </div>
         ) : (
           <div className="p-4 space-y-4">
@@ -155,17 +155,17 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-xs font-medium flex items-center gap-1 text-red-500">
                   <TrendingDown className="w-3 h-3" />
-                  Asks (Sells)
+                  {t('asksSells')}
                   <span className="ml-auto font-mono">
-                    {orderBook.asks?.length || 0} orders
+                    {orderBook.asks?.length || 0} {t('orders')}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="grid grid-cols-3 text-xs text-muted-foreground px-3 py-1 border-b border-border">
-                  <span>Price</span>
-                  <span className="text-right">Size</span>
-                  <span className="text-right">Total</span>
+                  <span>{t('price')}</span>
+                  <span className="text-right">{t('size')}</span>
+                  <span className="text-right">{t('total')}</span>
                 </div>
                 {orderBook.asks?.slice(0, 10).reverse().map((ask, idx) => {
                   const total = orderBook.asks!
@@ -200,17 +200,17 @@ const OrderBookView = ({ tokenId, tokenName, marketQuestion }: OrderBookViewProp
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-xs font-medium flex items-center gap-1 text-green-500">
                   <TrendingUp className="w-3 h-3" />
-                  Bids (Buys)
+                  {t('bidsBuys')}
                   <span className="ml-auto font-mono">
-                    {orderBook.bids?.length || 0} orders
+                    {orderBook.bids?.length || 0} {t('orders')}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="grid grid-cols-3 text-xs text-muted-foreground px-3 py-1 border-b border-border">
-                  <span>Price</span>
-                  <span className="text-right">Size</span>
-                  <span className="text-right">Total</span>
+                  <span>{t('price')}</span>
+                  <span className="text-right">{t('size')}</span>
+                  <span className="text-right">{t('total')}</span>
                 </div>
                 {orderBook.bids?.slice(0, 10).map((bid, idx) => {
                   const total = orderBook.bids!

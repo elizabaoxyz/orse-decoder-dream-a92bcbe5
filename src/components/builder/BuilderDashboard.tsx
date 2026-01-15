@@ -129,10 +129,10 @@ const BuilderDashboard = () => {
           <div>
             <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
-              Builder Dashboard
+              {t('builderDashboard')}
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Polymarket CLOB Builder API Integration
+              {t('builderApiIntegration')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ const BuilderDashboard = () => {
                 ) : (
                   <XCircle className="w-3 h-3" />
                 )}
-                {health.connected ? 'Connected' : 'Disconnected'}
+                {health.connected ? t('connected') : t('disconnected')}
               </Badge>
             )}
             <Button
@@ -154,7 +154,7 @@ const BuilderDashboard = () => {
               className="gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('refresh')}
             </Button>
           </div>
         </div>
@@ -166,15 +166,15 @@ const BuilderDashboard = () => {
           <TabsList className="h-10 bg-transparent">
             <TabsTrigger value="overview" className="gap-1.5 data-[state=active]:bg-muted">
               <Activity className="w-3.5 h-3.5" />
-              Overview
+              {t('overview')}
             </TabsTrigger>
             <TabsTrigger value="markets" className="gap-1.5 data-[state=active]:bg-muted">
               <Search className="w-3.5 h-3.5" />
-              Markets
+              {t('markets')}
             </TabsTrigger>
             <TabsTrigger value="orderbook" className="gap-1.5 data-[state=active]:bg-muted">
               <Layers className="w-3.5 h-3.5" />
-              Order Book
+              {t('orderBook')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -213,10 +213,10 @@ const BuilderDashboard = () => {
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
               <XCircle className="w-12 h-12 text-destructive mb-4" />
-              <p className="text-destructive font-medium mb-2">Connection Error</p>
+              <p className="text-destructive font-medium mb-2">{t('connectionError')}</p>
               <p className="text-sm text-muted-foreground text-center max-w-md">{error}</p>
               <Button onClick={fetchData} variant="outline" className="mt-4">
-                Try Again
+                {t('tryAgain')}
               </Button>
             </div>
           ) : (
@@ -228,29 +228,29 @@ const BuilderDashboard = () => {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      API Configuration
+                      {t('apiConfiguration')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Endpoint</p>
+                        <p className="text-muted-foreground">{t('endpoint')}</p>
                         <p className="font-mono text-xs truncate">{health.endpoint}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Chain ID</p>
-                        <p className="font-medium">{health.chainId} (Polygon)</p>
+                        <p className="text-muted-foreground">{t('chainId')}</p>
+                        <p className="font-medium">{health.chainId} ({t('polygon')})</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Builder API</p>
+                        <p className="text-muted-foreground">{t('builderApi')}</p>
                         <Badge variant={health.builderApiConfigured ? 'default' : 'secondary'}>
-                          {health.builderApiConfigured ? 'Configured' : 'Not Configured'}
+                          {health.builderApiConfigured ? t('configured') : t('notConfigured')}
                         </Badge>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Status</p>
+                        <p className="text-muted-foreground">{t('status')}</p>
                         <Badge variant={health.connected ? 'default' : 'destructive'}>
-                          {health.connected ? 'Online' : 'Offline'}
+                          {health.connected ? t('online') : t('offline')}
                         </Badge>
                       </div>
                     </div>
@@ -264,7 +264,7 @@ const BuilderDashboard = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                       <Activity className="w-3 h-3" />
-                      Total Trades
+                      {t('totalTrades')}
                     </div>
                     <p className="text-2xl font-bold text-foreground">{stats.totalTrades}</p>
                   </CardContent>
@@ -273,7 +273,7 @@ const BuilderDashboard = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                       <DollarSign className="w-3 h-3" />
-                      Volume (USDC)
+                      {t('volumeUsdc')}
                     </div>
                     <p className="text-2xl font-bold text-foreground">{formatUsd(stats.totalVolumeUsdc)}</p>
                   </CardContent>
@@ -282,7 +282,7 @@ const BuilderDashboard = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                       <TrendingUp className="w-3 h-3" />
-                      Fees Earned
+                      {t('feesEarned')}
                     </div>
                     <p className="text-2xl font-bold text-green-500">{formatUsd(stats.totalFeesUsdc)}</p>
                   </CardContent>
@@ -291,7 +291,7 @@ const BuilderDashboard = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                       <BarChart3 className="w-3 h-3" />
-                      Markets
+                      {t('markets')}
                     </div>
                     <p className="text-2xl font-bold text-foreground">{stats.uniqueMarkets}</p>
                   </CardContent>
@@ -300,7 +300,7 @@ const BuilderDashboard = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                       <Users className="w-3 h-3" />
-                      Users
+                      {t('users')}
                     </div>
                     <p className="text-2xl font-bold text-foreground">{stats.uniqueUsers}</p>
                   </CardContent>
@@ -310,18 +310,15 @@ const BuilderDashboard = () => {
               {/* Recent Trades */}
               <Card className="bg-card/50 border-border">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Recent Builder Trades</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('recentBuilderTrades')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {trades.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No trades yet</p>
+                      <p>{t('noTradesYet')}</p>
                       <p className="text-xs mt-1">
-                        {authPending 
-                          ? 'Waiting for Polymarket to approve your Builder API access'
-                          : 'Trades attributed to your builder will appear here'
-                        }
+                        {t('tradesWillAppear')}
                       </p>
                     </div>
                   ) : (
@@ -379,7 +376,7 @@ const BuilderDashboard = () => {
           <div className="h-full flex">
             {/* Token Selector Sidebar */}
             <div className="w-48 border-r border-border p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Select Token</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{t('selectToken')}</p>
               {selectedMarket ? (
                 selectedMarket.tokens.map((token) => (
                   <Button
@@ -403,9 +400,7 @@ const BuilderDashboard = () => {
                   </Button>
                 ))
               ) : (
-                <p className="text-xs text-muted-foreground">
-                  Select a market from the Markets tab first
-                </p>
+                <p className="text-xs text-muted-foreground">{t('selectMarketFirst')}</p>
               )}
             </div>
             
