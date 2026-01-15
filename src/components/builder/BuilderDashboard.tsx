@@ -51,7 +51,7 @@ const BuilderDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authPending, setAuthPending] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('leaderboard');
   const [selectedMarket, setSelectedMarket] = useState<SelectedMarket | null>(null);
   const [selectedTokenId, setSelectedTokenId] = useState<string>('');
 
