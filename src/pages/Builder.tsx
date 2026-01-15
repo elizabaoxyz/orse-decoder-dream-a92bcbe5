@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Sun, Moon, Globe } from 'lucide-react';
 import BuilderDashboard from '@/components/builder/BuilderDashboard';
+import AsciiMouseEffect from '@/components/terminal/AsciiMouseEffect';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import {
@@ -30,7 +31,9 @@ const Builder = () => {
   const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background relative">
+      {/* ASCII Mouse Effect */}
+      <AsciiMouseEffect />
       {/* Simple Header */}
       <header className="p-4 border-b border-border bg-card/50 flex items-center justify-between">
         <div className="flex items-center gap-4">
