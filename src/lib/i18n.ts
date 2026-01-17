@@ -187,6 +187,21 @@ const resources = {
       unknown: 'Unknown',
       nA: 'N/A',
       
+      // Trading Commands
+      tradingCommands: 'Trading Commands',
+      marketAnalysis: 'Market Analysis',
+      checkWallet: 'Check Wallet',
+      buyOrder: 'Buy Order',
+      sellOrder: 'Sell Order',
+      viewOrders: 'View Orders',
+      cancelOrder: 'Cancel Order',
+      redeemWinnings: 'Redeem Winnings',
+      checkPrice: 'Check Price',
+      explainMarket: 'Explain Market',
+      viewOrderBook: 'Order Book',
+      tradingTip: 'Tip: Use /buy [market] [amount] [price] to place orders',
+      mediaGeneration: 'Media Generation',
+      
       // Markets Explorer
       marketsExplorer: 'Markets Explorer',
       marketsExplorerDesc: 'Browse all Polymarket prediction markets in real-time',
@@ -449,6 +464,21 @@ const resources = {
       no: '否',
       unknown: '未知',
       nA: '暂无',
+      
+      // Trading Commands
+      tradingCommands: '交易命令',
+      marketAnalysis: '市场分析',
+      checkWallet: '查看钱包',
+      buyOrder: '买入订单',
+      sellOrder: '卖出订单',
+      viewOrders: '查看订单',
+      cancelOrder: '取消订单',
+      redeemWinnings: '领取收益',
+      checkPrice: '查看价格',
+      explainMarket: '市场详情',
+      viewOrderBook: '订单簿',
+      tradingTip: '提示：使用 /buy [市场] [数量] [价格] 下单',
+      mediaGeneration: '媒体生成',
       
       // Markets Explorer
       marketsExplorer: '市场浏览器',
@@ -713,6 +743,21 @@ const resources = {
       unknown: 'Không rõ',
       nA: 'N/A',
       
+      // Trading Commands
+      tradingCommands: 'Lệnh Giao Dịch',
+      marketAnalysis: 'Phân Tích Thị Trường',
+      checkWallet: 'Kiểm Tra Ví',
+      buyOrder: 'Lệnh Mua',
+      sellOrder: 'Lệnh Bán',
+      viewOrders: 'Xem Lệnh',
+      cancelOrder: 'Hủy Lệnh',
+      redeemWinnings: 'Nhận Thắng',
+      checkPrice: 'Xem Giá',
+      explainMarket: 'Chi Tiết Thị Trường',
+      viewOrderBook: 'Sổ Lệnh',
+      tradingTip: 'Mẹo: Dùng /buy [thị trường] [số lượng] [giá] để đặt lệnh',
+      mediaGeneration: 'Tạo Media',
+      
       // Markets Explorer
       marketsExplorer: 'Khám Phá Thị Trường',
       marketsExplorerDesc: 'Duyệt tất cả thị trường dự đoán Polymarket theo thời gian thực',
@@ -975,6 +1020,21 @@ const resources = {
       no: 'ไม่',
       unknown: 'ไม่ทราบ',
       nA: 'ไม่มี',
+      
+      // Trading Commands
+      tradingCommands: 'คำสั่งซื้อขาย',
+      marketAnalysis: 'วิเคราะห์ตลาด',
+      checkWallet: 'ตรวจสอบกระเป๋า',
+      buyOrder: 'คำสั่งซื้อ',
+      sellOrder: 'คำสั่งขาย',
+      viewOrders: 'ดูคำสั่ง',
+      cancelOrder: 'ยกเลิกคำสั่ง',
+      redeemWinnings: 'รับเงินรางวัล',
+      checkPrice: 'ดูราคา',
+      explainMarket: 'รายละเอียดตลาด',
+      viewOrderBook: 'สมุดคำสั่ง',
+      tradingTip: 'เคล็ดลับ: ใช้ /buy [ตลาด] [จำนวน] [ราคา] เพื่อวางคำสั่ง',
+      mediaGeneration: 'สร้างมีเดีย',
       
       // Markets Explorer
       marketsExplorer: 'สำรวจตลาด',
