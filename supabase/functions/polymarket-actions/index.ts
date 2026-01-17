@@ -11,8 +11,12 @@ const CLOB_API_URL = "https://clob.polymarket.com";
 const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
 
-// Public chain RPC for on-chain balance checks (no secrets)
-const POLYGON_RPC_URL = "https://rpc.ankr.com/polygon";
+// Multiple RPC endpoints for fallback (public, no auth)
+const POLYGON_RPCS = [
+  "https://polygon-bor-rpc.publicnode.com",
+  "https://1rpc.io/matic",
+  "https://endpoints.omniatech.io/v1/matic/mainnet/public",
+];
 const USDC_POLYGON_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC (PoS)
 
 // Builder credentials from environment
@@ -673,6 +677,19 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
 ];
 
+async function tryRpcProvider(): Promise<ethers.JsonRpcProvider> {
+  for (const url of POLYGON_RPCS) {
+    try {
+      const provider = new ethers.JsonRpcProvider(url);
+      await provider.getBlockNumber(); // quick connectivity test
+      return provider;
+    } catch {
+      console.warn(`[tryRpcProvider] ${url} failed, trying next...`);
+    }
+  }
+  throw new Error("All Polygon RPCs failed");
+}
+
 async function fetchOnchainBalances(
   provider: ethers.JsonRpcProvider,
   address: string
@@ -682,7 +699,8 @@ async function fetchOnchainBalances(
     const matic = ethers.formatEther(maticWei);
 
     const usdc = new ethers.Contract(USDC_POLYGON_ADDRESS, ERC20_ABI, provider);
-    const [usdcBal, decimals] = await Promise.all([usdc.balanceOf(address), usdc.decimals()]);
+    const usdcBal = await usdc.balanceOf(address);
+    const decimals = await usdc.decimals();
     const usdcFormatted = ethers.formatUnits(usdcBal, decimals);
 
     return { usdc: usdcFormatted, matic };
@@ -752,13 +770,13 @@ async function getWalletBalance(): Promise<{
   let builderOnchain: { usdc: string; matic: string } | undefined;
 
   try {
-    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
+    const provider = await tryRpcProvider();
 
     const normalizedBuilder = (BUILDER_ADDRESS || "").trim();
     const shouldCheckBuilder =
       normalizedBuilder && normalizedBuilder.toLowerCase() !== WALLET_ADDRESS.toLowerCase();
 
-    // Avoid RPC batch/coalescing issues on some public endpoints by doing sequential calls.
+    // Sequential calls to avoid batching issues on some RPCs
     onchain = await fetchOnchainBalances(provider, WALLET_ADDRESS);
     builderOnchain = shouldCheckBuilder ? await fetchOnchainBalances(provider, normalizedBuilder) : undefined;
   } catch (e) {
