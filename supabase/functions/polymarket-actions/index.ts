@@ -7,6 +7,90 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Oxylabs Web Unblocker configuration
+const OXYLABS_PROXY_URL = "https://unblock.oxylabs.io:60000";
+const getOxylabsCredentials = () => {
+  const username = Deno.env.get("OXYLABS_USERNAME");
+  const password = Deno.env.get("OXYLABS_PASSWORD");
+  return username && password ? { username, password } : null;
+};
+
+// Helper function to make requests through Oxylabs Web Unblocker proxy
+async function fetchWithProxy(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const oxylabsCreds = getOxylabsCredentials();
+  
+  if (!oxylabsCreds) {
+    // Fallback to direct request if no proxy configured
+    console.log("[fetchWithProxy] No proxy credentials, making direct request");
+    return fetch(url, options);
+  }
+
+  console.log(`[fetchWithProxy] Using Oxylabs proxy for: ${url}`);
+  
+  // For Oxylabs Web Unblocker, we use their REST API endpoint
+  const proxyUrl = "https://realtime.oxylabs.io/v1/queries";
+  
+  // Build context array with proper typing
+  const context: Array<{ key: string; value: unknown }> = [];
+  
+  if (options.headers) {
+    context.push({ key: "headers", value: options.headers });
+  }
+  
+  // Add body for POST/PUT requests
+  if (options.body && (options.method === "POST" || options.method === "PUT")) {
+    context.push({ key: "content", value: String(options.body) });
+  }
+
+  const proxyPayload = {
+    source: "universal",
+    url: url,
+    http_method: options.method || "GET",
+    geo_location: "Singapore", // Non-US location
+    render: "html",
+    parse: false,
+    context: context.length > 0 ? context : undefined,
+  };
+
+  const authHeader = "Basic " + btoa(`${oxylabsCreds.username}:${oxylabsCreds.password}`);
+  
+  try {
+    const proxyResponse = await fetch(proxyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+      body: JSON.stringify(proxyPayload),
+    });
+
+    const proxyResult = await proxyResponse.json();
+    console.log(`[fetchWithProxy] Proxy response status: ${proxyResponse.status}`);
+    
+    if (!proxyResponse.ok) {
+      console.error("[fetchWithProxy] Proxy error:", proxyResult);
+      // Fallback to direct request
+      return fetch(url, options);
+    }
+
+    // Create a Response object from the proxy result
+    const content = proxyResult.results?.[0]?.content || "";
+    const statusCode = proxyResult.results?.[0]?.status_code || 200;
+    
+    return new Response(content, {
+      status: statusCode,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("[fetchWithProxy] Error:", error);
+    // Fallback to direct request on proxy failure
+    return fetch(url, options);
+  }
+}
+
 const CLOB_API_URL = "https://clob.polymarket.com";
 const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
@@ -437,8 +521,8 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
       "POLY_NONCE": nonce.toString(),
     };
 
-    // Try POST to create new API key
-    const response = await fetch(`${CLOB_API_URL}/auth/api-key`, {
+    // Try POST to create new API key (use proxy to bypass Cloudflare)
+    const response = await fetchWithProxy(`${CLOB_API_URL}/auth/api-key`, {
       method: "POST",
       headers: l1Headers,
       body: JSON.stringify({
@@ -519,8 +603,8 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
       "POLY_NONCE": nonce.toString(),
     };
 
-    // Try GET first (standard derive)
-    const response = await fetch(`${CLOB_API_URL}/auth/derive-api-key`, {
+    // Try GET first (standard derive) - use proxy to bypass Cloudflare
+    const response = await fetchWithProxy(`${CLOB_API_URL}/auth/derive-api-key`, {
       method: "GET",
       headers: l1Headers,
     });
@@ -669,7 +753,8 @@ async function placeOrder(params: TradeParams): Promise<OrderResult> {
     const bodyString = JSON.stringify(signedOrder);
     const headers = await createClobAuthHeaders("POST", requestPath, bodyString);
 
-    const response = await fetch(`${CLOB_API_URL}${requestPath}`, {
+    // Use proxy for trading requests to bypass Cloudflare
+    const response = await fetchWithProxy(`${CLOB_API_URL}${requestPath}`, {
       method: "POST",
       headers,
       body: bodyString,
