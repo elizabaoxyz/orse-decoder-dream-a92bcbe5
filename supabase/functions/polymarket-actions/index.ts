@@ -943,21 +943,21 @@ function formatWalletForChat(wallet: {
   const clobBal = Number.parseFloat(wallet.balance || "0");
   const clobUsd = Number.isFinite(clobBal) ? `$${clobBal.toFixed(2)}` : "$0.00";
 
-  const builderNote = wallet.builder
-    ? `\n\n⚠️ **地址不一致提示**\n你在网页/Builder里看到的地址可能是 \`${wallet.builder.address}\`，但当前私钥派生的签名地址是 \`${wallet.address}\`。如果资金在 Builder 地址而签名地址为 0，请把资金转到签名地址再交易。`
-    : "";
+  // If builder (proxy wallet) exists, show it as the primary wallet
+  if (wallet.builder) {
+    return `💰 **Wallet**
+Address: \`${wallet.builder.address}\`
+CLOB Balance: ${clobUsd}
+On-chain USDC (Polygon): ${toUsd(wallet.builder.onchain?.usdc)}
+Open Positions: ${wallet.positions.length}`;
+  }
 
-  return `💰 **Wallet / 签名钱包**
-Address (derived from private key): \`${wallet.address}\`
+  // Fallback: show signer wallet directly
+  return `💰 **Wallet**
+Address: \`${wallet.address}\`
 CLOB Balance: ${clobUsd}
 On-chain USDC (Polygon): ${toUsd(wallet.onchain?.usdc)}
-Open Positions: ${wallet.positions.length}` +
-    (wallet.builder
-      ? `\n\n🏗️ **Builder Address**
-Address: \`${wallet.builder.address}\`
-On-chain USDC (Polygon): ${toUsd(wallet.builder.onchain?.usdc)}`
-      : "") +
-    builderNote;
+Open Positions: ${wallet.positions.length}`;
 }
 
 // =============================================================================
