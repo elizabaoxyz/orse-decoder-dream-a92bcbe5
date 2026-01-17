@@ -11,6 +11,10 @@ const CLOB_API_URL = "https://clob.polymarket.com";
 const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
 
+// Public chain RPC for on-chain balance checks (no secrets)
+const POLYGON_RPC_URL = "https://polygon-rpc.com";
+const USDC_POLYGON_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC (PoS)
+
 // Builder credentials from environment
 const BUILDER_ADDRESS = Deno.env.get("POLYMARKET_BUILDER_ADDRESS") || "";
 const BUILDER_API_KEY = Deno.env.get("POLYMARKET_BUILDER_API_KEY") || "";
@@ -18,9 +22,9 @@ const BUILDER_SECRET = Deno.env.get("POLYMARKET_BUILDER_SECRET") || "";
 const BUILDER_PASSPHRASE = Deno.env.get("POLYMARKET_BUILDER_PASSPHRASE") || "";
 
 // CLOB Trading credentials
-const WALLET_PRIVATE_KEY = Deno.env.get("WALLET_PRIVATE_KEY") || "";
+const getWalletPrivateKey = () => Deno.env.get("WALLET_PRIVATE_KEY") || "";
 
-// Derived CLOB API credentials (will be populated on first use)
+// Derived CLOB API credentials (cached per-wallet; reset if wallet changes)
 let CLOB_API_KEY = "";
 let CLOB_API_SECRET = "";
 let CLOB_PASSPHRASE = "";
@@ -339,13 +343,13 @@ async function getPriceHistory(tokenId: string, interval = "1d"): Promise<unknow
 // =============================================================================
 
 function checkTradingCapability(): { canTrade: boolean; reason?: string } {
-  if (!WALLET_PRIVATE_KEY) {
+  if (!getWalletPrivateKey()) {
     return {
       canTrade: false,
       reason: "WALLET_PRIVATE_KEY not configured. Trading is disabled."
     };
   }
-  
+
   return { canTrade: true };
 }
 
@@ -354,20 +358,32 @@ function checkTradingCapability(): { canTrade: boolean; reason?: string } {
 // =============================================================================
 
 async function initializeClobCredentials(): Promise<boolean> {
-  if (!WALLET_PRIVATE_KEY) {
+  const pk = getWalletPrivateKey();
+  if (!pk) {
     console.error("[initializeClobCredentials] No wallet private key configured");
     return false;
   }
-  
-  if (CLOB_API_KEY && CLOB_API_SECRET && CLOB_PASSPHRASE) {
-    console.log("[initializeClobCredentials] Already initialized");
-    return true;
-  }
 
   try {
-    const wallet = new ethers.Wallet(WALLET_PRIVATE_KEY);
-    WALLET_ADDRESS = wallet.address;
+    const wallet = new ethers.Wallet(pk);
+    const derivedAddress = wallet.address;
+
+    // If user updated the secret, the derived wallet address will change.
+    // Reset cached API creds so we re-auth against CLOB with the new wallet.
+    if (WALLET_ADDRESS && WALLET_ADDRESS.toLowerCase() !== derivedAddress.toLowerCase()) {
+      console.log("[initializeClobCredentials] Wallet changed; clearing cached CLOB credentials");
+      CLOB_API_KEY = "";
+      CLOB_API_SECRET = "";
+      CLOB_PASSPHRASE = "";
+    }
+
+    WALLET_ADDRESS = derivedAddress;
     console.log(`[initializeClobCredentials] Wallet address: ${WALLET_ADDRESS}`);
+
+    if (CLOB_API_KEY && CLOB_API_SECRET && CLOB_PASSPHRASE) {
+      console.log("[initializeClobCredentials] Already initialized");
+      return true;
+    }
 
     // Try L1 authentication (works for all wallets)
     return await createNewApiKey(wallet);
@@ -531,9 +547,9 @@ async function createClobAuthHeaders(
   requestPath: string,
   body: string = ""
 ): Promise<Record<string, string>> {
-  // Ensure credentials are initialized
-  if (!CLOB_API_KEY) {
-    await initializeClobCredentials();
+  const initialized = await initializeClobCredentials();
+  if (!initialized || !CLOB_API_KEY || !CLOB_API_SECRET || !CLOB_PASSPHRASE || !WALLET_ADDRESS) {
+    throw new Error("CLOB credentials not initialized");
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -601,7 +617,12 @@ async function placeOrder(params: TradeParams): Promise<OrderResult> {
     };
 
     // Sign the order
-    const wallet = new ethers.Wallet(WALLET_PRIVATE_KEY);
+    const pk = getWalletPrivateKey();
+    if (!pk) {
+      return { status: "error", message: "Wallet private key not configured" };
+    }
+
+    const wallet = new ethers.Wallet(pk);
     const orderHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(orderPayload)));
     const orderSignature = await wallet.signMessage(ethers.getBytes(orderHash));
 
@@ -647,16 +668,25 @@ async function placeOrder(params: TradeParams): Promise<OrderResult> {
   }
 }
 
-async function getWalletBalance(): Promise<{ address: string; balance: string; positions: unknown[] }> {
+async function getWalletBalance(): Promise<{
+  address: string;
+  balance: string; // CLOB balance (collateral)
+  positions: unknown[];
+  onchain?: { usdc: string; matic: string };
+  clob?: unknown;
+}> {
   console.log("[getWalletBalance] Fetching wallet info");
-  
+
   const initialized = await initializeClobCredentials();
   if (!initialized) {
     return { address: "", balance: "0", positions: [] };
   }
 
+  // 1) CLOB collateral balance (what Polymarket uses for trading)
+  let clobBalance = "0";
+  let clobRaw: unknown = null;
   try {
-    const requestPath = "/balance";
+    const requestPath = "/balance-allowance";
     const headers = await createClobAuthHeaders("GET", requestPath);
 
     const response = await fetch(`${CLOB_API_URL}${requestPath}`, {
@@ -664,21 +694,66 @@ async function getWalletBalance(): Promise<{ address: string; balance: string; p
       headers,
     });
 
+    const text = await response.text();
     if (!response.ok) {
-      console.error("[getWalletBalance] Failed:", response.status);
-      return { address: WALLET_ADDRESS, balance: "0", positions: [] };
+      console.error("[getWalletBalance] CLOB balance-allowance failed:", response.status, text);
+    } else {
+      const data = JSON.parse(text);
+      clobRaw = data;
+      clobBalance = String(
+        data?.balance ?? data?.availableBalance ?? data?.available ?? data?.collateral ?? "0"
+      );
     }
-
-    const data = await response.json();
-    return {
-      address: WALLET_ADDRESS,
-      balance: data.balance || "0",
-      positions: data.positions || [],
-    };
   } catch (error) {
-    console.error("[getWalletBalance] Error:", error);
-    return { address: WALLET_ADDRESS, balance: "0", positions: [] };
+    console.error("[getWalletBalance] CLOB balance-allowance error:", error);
   }
+
+  // 2) Positions (public data-api; useful even if CLOB endpoint changes)
+  let positions: unknown[] = [];
+  try {
+    const resp = await fetch(`https://data-api.polymarket.com/positions?user=${WALLET_ADDRESS}`, {
+      headers: { "Accept": "application/json" },
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      positions = Array.isArray(data) ? data : (data?.positions ?? []);
+    }
+  } catch (e) {
+    console.error("[getWalletBalance] Positions fetch error:", e);
+  }
+
+  // 3) On-chain USDC + MATIC balance (helps diagnose "I deposited but shows $0")
+  let onchain: { usdc: string; matic: string } | undefined;
+  try {
+    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
+
+    const maticWei = await provider.getBalance(WALLET_ADDRESS);
+    const matic = ethers.formatEther(maticWei);
+
+    const erc20Abi = [
+      "function balanceOf(address) view returns (uint256)",
+      "function decimals() view returns (uint8)",
+    ];
+
+    const usdc = new ethers.Contract(USDC_POLYGON_ADDRESS, erc20Abi, provider);
+    const [usdcBal, decimals] = await Promise.all([
+      usdc.balanceOf(WALLET_ADDRESS),
+      usdc.decimals(),
+    ]);
+    const usdcFormatted = ethers.formatUnits(usdcBal, decimals);
+
+    onchain = { usdc: usdcFormatted, matic };
+  } catch (e) {
+    console.error("[getWalletBalance] On-chain balance fetch error:", e);
+  }
+
+  return {
+    address: WALLET_ADDRESS,
+    balance: clobBalance,
+    positions,
+    onchain,
+    clob: clobRaw ?? undefined,
+  };
 }
 
 async function getOpenOrders(): Promise<unknown[]> {
@@ -801,10 +876,19 @@ Error: ${result.message}`;
   }
 }
 
-function formatWalletForChat(wallet: { address: string; balance: string; positions: unknown[] }): string {
+function formatWalletForChat(wallet: {
+  address: string;
+  balance: string;
+  positions: unknown[];
+  onchain?: { usdc: string; matic: string };
+}): string {
+  const clobBal = Number.parseFloat(wallet.balance || "0");
+  const onchainUsdc = wallet.onchain?.usdc ? Number.parseFloat(wallet.onchain.usdc) : null;
+
   return `💰 **Wallet Info**
 Address: \`${wallet.address}\`
-Balance: $${parseFloat(wallet.balance).toFixed(2)}
+CLOB Balance: $${Number.isFinite(clobBal) ? clobBal.toFixed(2) : "0.00"}
+On-chain USDC: ${onchainUsdc !== null && Number.isFinite(onchainUsdc) ? `$${onchainUsdc.toFixed(2)}` : "N/A"}
 Open Positions: ${wallet.positions.length}`;
 }
 
