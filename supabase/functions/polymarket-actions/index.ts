@@ -12,7 +12,7 @@ const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
 
 // Public chain RPC for on-chain balance checks (no secrets)
-const POLYGON_RPC_URL = "https://polygon-rpc.com";
+const POLYGON_RPC_URL = "https://rpc.ankr.com/polygon";
 const USDC_POLYGON_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC (PoS)
 
 // Builder credentials from environment
@@ -668,11 +668,36 @@ async function placeOrder(params: TradeParams): Promise<OrderResult> {
   }
 }
 
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+];
+
+async function fetchOnchainBalances(
+  provider: ethers.JsonRpcProvider,
+  address: string
+): Promise<{ usdc: string; matic: string } | undefined> {
+  try {
+    const maticWei = await provider.getBalance(address);
+    const matic = ethers.formatEther(maticWei);
+
+    const usdc = new ethers.Contract(USDC_POLYGON_ADDRESS, ERC20_ABI, provider);
+    const [usdcBal, decimals] = await Promise.all([usdc.balanceOf(address), usdc.decimals()]);
+    const usdcFormatted = ethers.formatUnits(usdcBal, decimals);
+
+    return { usdc: usdcFormatted, matic };
+  } catch (e) {
+    console.error("[fetchOnchainBalances] Error:", address, e);
+    return undefined;
+  }
+}
+
 async function getWalletBalance(): Promise<{
   address: string;
   balance: string; // CLOB balance (collateral)
   positions: unknown[];
   onchain?: { usdc: string; matic: string };
+  builder?: { address: string; onchain?: { usdc: string; matic: string } };
   clob?: unknown;
 }> {
   console.log("[getWalletBalance] Fetching wallet info");
@@ -712,7 +737,7 @@ async function getWalletBalance(): Promise<{
   let positions: unknown[] = [];
   try {
     const resp = await fetch(`https://data-api.polymarket.com/positions?user=${WALLET_ADDRESS}`, {
-      headers: { "Accept": "application/json" },
+      headers: { Accept: "application/json" },
     });
     if (resp.ok) {
       const data = await resp.json();
@@ -722,27 +747,20 @@ async function getWalletBalance(): Promise<{
     console.error("[getWalletBalance] Positions fetch error:", e);
   }
 
-  // 3) On-chain USDC + MATIC balance (helps diagnose "I deposited but shows $0")
+  // 3) On-chain balances: show BOTH signing wallet and (if different) builder address
   let onchain: { usdc: string; matic: string } | undefined;
+  let builderOnchain: { usdc: string; matic: string } | undefined;
+
   try {
     const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
 
-    const maticWei = await provider.getBalance(WALLET_ADDRESS);
-    const matic = ethers.formatEther(maticWei);
+    const normalizedBuilder = (BUILDER_ADDRESS || "").trim();
+    const shouldCheckBuilder =
+      normalizedBuilder && normalizedBuilder.toLowerCase() !== WALLET_ADDRESS.toLowerCase();
 
-    const erc20Abi = [
-      "function balanceOf(address) view returns (uint256)",
-      "function decimals() view returns (uint8)",
-    ];
-
-    const usdc = new ethers.Contract(USDC_POLYGON_ADDRESS, erc20Abi, provider);
-    const [usdcBal, decimals] = await Promise.all([
-      usdc.balanceOf(WALLET_ADDRESS),
-      usdc.decimals(),
-    ]);
-    const usdcFormatted = ethers.formatUnits(usdcBal, decimals);
-
-    onchain = { usdc: usdcFormatted, matic };
+    // Avoid RPC batch/coalescing issues on some public endpoints by doing sequential calls.
+    onchain = await fetchOnchainBalances(provider, WALLET_ADDRESS);
+    builderOnchain = shouldCheckBuilder ? await fetchOnchainBalances(provider, normalizedBuilder) : undefined;
   } catch (e) {
     console.error("[getWalletBalance] On-chain balance fetch error:", e);
   }
@@ -752,6 +770,10 @@ async function getWalletBalance(): Promise<{
     balance: clobBalance,
     positions,
     onchain,
+    builder:
+      (BUILDER_ADDRESS || "").trim() && (BUILDER_ADDRESS || "").trim().toLowerCase() !== WALLET_ADDRESS.toLowerCase()
+        ? { address: (BUILDER_ADDRESS || "").trim(), onchain: builderOnchain }
+        : undefined,
     clob: clobRaw ?? undefined,
   };
 }
@@ -881,15 +903,31 @@ function formatWalletForChat(wallet: {
   balance: string;
   positions: unknown[];
   onchain?: { usdc: string; matic: string };
+  builder?: { address: string; onchain?: { usdc: string; matic: string } };
 }): string {
-  const clobBal = Number.parseFloat(wallet.balance || "0");
-  const onchainUsdc = wallet.onchain?.usdc ? Number.parseFloat(wallet.onchain.usdc) : null;
+  const toUsd = (v?: string) => {
+    const n = v ? Number.parseFloat(v) : NaN;
+    return Number.isFinite(n) ? `$${n.toFixed(2)}` : "N/A";
+  };
 
-  return `💰 **Wallet Info**
-Address: \`${wallet.address}\`
-CLOB Balance: $${Number.isFinite(clobBal) ? clobBal.toFixed(2) : "0.00"}
-On-chain USDC: ${onchainUsdc !== null && Number.isFinite(onchainUsdc) ? `$${onchainUsdc.toFixed(2)}` : "N/A"}
-Open Positions: ${wallet.positions.length}`;
+  const clobBal = Number.parseFloat(wallet.balance || "0");
+  const clobUsd = Number.isFinite(clobBal) ? `$${clobBal.toFixed(2)}` : "$0.00";
+
+  const builderNote = wallet.builder
+    ? `\n\n⚠️ **地址不一致提示**\n你在网页/Builder里看到的地址可能是 \`${wallet.builder.address}\`，但当前私钥派生的签名地址是 \`${wallet.address}\`。如果资金在 Builder 地址而签名地址为 0，请把资金转到签名地址再交易。`
+    : "";
+
+  return `💰 **Wallet / 签名钱包**
+Address (derived from private key): \`${wallet.address}\`
+CLOB Balance: ${clobUsd}
+On-chain USDC (Polygon): ${toUsd(wallet.onchain?.usdc)}
+Open Positions: ${wallet.positions.length}` +
+    (wallet.builder
+      ? `\n\n🏗️ **Builder Address**
+Address: \`${wallet.builder.address}\`
+On-chain USDC (Polygon): ${toUsd(wallet.builder.onchain?.usdc)}`
+      : "") +
+    builderNote;
 }
 
 // =============================================================================
