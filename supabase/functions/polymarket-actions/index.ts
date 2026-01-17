@@ -1039,6 +1039,120 @@ async function fetchOnchainBalances(
   }
 }
 
+// ==================== DIAGNOSTICS ====================
+interface DiagResult {
+  l1_derive_ok: boolean;
+  l1_derive_status?: number;
+  l1_derive_error?: string;
+  balance_direct_status?: number;
+  balance_direct_ok: boolean;
+  balance_direct_hasError: boolean;
+  balance_proxy_status?: number;
+  balance_proxy_ok: boolean;
+  balance_proxy_hasError: boolean;
+  headers_sent: string[];
+  wallet_address_masked: string;
+  builder_address_masked: string;
+}
+
+async function runDiagnostics(): Promise<DiagResult> {
+  const result: DiagResult = {
+    l1_derive_ok: false,
+    balance_direct_ok: false,
+    balance_direct_hasError: false,
+    balance_proxy_ok: false,
+    balance_proxy_hasError: false,
+    headers_sent: [],
+    wallet_address_masked: WALLET_ADDRESS ? `${WALLET_ADDRESS.slice(0, 6)}...${WALLET_ADDRESS.slice(-4)}` : "not set",
+    builder_address_masked: BUILDER_ADDRESS ? `${BUILDER_ADDRESS.slice(0, 6)}...${BUILDER_ADDRESS.slice(-4)}` : "not set",
+  };
+
+  // Step 1: Test L1 deriveApiKey
+  try {
+    // Clear cached creds to force fresh derivation
+    CLOB_API_KEY = "";
+    CLOB_API_SECRET = "";
+    CLOB_PASSPHRASE = "";
+    const initialized = await initializeClobCredentials();
+    result.l1_derive_ok = initialized && !!CLOB_API_KEY;
+    result.l1_derive_status = initialized ? 200 : 0;
+  } catch (e) {
+    result.l1_derive_ok = false;
+    result.l1_derive_error = e instanceof Error ? e.message.slice(0, 100) : "unknown";
+  }
+
+  // Step 2: Test balance-allowance direct
+  try {
+    const requestPath = "/balance-allowance?asset_type=0";
+    const headers = await createClobAuthHeaders("GET", requestPath);
+    result.headers_sent = Object.keys(headers);
+    const url = `${CLOB_API_URL}${requestPath}`;
+    const res = await fetch(url, { method: "GET", headers });
+    const text = await res.text();
+    result.balance_direct_status = res.status;
+    result.balance_direct_ok = res.ok;
+    if (res.ok) {
+      try {
+        const data = JSON.parse(text);
+        result.balance_direct_hasError = !!data?.error;
+      } catch {
+        result.balance_direct_hasError = true;
+      }
+    }
+  } catch (e) {
+    result.balance_direct_ok = false;
+    result.balance_direct_hasError = true;
+  }
+
+  // Step 3: Test balance-allowance via proxy
+  try {
+    const requestPath = "/balance-allowance?asset_type=0";
+    const headers = await createClobAuthHeaders("GET", requestPath);
+    const url = `${CLOB_API_URL}${requestPath}`;
+    const res = await fetchWithProxy(url, { method: "GET", headers });
+    const text = await res.text();
+    result.balance_proxy_status = res.status;
+    result.balance_proxy_ok = res.ok;
+    if (res.ok) {
+      try {
+        const data = JSON.parse(text);
+        result.balance_proxy_hasError = !!data?.error;
+      } catch {
+        result.balance_proxy_hasError = true;
+      }
+    }
+  } catch (e) {
+    result.balance_proxy_ok = false;
+    result.balance_proxy_hasError = true;
+  }
+
+  return result;
+}
+
+function formatDiagForChat(diag: DiagResult): string {
+  const lines: string[] = [
+    `🔧 **Polymarket Diagnostics**`,
+    ``,
+    `**Wallet:** ${diag.wallet_address_masked}`,
+    `**Builder:** ${diag.builder_address_masked}`,
+    ``,
+    `**L1 (deriveApiKey):** ${diag.l1_derive_ok ? "✅ OK" : "❌ FAIL"}${diag.l1_derive_error ? ` (${diag.l1_derive_error})` : ""}`,
+    ``,
+    `**L2 balance-allowance (direct):**`,
+    `  Status: ${diag.balance_direct_status ?? "N/A"}`,
+    `  OK: ${diag.balance_direct_ok ? "✅" : "❌"}`,
+    `  Has error field: ${diag.balance_direct_hasError ? "⚠️ YES" : "✅ NO"}`,
+    ``,
+    `**L2 balance-allowance (proxy):**`,
+    `  Status: ${diag.balance_proxy_status ?? "N/A"}`,
+    `  OK: ${diag.balance_proxy_ok ? "✅" : "❌"}`,
+    `  Has error field: ${diag.balance_proxy_hasError ? "⚠️ YES" : "✅ NO"}`,
+    ``,
+    `**Headers sent:** ${diag.headers_sent.filter(h => h.startsWith("POLY")).join(", ")}`,
+  ];
+  return lines.join("\n");
+}
+
 async function getWalletBalance(): Promise<{
   address: string;
   balance: string; // CLOB balance (collateral)
@@ -1602,6 +1716,15 @@ serve(async (req) => {
             ? `✅ ${result.message}` 
             : `❌ ${result.message}`;
         }
+        break;
+      }
+
+      // Diagnostics command (no sensitive info)
+      case "diag":
+      case "DIAG": {
+        const diagResult = await runDiagnostics();
+        data = diagResult;
+        formattedResponse = formatDiagForChat(diagResult);
         break;
       }
 
