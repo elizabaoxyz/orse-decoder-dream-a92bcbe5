@@ -1083,16 +1083,25 @@ async function getWalletBalance(): Promise<{
     if (!res.ok && (res.status === 401 || res.status === 403 || res.status === 429 || res.status === 503)) {
       console.warn(`[getWalletBalance] balance-allowance direct failed (${res.status}); trying proxy...`);
       ({ res, text } = await doRequest(true));
+      // Log proxy result for debugging
+      console.log(`[getWalletBalance] balance-allowance proxy result: status=${res.status}, body=${text.slice(0, 200)}`);
     }
 
     if (!res.ok) {
-      console.error("[getWalletBalance] CLOB balance-allowance failed:", res.status, text);
+      console.error("[getWalletBalance] CLOB balance-allowance failed:", res.status, text.slice(0, 200));
     } else {
       const data = JSON.parse(text);
       clobRaw = data;
+      // Determine which field was used for balance
+      const balanceField = data?.balance !== undefined ? "balance"
+        : data?.availableBalance !== undefined ? "availableBalance"
+        : data?.available !== undefined ? "available"
+        : data?.collateral !== undefined ? "collateral"
+        : "none";
       clobBalance = String(
         data?.balance ?? data?.availableBalance ?? data?.available ?? data?.collateral ?? "0"
       );
+      console.log(`[getWalletBalance] balance-allowance success: field=${balanceField}, value=${clobBalance}`);
     }
   } catch (error) {
     console.error("[getWalletBalance] CLOB balance-allowance error:", error);
