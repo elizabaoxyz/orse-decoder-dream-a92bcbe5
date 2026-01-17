@@ -114,13 +114,32 @@ async function fetchWithProxy(
   return fetch(url, options);
 }
 
+// Prefer direct calls for auth endpoints; only use proxy if we hit Cloudflare blocks.
+async function fetchClobPreferDirect(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  try {
+    const direct = await fetch(url, options);
+    // Cloudflare-style blocks we want to bypass.
+    if (direct.status === 403 || direct.status === 429 || direct.status === 503) {
+      console.log(`[fetchClobPreferDirect] Direct blocked (${direct.status}); using proxy for: ${url}`);
+      return await fetchWithProxy(url, options);
+    }
+    return direct;
+  } catch (err) {
+    console.error("[fetchClobPreferDirect] Direct request error, using proxy:", err);
+    return await fetchWithProxy(url, options);
+  }
+}
+
 const CLOB_API_URL = "https://clob.polymarket.com";
 const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
 
 async function getClobServerTimeSeconds(): Promise<number | null> {
   try {
-    const res = await fetchWithProxy(`${CLOB_API_URL}/time`, { method: "GET" });
+    const res = await fetchClobPreferDirect(`${CLOB_API_URL}/time`, { method: "GET" });
     const text = (await res.text()).trim();
 
     // Endpoint commonly returns a JSON number, but be defensive.
@@ -660,7 +679,7 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
 
     // Try POST to create new API key (use proxy to bypass Cloudflare)
     // CRITICAL: timestamp must be STRING in body to match headers (API requirement)
-    const response = await fetchWithProxy(`${CLOB_API_URL}/auth/api-key`, {
+    const response = await fetchClobPreferDirect(`${CLOB_API_URL}/auth/api-key`, {
       method: "POST",
       headers: l1Headers,
       body: JSON.stringify({
@@ -764,7 +783,7 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
     };
 
     // Try GET first (standard derive) - use proxy to bypass Cloudflare
-    const response = await fetchWithProxy(`${CLOB_API_URL}/auth/derive-api-key`, {
+    const response = await fetchClobPreferDirect(`${CLOB_API_URL}/auth/derive-api-key`, {
       method: "GET",
       headers: l1Headers,
     });
