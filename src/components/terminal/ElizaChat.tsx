@@ -1,15 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mic, MicOff, ImageIcon, Video, Loader2, Send, Clock, Plus, X } from "lucide-react";
+import { Mic, MicOff, Loader2, Send, Clock, Sparkles } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import TradingQuickMenu from "./TradingQuickMenu";
 
 const agentAvatar = cacheBust(agentAvatarBase);
 
@@ -163,7 +159,7 @@ const ElizaChat = () => {
     }
   };
 
-  // Handle Polymarket commands
+  // Handle Polymarket commands (including trading)
   const handlePolymarketCommand = async (command: string, args: string): Promise<string | null> => {
     try {
       let action = "";
@@ -192,6 +188,43 @@ const ElizaChat = () => {
         case "/spread":
           action = "getSpread";
           params = { tokenId: args };
+          break;
+        // Trading commands
+        case "/wallet":
+          action = "wallet";
+          break;
+        case "/buy": {
+          // Parse: /buy [tokenId] [amount] [price?]
+          const buyParts = args.split(/\s+/);
+          action = "buy";
+          params = { 
+            tokenId: buyParts[0], 
+            amount: parseFloat(buyParts[1]) || 10,
+            price: buyParts[2] ? parseFloat(buyParts[2]) : undefined
+          };
+          break;
+        }
+        case "/sell": {
+          // Parse: /sell [tokenId] [amount] [price?]
+          const sellParts = args.split(/\s+/);
+          action = "sell";
+          params = { 
+            tokenId: sellParts[0], 
+            amount: parseFloat(sellParts[1]) || 10,
+            price: sellParts[2] ? parseFloat(sellParts[2]) : undefined
+          };
+          break;
+        }
+        case "/orders":
+          action = "orders";
+          break;
+        case "/cancel":
+          action = "cancel";
+          params = { orderId: args };
+          break;
+        case "/redeem":
+          action = "redeem";
+          params = { conditionId: args };
           break;
         default:
           return null;
@@ -271,8 +304,8 @@ const ElizaChat = () => {
       return;
     }
 
-    // Check for Polymarket commands
-    const polymarketMatch = userMessage.match(/^(\/market|\/search|\/explain|\/details|\/orderbook|\/book|\/price|\/spread)\s*(.*)/i);
+    // Check for Polymarket commands (including trading)
+    const polymarketMatch = userMessage.match(/^(\/market|\/search|\/explain|\/details|\/orderbook|\/book|\/price|\/spread|\/wallet|\/buy|\/sell|\/orders|\/cancel|\/redeem)\s*(.*)/i);
     if (polymarketMatch) {
       const command = polymarketMatch[1].toLowerCase();
       const args = polymarketMatch[2].trim();
@@ -458,65 +491,24 @@ const ElizaChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area - ChatGPT Style */}
+        {/* Input Area - ChatGPT Style with Trading Menu */}
         <div className="relative">
           <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-2 py-2 focus-within:border-primary/50 transition-colors">
-            {/* Attachment Menu (Image/Video) */}
-            <Popover open={showAttachMenu} onOpenChange={setShowAttachMenu}>
-              <PopoverTrigger asChild>
+            {/* Trading Quick Menu */}
+            <TradingQuickMenu
+              isOpen={showAttachMenu}
+              onOpenChange={setShowAttachMenu}
+              onCommand={insertCommand}
+              trigger={
                 <button
                   disabled={isLoading}
                   className="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30"
-                  title="Attach media"
+                  title={t('tradingCommands')}
                 >
-                  <Plus className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5" />
                 </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                side="top" 
-                align="start" 
-                className="w-auto p-2 bg-popover border-border"
-              >
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => insertCommand("/image")}
-                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <ImageIcon className="w-4 h-4 text-primary" />
-                    <span>{t('generateImage')}</span>
-                  </button>
-                  <button
-                    onClick={() => insertCommand("/video")}
-                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <Video className="w-4 h-4 text-primary" />
-                    <span>{t('generateVideo')}</span>
-                  </button>
-                  <div className="h-px bg-border my-1" />
-                  <button
-                    onClick={() => insertCommand("/market")}
-                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <span className="w-4 h-4 text-primary">🔍</span>
-                    <span>{t('searchMarkets') || 'Search Markets'}</span>
-                  </button>
-                  <button
-                    onClick={() => insertCommand("/explain")}
-                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <span className="w-4 h-4 text-primary">📊</span>
-                    <span>{t('explainMarket') || 'Explain Market'}</span>
-                  </button>
-                  <button
-                    onClick={() => insertCommand("/orderbook")}
-                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <span className="w-4 h-4 text-primary">📈</span>
-                    <span>{t('viewOrderBook') || 'Order Book'}</span>
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
+              }
+            />
             
             <input
               ref={inputRef}
