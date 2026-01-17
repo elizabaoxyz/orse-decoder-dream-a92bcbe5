@@ -617,12 +617,13 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
     };
 
     // Try POST to create new API key (use proxy to bypass Cloudflare)
+    // CRITICAL: timestamp must be STRING in body to match headers (API requirement)
     const response = await fetchWithProxy(`${CLOB_API_URL}/auth/api-key`, {
       method: "POST",
       headers: l1Headers,
       body: JSON.stringify({
         address: wallet.address.toLowerCase(),
-        timestamp,
+        timestamp: timestamp.toString(), // Must be string to match header
         nonce,
         signature,
       }),
