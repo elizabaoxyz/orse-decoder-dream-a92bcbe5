@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mic, MicOff, Loader2, Send, Clock, Sparkles } from "lucide-react";
+import { Mic, MicOff, Loader2, Send, Clock, Sparkles, Wallet, ShoppingCart, TrendingDown, Gift, ListOrdered, XCircle, BarChart3, Search, BookOpen, DollarSign, ImageIcon, Video } from "lucide-react";
 import agentAvatarBase from "@/assets/agent-avatar.jpg";
 import { cacheBust } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import TradingQuickMenu from "./TradingQuickMenu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const agentAvatar = cacheBust(agentAvatarBase);
 
@@ -494,22 +498,128 @@ const ElizaChat = () => {
         {/* Input Area - Fixed at bottom, ChatGPT style */}
         <div className="shrink-0 p-4 pt-2 border-t border-border/30">
           <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-3 py-2 focus-within:border-primary/50 transition-colors">
-            {/* Trading Quick Menu Button */}
-            <TradingQuickMenu
-              isOpen={showAttachMenu}
-              onOpenChange={setShowAttachMenu}
-              onCommand={insertCommand}
-              trigger={
+            {/* Trading Quick Menu Button - Inline */}
+            <Popover open={showAttachMenu} onOpenChange={setShowAttachMenu}>
+              <PopoverTrigger asChild>
                 <button
                   type="button"
                   disabled={isLoading}
-                  className="p-2 rounded-xl text-primary hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 flex-shrink-0"
+                  className="p-2 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 transition-all disabled:opacity-30 flex-shrink-0"
                   title={t('tradingCommands')}
                 >
                   <Sparkles className="w-5 h-5" />
                 </button>
-              }
-            />
+              </PopoverTrigger>
+              <PopoverContent 
+                side="top" 
+                align="start" 
+                className="w-80 p-0 bg-popover/95 backdrop-blur-sm border-border shadow-xl z-50"
+              >
+                <div className="p-3 border-b border-border">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-primary" />
+                    {t('tradingCommands')}
+                  </h3>
+                </div>
+                
+                {/* Trading Commands Grid */}
+                <div className="p-2">
+                  <div className="grid grid-cols-2 gap-1">
+                    <button onClick={() => insertCommand("/wallet")} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <Wallet className="w-4 h-4 text-green-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('checkWallet')}</span>
+                        <span className="text-[10px] text-muted-foreground">/wallet</span>
+                      </div>
+                    </button>
+                    <button onClick={() => insertCommand("/buy")} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <ShoppingCart className="w-4 h-4 text-emerald-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('buyOrder')}</span>
+                        <span className="text-[10px] text-muted-foreground">/buy</span>
+                      </div>
+                    </button>
+                    <button onClick={() => insertCommand("/sell")} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <TrendingDown className="w-4 h-4 text-red-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('sellOrder')}</span>
+                        <span className="text-[10px] text-muted-foreground">/sell</span>
+                      </div>
+                    </button>
+                    <button onClick={() => insertCommand("/orders")} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <ListOrdered className="w-4 h-4 text-blue-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('viewOrders')}</span>
+                        <span className="text-[10px] text-muted-foreground">/orders</span>
+                      </div>
+                    </button>
+                    <button onClick={() => insertCommand("/cancel")} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <XCircle className="w-4 h-4 text-orange-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('cancelOrder')}</span>
+                        <span className="text-[10px] text-muted-foreground">/cancel</span>
+                      </div>
+                    </button>
+                    <button onClick={() => insertCommand("/redeem")} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <Gift className="w-4 h-4 text-purple-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('redeemWinnings')}</span>
+                        <span className="text-[10px] text-muted-foreground">/redeem</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 border-t border-border">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    {t('marketAnalysis')}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-1">
+                    <button onClick={() => insertCommand("/market")} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <Search className="w-4 h-4 text-primary" />
+                      <span className="text-xs">{t('searchMarkets')}</span>
+                    </button>
+                    <button onClick={() => insertCommand("/explain")} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <BarChart3 className="w-4 h-4 text-primary" />
+                      <span className="text-xs">{t('explainMarket')}</span>
+                    </button>
+                    <button onClick={() => insertCommand("/orderbook")} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      <span className="text-xs">{t('viewOrderBook')}</span>
+                    </button>
+                    <button onClick={() => insertCommand("/price")} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <DollarSign className="w-4 h-4 text-primary" />
+                      <span className="text-xs">{t('checkPrice')}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 border-t border-border">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    {t('mediaGeneration')}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-1">
+                    <button onClick={() => insertCommand("/image")} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <ImageIcon className="w-4 h-4 text-primary" />
+                      <span className="text-xs">{t('generateImage')}</span>
+                    </button>
+                    <button onClick={() => insertCommand("/video")} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left">
+                      <Video className="w-4 h-4 text-primary" />
+                      <span className="text-xs">{t('generateVideo')}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Tips */}
+                <div className="p-2 bg-muted/30 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    {t('tradingTip')}
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
             
             <input
               ref={inputRef}
