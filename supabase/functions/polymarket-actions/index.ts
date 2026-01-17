@@ -873,8 +873,20 @@ async function createClobAuthHeaders(
     "Accept": "application/json",
   };
 
-  // Add proxy address header if configured (for Safe multisig trading)
-  if (proxyAddress && proxyAddress.toLowerCase() !== WALLET_ADDRESS.toLowerCase()) {
+  // Add proxy address header ONLY for trading endpoints.
+  // For account endpoints (e.g. /balance-allowance), sending a proxy header can cause auth mismatches.
+  const shouldIncludeProxyHeader =
+    requestPath.startsWith("/order") ||
+    requestPath.startsWith("/orders") ||
+    requestPath.startsWith("/cancel") ||
+    requestPath.startsWith("/redeem") ||
+    requestPath.startsWith("/trades");
+
+  if (
+    shouldIncludeProxyHeader &&
+    proxyAddress &&
+    proxyAddress.toLowerCase() !== WALLET_ADDRESS.toLowerCase()
+  ) {
     headers["POLY-PROXY-ADDRESS"] = proxyAddress;
     console.log(`[createClobAuthHeaders] Using proxy wallet: ${proxyAddress}`);
   }
