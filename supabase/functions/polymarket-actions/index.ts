@@ -25,23 +25,33 @@ const WALLET_PRIVATE_KEY = Deno.env.get("WALLET_PRIVATE_KEY") || "";
 
 interface MarketInfo {
   id: string;
-  condition_id: string;
+  condition_id?: string;
+  conditionId?: string;
   question: string;
   description?: string;
   market_slug?: string;
+  slug?: string;
   end_date_iso?: string;
+  endDateIso?: string;
   game_start_time?: string;
   seconds_delay?: number;
   minimum_tick_size?: string;
-  tokens: TokenInfo[];
+  tokens?: TokenInfo[];
   active?: boolean;
   closed?: boolean;
   archived?: boolean;
   accepting_orders?: boolean;
+  acceptingOrders?: boolean;
   enable_order_book?: boolean;
-  liquidity?: string;
-  volume?: string;
-  volume24hr?: string;
+  enableOrderBook?: boolean;
+  liquidity?: string | number;
+  volume?: string | number;
+  volume24hr?: number;
+  // Gamma API specific fields
+  bestBid?: number;
+  bestAsk?: number;
+  outcomePrices?: string; // JSON string like "[0.52, 0.48]"
+  outcomes?: string; // JSON string like '["Yes", "No"]'
 }
 
 interface TokenInfo {
@@ -337,13 +347,43 @@ function checkTradingCapability(): { canTrade: boolean; reason?: string } {
 // =============================================================================
 
 function formatMarketForChat(market: MarketInfo): string {
-  const tokens = market.tokens || [];
-  const priceInfo = tokens.map(t => `${t.outcome}: ${(t.price || 0) * 100}%`).join(", ");
+  // Try to extract prices from various sources
+  let priceInfo = "N/A";
+  
+  // Method 1: From outcomePrices (Gamma API format - JSON string)
+  if (market.outcomePrices && market.outcomes) {
+    try {
+      const prices = JSON.parse(market.outcomePrices) as number[];
+      const outcomes = JSON.parse(market.outcomes) as string[];
+      priceInfo = outcomes.map((o, i) => `${o}: ${(prices[i] * 100).toFixed(1)}%`).join(", ");
+    } catch (e) {
+      console.log("Failed to parse outcomePrices:", e);
+    }
+  }
+  
+  // Method 2: From bestBid/bestAsk (Gamma API)
+  if (priceInfo === "N/A" && (market.bestBid || market.bestAsk)) {
+    const yesPrice = market.bestAsk ? (market.bestAsk * 100).toFixed(1) : "?";
+    const noPrice = market.bestBid ? ((1 - market.bestBid) * 100).toFixed(1) : "?";
+    priceInfo = `Yes: ${yesPrice}%, No: ${noPrice}%`;
+  }
+  
+  // Method 3: From tokens array (CLOB API format)
+  if (priceInfo === "N/A" && market.tokens && market.tokens.length > 0) {
+    priceInfo = market.tokens.map(t => `${t.outcome}: ${((t.price || 0) * 100).toFixed(1)}%`).join(", ");
+  }
+  
+  const volume = typeof market.volume24hr === 'number' 
+    ? market.volume24hr.toLocaleString() 
+    : parseFloat(String(market.volume24hr || "0")).toLocaleString();
+  
+  const marketId = market.conditionId || market.condition_id || market.id;
+  const slug = market.slug || market.market_slug || "";
   
   return `📊 **${market.question}**
-ID: \`${market.condition_id || market.id}\`
-Prices: ${priceInfo || "N/A"}
-Volume 24h: $${parseFloat(market.volume24hr || "0").toLocaleString()}
+ID: \`${marketId}\`
+${slug ? `Slug: ${slug}\n` : ""}Prices: ${priceInfo}
+Volume 24h: $${volume}
 Status: ${market.active ? "🟢 Active" : "🔴 Inactive"}`;
 }
 
