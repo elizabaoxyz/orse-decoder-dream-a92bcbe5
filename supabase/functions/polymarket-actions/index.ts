@@ -7,79 +7,96 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Oxylabs Web Unblocker configuration
-const OXYLABS_PROXY_URL = "https://unblock.oxylabs.io:60000";
-const getOxylabsCredentials = () => {
-  const username = Deno.env.get("OXYLABS_USERNAME");
-  const password = Deno.env.get("OXYLABS_PASSWORD");
-  return username && password ? { username, password } : null;
-};
+// Bright Data Web Unlocker API configuration
+const BRIGHT_DATA_API_URL = "https://api.brightdata.com/request";
+const BRIGHT_DATA_ZONE = "web_unlocker1";
 
-// Helper function to make requests through proxy
+const getBrightDataApiKey = () => Deno.env.get("BRIGHT_DATA_API_KEY") || "";
+
+// Helper function to make requests through Bright Data Web Unlocker
 async function fetchWithProxy(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const creds = getOxylabsCredentials();
+  const apiKey = getBrightDataApiKey();
   
-  // Try Deno.createHttpClient with proxy (if available in this runtime)
-  if (creds && typeof Deno.createHttpClient === "function") {
+  if (apiKey) {
     try {
-      console.log("[fetchWithProxy] Attempting Deno.createHttpClient with Oxylabs proxy...");
-      const client = Deno.createHttpClient({
-        proxy: {
-          url: OXYLABS_PROXY_URL,
-          basicAuth: {
-            username: creds.username,
-            password: creds.password,
-          },
-        },
-      });
+      console.log("[fetchWithProxy] Using Bright Data Web Unlocker for:", url);
       
-      const response = await fetch(url, { ...options, client } as RequestInit);
-      console.log("[fetchWithProxy] Proxy request successful, status:", response.status);
-      return response;
-    } catch (proxyErr) {
-      console.error("[fetchWithProxy] Deno.createHttpClient failed:", proxyErr);
-      // Fall through to direct request
-    }
-  } else if (creds) {
-    console.log("[fetchWithProxy] Deno.createHttpClient not available, trying Oxylabs Realtime API...");
-    // Fallback: Use Oxylabs Realtime/Push-Pull API
-    try {
-      const auth = base64Encode(`${creds.username}:${creds.password}`);
-      const payload = {
-        source: "universal",
+      // Build headers object for target request
+      const targetHeaders: Record<string, string> = {};
+      if (options.headers) {
+        const headers = options.headers as Record<string, string>;
+        Object.entries(headers).forEach(([key, value]) => {
+          if (typeof value === "string") {
+            targetHeaders[key] = value;
+          }
+        });
+      }
+      
+      // Bright Data Web Unlocker API request
+      const payload: Record<string, unknown> = {
+        zone: BRIGHT_DATA_ZONE,
         url: url,
-        render: "html",
-        http_method: options.method || "GET",
-        headers: options.headers || {},
-        body: options.body ? String(options.body) : undefined,
+        format: "raw",
       };
       
-      const proxyResponse = await fetch("https://realtime.oxylabs.io/v1/queries", {
+      // Add method if not GET
+      if (options.method && options.method.toUpperCase() !== "GET") {
+        payload.method = options.method.toUpperCase();
+      }
+      
+      // Add body if present
+      if (options.body) {
+        payload.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
+      }
+      
+      // Add headers if present
+      if (Object.keys(targetHeaders).length > 0) {
+        payload.headers = targetHeaders;
+      }
+      
+      const proxyResponse = await fetch(BRIGHT_DATA_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Basic ${auth}`,
+          "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
       
+      console.log("[fetchWithProxy] Bright Data response status:", proxyResponse.status);
+      
       if (proxyResponse.ok) {
-        const data = await proxyResponse.json();
-        console.log("[fetchWithProxy] Oxylabs Realtime API success");
-        // Return a mock Response with the content
-        return new Response(JSON.stringify(data.results?.[0]?.content || data), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        const responseText = await proxyResponse.text();
+        console.log("[fetchWithProxy] Bright Data success, response length:", responseText.length);
+        
+        // Try to parse as JSON
+        try {
+          const jsonData = JSON.parse(responseText);
+          return new Response(JSON.stringify(jsonData), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch {
+          // Return raw text if not JSON
+          return new Response(responseText, {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
       } else {
-        console.error("[fetchWithProxy] Oxylabs Realtime API failed:", proxyResponse.status);
+        const errorText = await proxyResponse.text();
+        console.error("[fetchWithProxy] Bright Data error:", proxyResponse.status, errorText);
+        // Fall through to direct request
       }
-    } catch (realtimeErr) {
-      console.error("[fetchWithProxy] Oxylabs Realtime API error:", realtimeErr);
+    } catch (brightDataErr) {
+      console.error("[fetchWithProxy] Bright Data error:", brightDataErr);
+      // Fall through to direct request
     }
+  } else {
+    console.log("[fetchWithProxy] No Bright Data API key, using direct request");
   }
   
   // Direct request as final fallback
