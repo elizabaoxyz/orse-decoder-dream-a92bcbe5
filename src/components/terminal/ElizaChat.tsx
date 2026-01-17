@@ -163,6 +163,55 @@ const ElizaChat = () => {
     }
   };
 
+  // Handle Polymarket commands
+  const handlePolymarketCommand = async (command: string, args: string): Promise<string | null> => {
+    try {
+      let action = "";
+      let params: Record<string, unknown> = {};
+
+      switch (command) {
+        case "/market":
+        case "/search":
+          action = "searchMarkets";
+          params = { query: args, limit: 5 };
+          break;
+        case "/explain":
+        case "/details":
+          action = "getMarketDetails";
+          params = { marketId: args };
+          break;
+        case "/orderbook":
+        case "/book":
+          action = "getOrderBookSummary";
+          params = { tokenId: args };
+          break;
+        case "/price":
+          action = "getBestPrice";
+          params = { tokenId: args, side: "buy" };
+          break;
+        case "/spread":
+          action = "getSpread";
+          params = { tokenId: args };
+          break;
+        default:
+          return null;
+      }
+
+      const { data, error } = await supabase.functions.invoke("polymarket-actions", {
+        body: { action, params },
+      });
+
+      if (error || !data?.success) {
+        return `❌ Error: ${data?.error || error?.message || "Unknown error"}`;
+      }
+
+      return data.formattedResponse || JSON.stringify(data.data, null, 2);
+    } catch (error) {
+      console.error("Polymarket command error:", error);
+      return `❌ Failed to execute command: ${error instanceof Error ? error.message : "Unknown error"}`;
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -220,6 +269,26 @@ const ElizaChat = () => {
       }
       setIsLoading(false);
       return;
+    }
+
+    // Check for Polymarket commands
+    const polymarketMatch = userMessage.match(/^(\/market|\/search|\/explain|\/details|\/orderbook|\/book|\/price|\/spread)\s*(.*)/i);
+    if (polymarketMatch) {
+      const command = polymarketMatch[1].toLowerCase();
+      const args = polymarketMatch[2].trim();
+      
+      setMessages(prev => [...prev, { role: "user", content: userMessage, timestamp }]);
+      
+      const response = await handlePolymarketCommand(command, args);
+      if (response) {
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: response,
+          timestamp: new Date()
+        }]);
+        setIsLoading(false);
+        return;
+      }
     }
 
     // Regular chat message
@@ -422,6 +491,28 @@ const ElizaChat = () => {
                   >
                     <Video className="w-4 h-4 text-primary" />
                     <span>{t('generateVideo')}</span>
+                  </button>
+                  <div className="h-px bg-border my-1" />
+                  <button
+                    onClick={() => insertCommand("/market")}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <span className="w-4 h-4 text-primary">🔍</span>
+                    <span>{t('searchMarkets') || 'Search Markets'}</span>
+                  </button>
+                  <button
+                    onClick={() => insertCommand("/explain")}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <span className="w-4 h-4 text-primary">📊</span>
+                    <span>{t('explainMarket') || 'Explain Market'}</span>
+                  </button>
+                  <button
+                    onClick={() => insertCommand("/orderbook")}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <span className="w-4 h-4 text-primary">📈</span>
+                    <span>{t('viewOrderBook') || 'Order Book'}</span>
                   </button>
                 </div>
               </PopoverContent>
