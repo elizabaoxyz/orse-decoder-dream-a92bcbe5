@@ -15,14 +15,75 @@ const getOxylabsCredentials = () => {
   return username && password ? { username, password } : null;
 };
 
-// Helper function to make requests - proxy temporarily disabled for testing
+// Helper function to make requests through proxy
 async function fetchWithProxy(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  // Direct request to test trading logic
-  // Proxy will be re-enabled once Oxylabs credentials are verified
-  console.log("[fetchWithProxy] Making direct request to:", url);
+  const creds = getOxylabsCredentials();
+  
+  // Try Deno.createHttpClient with proxy (if available in this runtime)
+  if (creds && typeof Deno.createHttpClient === "function") {
+    try {
+      console.log("[fetchWithProxy] Attempting Deno.createHttpClient with Oxylabs proxy...");
+      const client = Deno.createHttpClient({
+        proxy: {
+          url: OXYLABS_PROXY_URL,
+          basicAuth: {
+            username: creds.username,
+            password: creds.password,
+          },
+        },
+      });
+      
+      const response = await fetch(url, { ...options, client } as RequestInit);
+      console.log("[fetchWithProxy] Proxy request successful, status:", response.status);
+      return response;
+    } catch (proxyErr) {
+      console.error("[fetchWithProxy] Deno.createHttpClient failed:", proxyErr);
+      // Fall through to direct request
+    }
+  } else if (creds) {
+    console.log("[fetchWithProxy] Deno.createHttpClient not available, trying Oxylabs Realtime API...");
+    // Fallback: Use Oxylabs Realtime/Push-Pull API
+    try {
+      const auth = base64Encode(`${creds.username}:${creds.password}`);
+      const payload = {
+        source: "universal",
+        url: url,
+        render: "html",
+        http_method: options.method || "GET",
+        headers: options.headers || {},
+        body: options.body ? String(options.body) : undefined,
+      };
+      
+      const proxyResponse = await fetch("https://realtime.oxylabs.io/v1/queries", {
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (proxyResponse.ok) {
+        const data = await proxyResponse.json();
+        console.log("[fetchWithProxy] Oxylabs Realtime API success");
+        // Return a mock Response with the content
+        return new Response(JSON.stringify(data.results?.[0]?.content || data), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } else {
+        console.error("[fetchWithProxy] Oxylabs Realtime API failed:", proxyResponse.status);
+      }
+    } catch (realtimeErr) {
+      console.error("[fetchWithProxy] Oxylabs Realtime API error:", realtimeErr);
+    }
+  }
+  
+  // Direct request as final fallback
+  console.log("[fetchWithProxy] Using direct request to:", url);
   return fetch(url, options);
 }
 
