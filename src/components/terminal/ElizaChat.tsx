@@ -374,7 +374,7 @@ const ElizaChat = () => {
   };
 
   return (
-    <div className="terminal-panel flex-1 flex flex-col overflow-hidden min-h-0 rounded-2xl">
+    <div className="terminal-panel flex-1 flex flex-col overflow-hidden min-h-0 rounded-2xl h-full">
       {/* Header - Clean and minimal */}
       <div className="terminal-header px-4 shrink-0">
         <div className="flex items-center gap-3">
@@ -393,12 +393,12 @@ const ElizaChat = () => {
         </div>
       </div>
       
-      <div className="flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
-
-        {/* Chat Messages - Flexible height */}
+      {/* Main content area - flex-1 to take remaining space */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Chat Messages - scrollable area that grows */}
         <div 
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto space-y-4 scrollbar-none pr-1 min-h-0 mb-4"
+          className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-none"
         >
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center space-y-3 py-8">
@@ -491,18 +491,19 @@ const ElizaChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area - ChatGPT Style with Trading Menu */}
-        <div className="relative">
-          <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-2 py-2 focus-within:border-primary/50 transition-colors">
-            {/* Trading Quick Menu */}
+        {/* Input Area - Fixed at bottom, ChatGPT style */}
+        <div className="shrink-0 p-4 pt-2 border-t border-border/30">
+          <div className="flex items-center gap-2 bg-muted/30 rounded-2xl border border-border/50 px-3 py-2 focus-within:border-primary/50 transition-colors">
+            {/* Trading Quick Menu Button */}
             <TradingQuickMenu
               isOpen={showAttachMenu}
               onOpenChange={setShowAttachMenu}
               onCommand={insertCommand}
               trigger={
                 <button
+                  type="button"
                   disabled={isLoading}
-                  className="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30"
+                  className="p-2 rounded-xl text-primary hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 flex-shrink-0"
                   title={t('tradingCommands')}
                 >
                   <Sparkles className="w-5 h-5" />
@@ -518,7 +519,7 @@ const ElizaChat = () => {
               onKeyDown={handleKeyDown}
               disabled={isLoading}
               placeholder={t('messageElizaBAO')}
-              className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground/50 disabled:opacity-50"
+              className="flex-1 bg-transparent border-none outline-none text-foreground text-sm placeholder:text-muted-foreground/50 disabled:opacity-50 min-w-0"
               autoFocus
             />
             
@@ -527,7 +528,7 @@ const ElizaChat = () => {
               <button
                 onClick={sendMessage}
                 disabled={isLoading}
-                className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -539,7 +540,7 @@ const ElizaChat = () => {
               <button
                 onClick={toggleRecording}
                 disabled={isLoading}
-                className={`p-2 rounded-xl transition-all ${
+                className={`p-2 rounded-xl transition-all flex-shrink-0 ${
                   isRecording 
                     ? 'bg-red-500 text-white animate-pulse' 
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
