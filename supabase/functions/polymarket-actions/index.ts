@@ -559,7 +559,11 @@ async function createClobAuthHeaders(
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const signature = await generateL2Signature(CLOB_API_SECRET, timestamp, method, requestPath, body);
 
-  return {
+  // Use BUILDER_ADDRESS as proxy wallet (1/1 Safe multisig that holds funds)
+  // The signer (WALLET_ADDRESS) signs for the proxy wallet
+  const proxyAddress = BUILDER_ADDRESS || "";
+
+  const headers: Record<string, string> = {
     "POLY-ADDRESS": WALLET_ADDRESS,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
@@ -568,6 +572,14 @@ async function createClobAuthHeaders(
     "Content-Type": "application/json",
     "Accept": "application/json",
   };
+
+  // Add proxy address header if configured (for Safe multisig trading)
+  if (proxyAddress && proxyAddress.toLowerCase() !== WALLET_ADDRESS.toLowerCase()) {
+    headers["POLY-PROXY-ADDRESS"] = proxyAddress;
+    console.log(`[createClobAuthHeaders] Using proxy wallet: ${proxyAddress}`);
+  }
+
+  return headers;
 }
 
 // =============================================================================
