@@ -624,7 +624,7 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
       body: JSON.stringify({
         address: wallet.address.toLowerCase(),
         timestamp: timestamp.toString(), // Must be string to match header
-        nonce,
+        nonce: nonce.toString(), // Must be string to match header
         signature,
       }),
     });
