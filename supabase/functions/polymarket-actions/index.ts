@@ -1055,16 +1055,38 @@ async function getWalletBalance(): Promise<{
   let clobRaw: unknown = null;
   try {
     const requestPath = "/balance-allowance";
-    const headers = await createClobAuthHeaders("GET", requestPath);
 
-    const response = await fetch(`${CLOB_API_URL}${requestPath}`, {
-      method: "GET",
-      headers,
-    });
+    const doRequest = async (viaProxy: boolean) => {
+      const headers = await createClobAuthHeaders("GET", requestPath);
+      const url = `${CLOB_API_URL}${requestPath}`;
+      const res = viaProxy
+        ? await fetchWithProxy(url, { method: "GET", headers })
+        : await fetch(url, { method: "GET", headers });
+      const text = await res.text();
+      return { res, text };
+    };
 
-    const text = await response.text();
-    if (!response.ok) {
-      console.error("[getWalletBalance] CLOB balance-allowance failed:", response.status, text);
+    // 1) Try direct
+    let { res, text } = await doRequest(false);
+
+    // 2) If 401, re-init creds once and retry direct
+    if (!res.ok && res.status === 401) {
+      console.warn("[getWalletBalance] balance-allowance 401; clearing creds + re-initializing...");
+      CLOB_API_KEY = "";
+      CLOB_API_SECRET = "";
+      CLOB_PASSPHRASE = "";
+      await initializeClobCredentials();
+      ({ res, text } = await doRequest(false));
+    }
+
+    // 3) If still failing with auth-like or block-like status, try proxy as last resort
+    if (!res.ok && (res.status === 401 || res.status === 403 || res.status === 429 || res.status === 503)) {
+      console.warn(`[getWalletBalance] balance-allowance direct failed (${res.status}); trying proxy...`);
+      ({ res, text } = await doRequest(true));
+    }
+
+    if (!res.ok) {
+      console.error("[getWalletBalance] CLOB balance-allowance failed:", res.status, text);
     } else {
       const data = JSON.parse(text);
       clobRaw = data;
