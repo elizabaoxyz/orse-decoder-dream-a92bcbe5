@@ -862,13 +862,14 @@ async function createClobAuthHeaders(
   // The signer (WALLET_ADDRESS) signs for the proxy wallet
   const proxyAddress = BUILDER_ADDRESS || "";
 
+  // Use UNDERSCORE style headers (matching L1 auth pattern)
   const headers: Record<string, string> = {
     ...BROWSER_HEADERS,
-    "POLY-ADDRESS": WALLET_ADDRESS,
-    "POLY-SIGNATURE": signature,
-    "POLY-TIMESTAMP": timestamp,
-    "POLY-API-KEY": CLOB_API_KEY,
-    "POLY-PASSPHRASE": CLOB_PASSPHRASE,
+    "POLY_ADDRESS": WALLET_ADDRESS,
+    "POLY_SIGNATURE": signature,
+    "POLY_TIMESTAMP": timestamp,
+    "POLY_API_KEY": CLOB_API_KEY,
+    "POLY_PASSPHRASE": CLOB_PASSPHRASE,
     "Content-Type": "application/json",
     "Accept": "application/json",
   };
@@ -887,7 +888,7 @@ async function createClobAuthHeaders(
     proxyAddress &&
     proxyAddress.toLowerCase() !== WALLET_ADDRESS.toLowerCase()
   ) {
-    headers["POLY-PROXY-ADDRESS"] = proxyAddress;
+    headers["POLY_PROXY_ADDRESS"] = proxyAddress;
     console.log(`[createClobAuthHeaders] Using proxy wallet: ${proxyAddress}`);
   }
 
