@@ -15,123 +15,15 @@ const getOxylabsCredentials = () => {
   return username && password ? { username, password } : null;
 };
 
-// Helper function to make requests through Oxylabs Web Unblocker proxy
-// Uses the SERP Push-Pull API method since forward proxy isn't supported in Deno
+// Helper function to make requests - proxy temporarily disabled for testing
 async function fetchWithProxy(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const oxylabsCreds = getOxylabsCredentials();
-  
-  if (!oxylabsCreds) {
-    // Fallback to direct request if no proxy configured
-    console.log("[fetchWithProxy] No proxy credentials, making direct request");
-    return fetch(url, options);
-  }
-
-  console.log(`[fetchWithProxy] Using Oxylabs Web Unblocker for: ${url}`);
-  
-  // Use Oxylabs Web Unblocker Push-Pull API
-  const proxyUrl = "https://realtime.oxylabs.io/v1/queries";
-  
-  // Build the request payload for Web Unblocker
-  const headersObj = options.headers instanceof Headers 
-    ? Object.fromEntries(options.headers.entries())
-    : (options.headers as Record<string, string>) || {};
-  
-  const proxyPayload: Record<string, unknown> = {
-    source: "universal",
-    url: url,
-    geo_location: "Singapore",
-    render: "html",
-  };
-
-  // For POST requests, include custom headers and body
-  if (options.method === "POST" || options.method === "PUT") {
-    proxyPayload.content_encoding = "base64";
-    const contextArray: Array<{ key: string; value: unknown }> = [
-      { 
-        key: "http_method", 
-        value: options.method 
-      },
-      { 
-        key: "headers", 
-        value: headersObj 
-      },
-    ];
-    
-    if (options.body) {
-      // Encode body as base64 for transmission
-      const bodyStr = String(options.body);
-      contextArray.push({
-        key: "content",
-        value: btoa(bodyStr)
-      });
-    }
-    
-    proxyPayload.context = contextArray;
-  }
-
-  const authHeader = "Basic " + btoa(`${oxylabsCreds.username}:${oxylabsCreds.password}`);
-  
-  try {
-    console.log("[fetchWithProxy] Sending request to Oxylabs...");
-    
-    const proxyResponse = await fetch(proxyUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": authHeader,
-      },
-      body: JSON.stringify(proxyPayload),
-    });
-
-    console.log(`[fetchWithProxy] Oxylabs response status: ${proxyResponse.status}`);
-    
-    // Read the response text first to avoid JSON parse errors on empty responses
-    const responseText = await proxyResponse.text();
-    
-    if (!proxyResponse.ok || !responseText) {
-      console.error("[fetchWithProxy] Proxy error:", responseText || "Empty response");
-      // Fallback to direct request
-      console.log("[fetchWithProxy] Falling back to direct request");
-      return fetch(url, options);
-    }
-
-    let proxyResult;
-    try {
-      proxyResult = JSON.parse(responseText);
-    } catch {
-      console.error("[fetchWithProxy] Failed to parse proxy response:", responseText.slice(0, 200));
-      return fetch(url, options);
-    }
-
-    // Extract the actual response content
-    const content = proxyResult.results?.[0]?.content || "";
-    const statusCode = proxyResult.results?.[0]?.status_code || 200;
-    
-    console.log(`[fetchWithProxy] Got response with status ${statusCode}, content length: ${content.length}`);
-    
-    // If content is base64 encoded, decode it
-    let decodedContent = content;
-    if (proxyPayload.content_encoding === "base64" && content) {
-      try {
-        decodedContent = atob(content);
-      } catch {
-        // Content might not be base64
-        decodedContent = content;
-      }
-    }
-    
-    return new Response(decodedContent, {
-      status: statusCode,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("[fetchWithProxy] Error:", error);
-    // Fallback to direct request on proxy failure
-    return fetch(url, options);
-  }
+  // Direct request to test trading logic
+  // Proxy will be re-enabled once Oxylabs credentials are verified
+  console.log("[fetchWithProxy] Making direct request to:", url);
+  return fetch(url, options);
 }
 
 const CLOB_API_URL = "https://clob.polymarket.com";
@@ -194,6 +86,7 @@ interface MarketInfo {
   bestAsk?: number;
   outcomePrices?: string; // JSON string like "[0.52, 0.48]"
   outcomes?: string; // JSON string like '["Yes", "No"]'
+  clobTokenIds?: string; // JSON string like '["tokenId1", "tokenId2"]'
 }
 
 interface TokenInfo {
@@ -315,6 +208,75 @@ async function searchMarkets(query: string, limit = 10): Promise<SearchResult> {
     total: filtered.length,
     query,
   };
+}
+
+// =============================================================================
+// Helper: Resolve marketSlug to tokenId
+// =============================================================================
+
+async function resolveTokenId(marketSlugOrTokenId: string, outcome: "YES" | "NO" = "YES"): Promise<{ tokenId: string; marketTitle: string } | null> {
+  console.log(`[resolveTokenId] Resolving: "${marketSlugOrTokenId}", outcome: ${outcome}`);
+  
+  // If it looks like a token ID (long numeric string), return as-is
+  if (/^\d{50,}$/.test(marketSlugOrTokenId)) {
+    console.log(`[resolveTokenId] Already a tokenId`);
+    return { tokenId: marketSlugOrTokenId, marketTitle: "Unknown" };
+  }
+  
+  // Search for the market using the slug/query
+  try {
+    const searchResult = await searchMarkets(marketSlugOrTokenId, 5);
+    if (searchResult.markets.length === 0) {
+      console.log(`[resolveTokenId] No markets found for: ${marketSlugOrTokenId}`);
+      return null;
+    }
+    
+    const market = searchResult.markets[0];
+    console.log(`[resolveTokenId] Found market: ${market.question}`);
+    
+    // Try to parse clobTokenIds (it's a JSON string from Gamma API)
+    if (market.clobTokenIds) {
+      try {
+        const tokenIds: string[] = JSON.parse(market.clobTokenIds);
+        if (tokenIds.length > 0) {
+          // clobTokenIds[0] = YES, clobTokenIds[1] = NO (typically)
+          const tokenIndex = outcome === "YES" ? 0 : 1;
+          const tokenId = tokenIds[tokenIndex] || tokenIds[0];
+          console.log(`[resolveTokenId] Resolved from clobTokenIds: ${tokenId}`);
+          return { tokenId, marketTitle: market.question || market.market_slug || "Unknown" };
+        }
+      } catch (parseErr) {
+        console.error(`[resolveTokenId] Failed to parse clobTokenIds:`, parseErr);
+      }
+    }
+    
+    // Get the token ID from tokens array
+    if (market.tokens && market.tokens.length > 0) {
+      // Find the token matching the outcome
+      const outcomeToken = market.tokens.find(t => 
+        t.outcome?.toUpperCase() === outcome || 
+        t.outcome?.toUpperCase() === "YES" && outcome === "YES" ||
+        t.outcome?.toUpperCase() === "NO" && outcome === "NO"
+      );
+      
+      const tokenId = outcomeToken?.token_id || market.tokens[0].token_id;
+      console.log(`[resolveTokenId] Resolved from tokens: ${tokenId}`);
+      return { tokenId, marketTitle: market.question || market.market_slug || "Unknown" };
+    }
+    
+    // Fallback to condition_id if no tokens
+    if (market.condition_id || market.conditionId) {
+      const conditionId = market.condition_id || market.conditionId || "";
+      console.log(`[resolveTokenId] Using condition_id as fallback: ${conditionId}`);
+      return { tokenId: conditionId, marketTitle: market.question || "Unknown" };
+    }
+    
+    console.log(`[resolveTokenId] No tokenId found for market`);
+    return null;
+  } catch (error) {
+    console.error(`[resolveTokenId] Error:`, error);
+    return null;
+  }
 }
 
 // =============================================================================
@@ -1252,14 +1214,35 @@ serve(async (req) => {
           data = { status: "error", message: capability.reason };
           formattedResponse = `❌ Trading disabled: ${capability.reason}`;
         } else {
+          // Resolve marketSlug to tokenId if needed
+          let tokenId = params?.tokenId;
+          let marketTitle = "Unknown Market";
+          
+          if (!tokenId && params?.marketSlug) {
+            const resolved = await resolveTokenId(params.marketSlug, params?.outcome || "YES");
+            if (!resolved) {
+              data = { status: "error", message: `Market not found: ${params.marketSlug}` };
+              formattedResponse = `❌ **Market Not Found**\nCould not find market: "${params.marketSlug}"`;
+              break;
+            }
+            tokenId = resolved.tokenId;
+            marketTitle = resolved.marketTitle;
+          }
+          
+          if (!tokenId) {
+            data = { status: "error", message: "Missing tokenId or marketSlug" };
+            formattedResponse = `❌ **Missing Parameter**\nPlease provide a market (e.g., /buy trump 0.1)`;
+            break;
+          }
+          
           const result = await placeOrder({
-            tokenId: params?.tokenId,
+            tokenId,
             amount: params?.amount || 1,
             price: params?.price,
             side: "BUY",
           });
           data = result;
-          formattedResponse = formatTradeResultForChat(result, "BUY", params?.tokenId, params?.amount || 1);
+          formattedResponse = formatTradeResultForChat(result, "BUY", marketTitle, params?.amount || 1);
         }
         break;
       }
@@ -1272,14 +1255,35 @@ serve(async (req) => {
           data = { status: "error", message: capability.reason };
           formattedResponse = `❌ Trading disabled: ${capability.reason}`;
         } else {
+          // Resolve marketSlug to tokenId if needed
+          let tokenId = params?.tokenId;
+          let marketTitle = "Unknown Market";
+          
+          if (!tokenId && params?.marketSlug) {
+            const resolved = await resolveTokenId(params.marketSlug, params?.outcome || "YES");
+            if (!resolved) {
+              data = { status: "error", message: `Market not found: ${params.marketSlug}` };
+              formattedResponse = `❌ **Market Not Found**\nCould not find market: "${params.marketSlug}"`;
+              break;
+            }
+            tokenId = resolved.tokenId;
+            marketTitle = resolved.marketTitle;
+          }
+          
+          if (!tokenId) {
+            data = { status: "error", message: "Missing tokenId or marketSlug" };
+            formattedResponse = `❌ **Missing Parameter**\nPlease provide a market (e.g., /sell trump 1)`;
+            break;
+          }
+          
           const result = await placeOrder({
-            tokenId: params?.tokenId,
+            tokenId,
             amount: params?.amount || 1,
             price: params?.price,
             side: "SELL",
           });
           data = result;
-          formattedResponse = formatTradeResultForChat(result, "SELL", params?.tokenId, params?.amount || 1);
+          formattedResponse = formatTradeResultForChat(result, "SELL", marketTitle, params?.amount || 1);
         }
         break;
       }
