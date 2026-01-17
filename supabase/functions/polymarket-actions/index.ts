@@ -382,21 +382,50 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
     const timestamp = Math.floor(Date.now() / 1000);
     const nonce = 0;
 
-    // L1 Authentication: Sign a simple message for L1 Auth
-    // Format: "I want to access my Polymarket trading account.\nTimestamp: {ts}\nNonce: {nonce}"
-    const l1Message = `I want to access my Polymarket trading account.\nTimestamp: ${timestamp}\nNonce: ${nonce}`;
-    const l1Signature = await wallet.signMessage(l1Message);
+    // L1 Authentication using EIP-712 typed data signature
+    const domain = {
+      name: "ClobAuthDomain",
+      version: "1",
+      chainId: CHAIN_ID,
+    };
 
-    console.log("[createNewApiKey] Creating API key with L1 signature...");
+    const types = {
+      ClobAuth: [
+        { name: "address", type: "address" },
+        { name: "timestamp", type: "string" },
+        { name: "nonce", type: "uint256" },
+        { name: "message", type: "string" },
+      ],
+    };
 
+    const value = {
+      address: wallet.address,
+      timestamp: timestamp.toString(),
+      nonce,
+      message: "This message attests that I control the given wallet",
+    };
+
+    const signature = await wallet.signTypedData(domain, types, value);
+    console.log("[createNewApiKey] Creating API key with EIP-712 signature...");
+
+    // L1 Auth requires BOTH headers AND body with the same params
+    const l1Headers = {
+      "Content-Type": "application/json",
+      "POLY_ADDRESS": wallet.address.toLowerCase(),
+      "POLY_SIGNATURE": signature,
+      "POLY_TIMESTAMP": timestamp.toString(),
+      "POLY_NONCE": nonce.toString(),
+    };
+
+    // Try POST to create new API key
     const response = await fetch(`${CLOB_API_URL}/auth/api-key`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: l1Headers,
       body: JSON.stringify({
         address: wallet.address.toLowerCase(),
         timestamp,
         nonce,
-        signature: l1Signature,
+        signature,
       }),
     });
 
@@ -404,11 +433,15 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
     console.log("[createNewApiKey] Response:", response.status, responseText);
 
     if (!response.ok) {
-      // If still fails, the wallet might need to be registered on Polymarket first
-      if (response.status === 401 || response.status === 400) {
-        console.error("[createNewApiKey] Auth failed - wallet may need to be registered on Polymarket.com first");
-        // Try derive API key endpoint (for already registered wallets)
-        return await deriveApiKey(wallet, timestamp, nonce);
+      // If create fails (409 = already exists), try derive endpoint
+      if (response.status === 409 || response.status === 400) {
+        console.log("[createNewApiKey] Create failed, trying derive...");
+        return await deriveApiKey(wallet, timestamp, nonce, signature);
+      }
+      // For 401, might need different signature format
+      if (response.status === 401) {
+        console.log("[createNewApiKey] Auth failed, trying derive with fresh signature...");
+        return await deriveApiKey(wallet, timestamp, nonce, signature);
       }
       return false;
     }
@@ -426,42 +459,50 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
   }
 }
 
-async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: number): Promise<boolean> {
+async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: number, existingSignature?: string): Promise<boolean> {
   try {
-    // L2 Auth for deriving existing API key
-    const l2Domain = {
-      name: "ClobAuthDomain",
-      version: "1",
-      chainId: CHAIN_ID,
-    };
+    // Use existing signature or create new one
+    let signature = existingSignature;
+    
+    if (!signature) {
+      const domain = {
+        name: "ClobAuthDomain",
+        version: "1",
+        chainId: CHAIN_ID,
+      };
 
-    const l2Types = {
-      ClobAuth: [
-        { name: "address", type: "address" },
-        { name: "timestamp", type: "string" },
-        { name: "nonce", type: "uint256" },
-        { name: "message", type: "string" },
-      ],
-    };
+      const types = {
+        ClobAuth: [
+          { name: "address", type: "address" },
+          { name: "timestamp", type: "string" },
+          { name: "nonce", type: "uint256" },
+          { name: "message", type: "string" },
+        ],
+      };
 
-    const l2Message = {
-      address: wallet.address,
-      timestamp: timestamp.toString(),
-      nonce,
-      message: "This message attests that I control the given wallet",
-    };
-
-    const l2Signature = await wallet.signTypedData(l2Domain, l2Types, l2Message);
-
-    const response = await fetch(`${CLOB_API_URL}/auth/derive-api-key`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        address: wallet.address.toLowerCase(),
-        timestamp,
+      const message = {
+        address: wallet.address,
+        timestamp: timestamp.toString(),
         nonce,
-        signature: l2Signature,
-      }),
+        message: "This message attests that I control the given wallet",
+      };
+
+      signature = await wallet.signTypedData(domain, types, message);
+    }
+
+    // L1 Headers for derive endpoint (GET request)
+    const l1Headers = {
+      "Content-Type": "application/json",
+      "POLY_ADDRESS": wallet.address.toLowerCase(),
+      "POLY_SIGNATURE": signature,
+      "POLY_TIMESTAMP": timestamp.toString(),
+      "POLY_NONCE": nonce.toString(),
+    };
+
+    // Try GET first (standard derive)
+    const response = await fetch(`${CLOB_API_URL}/auth/derive-api-key`, {
+      method: "GET",
+      headers: l1Headers,
     });
 
     const responseText = await response.text();
