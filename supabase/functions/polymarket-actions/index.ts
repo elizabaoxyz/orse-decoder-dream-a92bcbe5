@@ -607,13 +607,13 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
     console.log("[createNewApiKey] Creating API key with EIP-712 signature...");
 
     // L1 Auth requires BOTH headers AND body with the same params
-    // CRITICAL: Use hyphen-style headers (POLY-ADDRESS not POLY_ADDRESS)
+    // CRITICAL: Use UNDERSCORE style headers (POLY_ADDRESS per official docs)
     const l1Headers = {
       "Content-Type": "application/json",
-      "POLY-ADDRESS": wallet.address.toLowerCase(),
-      "POLY-SIGNATURE": signature,
-      "POLY-TIMESTAMP": timestamp.toString(),
-      "POLY-NONCE": nonce.toString(),
+      "POLY_ADDRESS": wallet.address.toLowerCase(),
+      "POLY_SIGNATURE": signature,
+      "POLY_TIMESTAMP": timestamp.toString(),
+      "POLY_NONCE": nonce.toString(),
     };
 
     // Try POST to create new API key (use proxy to bypass Cloudflare)
@@ -691,13 +691,13 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
     }
 
     // L1 Headers for derive endpoint (GET request)
-    // CRITICAL: Use hyphen-style headers (POLY-ADDRESS not POLY_ADDRESS)
+    // CRITICAL: Use UNDERSCORE style headers (POLY_ADDRESS per official docs)
     const l1Headers = {
       "Content-Type": "application/json",
-      "POLY-ADDRESS": wallet.address.toLowerCase(),
-      "POLY-SIGNATURE": signature,
-      "POLY-TIMESTAMP": timestamp.toString(),
-      "POLY-NONCE": nonce.toString(),
+      "POLY_ADDRESS": wallet.address.toLowerCase(),
+      "POLY_SIGNATURE": signature,
+      "POLY_TIMESTAMP": timestamp.toString(),
+      "POLY_NONCE": nonce.toString(),
     };
 
     // Try GET first (standard derive) - use proxy to bypass Cloudflare
