@@ -546,6 +546,22 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
   }
 }
 
+// Browser-like headers to bypass Cloudflare protection
+const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Cache-Control": "no-cache",
+  "Pragma": "no-cache",
+  "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
+  "Sec-Fetch-Dest": "empty",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Site": "cross-site",
+  "Origin": "https://polymarket.com",
+  "Referer": "https://polymarket.com/",
+};
+
 async function createClobAuthHeaders(
   method: string,
   requestPath: string,
@@ -564,6 +580,7 @@ async function createClobAuthHeaders(
   const proxyAddress = BUILDER_ADDRESS || "";
 
   const headers: Record<string, string> = {
+    ...BROWSER_HEADERS,
     "POLY-ADDRESS": WALLET_ADDRESS,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
