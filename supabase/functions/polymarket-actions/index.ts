@@ -24,38 +24,49 @@ async function fetchWithProxy(
     try {
       console.log("[fetchWithProxy] Using Bright Data Web Unlocker for:", url);
       
-      // Build headers object for target request
-      const targetHeaders: Record<string, string> = {};
+      // Build headers array for target request (Bright Data format)
+      const targetHeaders: Array<{name: string; value: string}> = [];
       if (options.headers) {
         const headers = options.headers as Record<string, string>;
         Object.entries(headers).forEach(([key, value]) => {
           if (typeof value === "string") {
-            targetHeaders[key] = value;
+            targetHeaders.push({ name: key, value: value });
           }
         });
       }
       
+      console.log("[fetchWithProxy] Target headers count:", targetHeaders.length);
+      
       // Bright Data Web Unlocker API request
+      // See: https://docs.brightdata.com/scraping-automation/web-unlocker/web-unlocker-api
       const payload: Record<string, unknown> = {
         zone: BRIGHT_DATA_ZONE,
         url: url,
-        format: "raw",
+        format: "raw", // Get raw response from target
+        country: "us", // Use US residential IP for Polymarket
       };
       
-      // Add method if not GET
-      if (options.method && options.method.toUpperCase() !== "GET") {
-        payload.method = options.method.toUpperCase();
-      }
+      // Add method
+      payload.method = (options.method || "GET").toUpperCase();
       
-      // Add body if present
+      // Add body if present (for POST requests)
       if (options.body) {
         payload.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
+        console.log("[fetchWithProxy] Request body length:", String(payload.body).length);
       }
       
-      // Add headers if present
-      if (Object.keys(targetHeaders).length > 0) {
-        payload.headers = targetHeaders;
+      // Add headers if present - Bright Data accepts object format for headers
+      if (targetHeaders.length > 0) {
+        // Convert array to object format (which Bright Data also accepts)
+        const headersObj: Record<string, string> = {};
+        targetHeaders.forEach(h => {
+          headersObj[h.name] = h.value;
+        });
+        payload.headers = headersObj;
+        console.log("[fetchWithProxy] Headers being sent:", Object.keys(headersObj).join(", "));
       }
+      
+      console.log("[fetchWithProxy] Bright Data payload method:", payload.method, "url:", url);
       
       const proxyResponse = await fetch(BRIGHT_DATA_API_URL, {
         method: "POST",
