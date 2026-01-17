@@ -1055,7 +1055,9 @@ async function getWalletBalance(): Promise<{
   let clobBalance = "0";
   let clobRaw: unknown = null;
   try {
-    const requestPath = "/balance-allowance";
+    // CLOB API requires asset_type for balance-allowance.
+    // 0 = collateral (USDC), 1 = conditional token (requires token_id)
+    const requestPath = "/balance-allowance?asset_type=0";
 
     const doRequest = async (viaProxy: boolean) => {
       const headers = await createClobAuthHeaders("GET", requestPath);
