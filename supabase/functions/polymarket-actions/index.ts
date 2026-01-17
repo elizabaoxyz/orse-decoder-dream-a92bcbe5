@@ -55,13 +55,14 @@ async function fetchWithProxy(
         console.log("[fetchWithProxy] Request body length:", String(payload.body).length);
       }
       
-      // Add headers if present - send as name/value array (most compatible)
+      // Add headers if present - Bright Data requires object format
       if (targetHeaders.length > 0) {
-        payload.headers = targetHeaders;
-        console.log(
-          "[fetchWithProxy] Headers being sent:",
-          targetHeaders.map((h) => h.name).join(", ")
-        );
+        const headersObj: Record<string, string> = {};
+        targetHeaders.forEach(h => {
+          headersObj[h.name] = h.value;
+        });
+        payload.headers = headersObj;
+        console.log("[fetchWithProxy] Headers being sent:", Object.keys(headersObj).join(", "));
       }
       
       console.log("[fetchWithProxy] Bright Data payload method:", payload.method, "url:", url);
