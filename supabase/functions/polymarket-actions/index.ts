@@ -238,6 +238,24 @@ interface SearchResult {
 // Helper Functions
 // =============================================================================
 
+function decodePolySecret(secret: string): Uint8Array {
+  const encoder = new TextEncoder();
+  const trimmed = (secret || "").trim();
+  if (!trimmed) return encoder.encode("");
+
+  // Polymarket may return URL-safe base64 ("-" and "_")
+  const normalized = trimmed.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+
+  try {
+    const decoded = base64Decode(padded);
+    return new Uint8Array(decoded);
+  } catch {
+    // As a last resort, treat it as a raw string key
+    return encoder.encode(trimmed);
+  }
+}
+
 async function generateL2Signature(
   secret: string,
   timestamp: string,
@@ -245,21 +263,13 @@ async function generateL2Signature(
   requestPath: string,
   body: string = ""
 ): Promise<string> {
-  const message = timestamp + method + requestPath + body;
+  const message = timestamp + method.toUpperCase() + requestPath + body;
   const encoder = new TextEncoder();
-  
-  let keyData: Uint8Array;
-  try {
-    const decoded = base64Decode(secret);
-    keyData = new Uint8Array(decoded);
-  } catch {
-    keyData = encoder.encode(secret);
-  }
-  
+
+  const keyData = decodePolySecret(secret);
   const keyBuffer = new ArrayBuffer(keyData.length);
-  const keyView = new Uint8Array(keyBuffer);
-  keyView.set(keyData);
-  
+  new Uint8Array(keyBuffer).set(keyData);
+
   const key = await crypto.subtle.importKey(
     "raw",
     keyBuffer as ArrayBuffer,
@@ -267,7 +277,7 @@ async function generateL2Signature(
     false,
     ["sign"]
   );
-  
+
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
   return base64Encode(signature);
 }
