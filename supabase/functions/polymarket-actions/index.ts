@@ -1091,17 +1091,25 @@ async function getWalletBalance(): Promise<{
       console.error("[getWalletBalance] CLOB balance-allowance failed:", res.status, text.slice(0, 200));
     } else {
       const data = JSON.parse(text);
-      clobRaw = data;
-      // Determine which field was used for balance
-      const balanceField = data?.balance !== undefined ? "balance"
-        : data?.availableBalance !== undefined ? "availableBalance"
-        : data?.available !== undefined ? "available"
-        : data?.collateral !== undefined ? "collateral"
-        : "none";
-      clobBalance = String(
-        data?.balance ?? data?.availableBalance ?? data?.available ?? data?.collateral ?? "0"
-      );
-      console.log(`[getWalletBalance] balance-allowance success: field=${balanceField}, value=${clobBalance}`);
+      // Check if response is 200 but contains an error field or lacks balance fields
+      const hasError = data?.error !== undefined;
+      const hasBalance = data?.balance !== undefined || data?.availableBalance !== undefined || data?.available !== undefined || data?.collateral !== undefined;
+      
+      if (hasError || !hasBalance) {
+        console.error(`[getWalletBalance] balance-allowance 200 but invalid: hasError=${hasError}, hasBalance=${hasBalance}, body=${text.slice(0, 200)}`);
+        // Treat as failure - don't populate clobBalance
+      } else {
+        clobRaw = data;
+        // Determine which field was used for balance
+        const balanceField = data?.balance !== undefined ? "balance"
+          : data?.availableBalance !== undefined ? "availableBalance"
+          : data?.available !== undefined ? "available"
+          : "collateral";
+        clobBalance = String(
+          data?.balance ?? data?.availableBalance ?? data?.available ?? data?.collateral ?? "0"
+        );
+        console.log(`[getWalletBalance] balance-allowance success: field=${balanceField}, value=${clobBalance}`);
+      }
     }
   } catch (error) {
     console.error("[getWalletBalance] CLOB balance-allowance error:", error);
