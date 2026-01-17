@@ -40,13 +40,10 @@ async function fetchWithProxy(
     : (options.headers as Record<string, string>) || {};
   
   const proxyPayload: Record<string, unknown> = {
-    source: "universal_ecommerce",
+    source: "universal",
     url: url,
     geo_location: "Singapore",
     render: "html",
-    browser_instructions: [
-      { type: "wait", wait_time_s: 1 }
-    ],
   };
 
   // For POST requests, include custom headers and body
