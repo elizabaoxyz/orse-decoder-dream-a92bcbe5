@@ -631,6 +631,7 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
 
     const responseText = await response.text();
     console.log("[createNewApiKey] Response:", response.status, responseText);
+    console.log("[createNewApiKey] Headers sent:", Object.keys(l1Headers).join(", "));
 
     if (!response.ok) {
       // If create fails (409 = already exists), try derive endpoint
@@ -646,7 +647,27 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
       return false;
     }
 
-    const data = JSON.parse(responseText);
+    // Check if response contains error field (API returns 200 with error JSON)
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("[createNewApiKey] Failed to parse response JSON");
+      return false;
+    }
+
+    // CRITICAL: Check for error in response body even if status is 200
+    if (data.error) {
+      console.error("[createNewApiKey] API returned error in body:", data.error);
+      console.log("[createNewApiKey] Falling back to derive endpoint...");
+      return await deriveApiKey(wallet, timestamp, nonce, signature);
+    }
+
+    if (!data.apiKey || !data.secret || !data.passphrase) {
+      console.error("[createNewApiKey] Response missing required fields:", Object.keys(data).join(", "));
+      return await deriveApiKey(wallet, timestamp, nonce, signature);
+    }
+
     CLOB_API_KEY = data.apiKey;
     CLOB_API_SECRET = data.secret;
     CLOB_PASSPHRASE = data.passphrase;
@@ -708,13 +729,33 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
 
     const responseText = await response.text();
     console.log("[deriveApiKey] Response:", response.status, responseText);
+    console.log("[deriveApiKey] Headers sent:", Object.keys(l1Headers).join(", "));
 
     if (!response.ok) {
       console.error("[deriveApiKey] Failed - wallet may need to sign up on Polymarket.com first");
       return false;
     }
 
-    const data = JSON.parse(responseText);
+    // Check if response contains error field (API returns 200 with error JSON)
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("[deriveApiKey] Failed to parse response JSON");
+      return false;
+    }
+
+    // CRITICAL: Check for error in response body even if status is 200
+    if (data.error) {
+      console.error("[deriveApiKey] API returned error in body:", data.error);
+      return false;
+    }
+
+    if (!data.apiKey || !data.secret || !data.passphrase) {
+      console.error("[deriveApiKey] Response missing required fields:", Object.keys(data).join(", "));
+      return false;
+    }
+
     CLOB_API_KEY = data.apiKey;
     CLOB_API_SECRET = data.secret;
     CLOB_PASSPHRASE = data.passphrase;
