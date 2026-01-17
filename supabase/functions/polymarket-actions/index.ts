@@ -16,6 +16,7 @@ const getOxylabsCredentials = () => {
 };
 
 // Helper function to make requests through Oxylabs Web Unblocker proxy
+// Uses the SERP Push-Pull API method since forward proxy isn't supported in Deno
 async function fetchWithProxy(
   url: string,
   options: RequestInit = {}
@@ -28,36 +29,57 @@ async function fetchWithProxy(
     return fetch(url, options);
   }
 
-  console.log(`[fetchWithProxy] Using Oxylabs proxy for: ${url}`);
+  console.log(`[fetchWithProxy] Using Oxylabs Web Unblocker for: ${url}`);
   
-  // For Oxylabs Web Unblocker, we use their REST API endpoint
+  // Use Oxylabs Web Unblocker Push-Pull API
   const proxyUrl = "https://realtime.oxylabs.io/v1/queries";
   
-  // Build context array with proper typing
-  const context: Array<{ key: string; value: unknown }> = [];
+  // Build the request payload for Web Unblocker
+  const headersObj = options.headers instanceof Headers 
+    ? Object.fromEntries(options.headers.entries())
+    : (options.headers as Record<string, string>) || {};
   
-  if (options.headers) {
-    context.push({ key: "headers", value: options.headers });
-  }
-  
-  // Add body for POST/PUT requests
-  if (options.body && (options.method === "POST" || options.method === "PUT")) {
-    context.push({ key: "content", value: String(options.body) });
-  }
-
-  const proxyPayload = {
-    source: "universal",
+  const proxyPayload: Record<string, unknown> = {
+    source: "universal_ecommerce",
     url: url,
-    http_method: options.method || "GET",
-    geo_location: "Singapore", // Non-US location
+    geo_location: "Singapore",
     render: "html",
-    parse: false,
-    context: context.length > 0 ? context : undefined,
+    browser_instructions: [
+      { type: "wait", wait_time_s: 1 }
+    ],
   };
+
+  // For POST requests, include custom headers and body
+  if (options.method === "POST" || options.method === "PUT") {
+    proxyPayload.content_encoding = "base64";
+    const contextArray: Array<{ key: string; value: unknown }> = [
+      { 
+        key: "http_method", 
+        value: options.method 
+      },
+      { 
+        key: "headers", 
+        value: headersObj 
+      },
+    ];
+    
+    if (options.body) {
+      // Encode body as base64 for transmission
+      const bodyStr = String(options.body);
+      contextArray.push({
+        key: "content",
+        value: btoa(bodyStr)
+      });
+    }
+    
+    proxyPayload.context = contextArray;
+  }
 
   const authHeader = "Basic " + btoa(`${oxylabsCreds.username}:${oxylabsCreds.password}`);
   
   try {
+    console.log("[fetchWithProxy] Sending request to Oxylabs...");
+    
     const proxyResponse = await fetch(proxyUrl, {
       method: "POST",
       headers: {
@@ -67,20 +89,44 @@ async function fetchWithProxy(
       body: JSON.stringify(proxyPayload),
     });
 
-    const proxyResult = await proxyResponse.json();
-    console.log(`[fetchWithProxy] Proxy response status: ${proxyResponse.status}`);
+    console.log(`[fetchWithProxy] Oxylabs response status: ${proxyResponse.status}`);
     
-    if (!proxyResponse.ok) {
-      console.error("[fetchWithProxy] Proxy error:", proxyResult);
+    // Read the response text first to avoid JSON parse errors on empty responses
+    const responseText = await proxyResponse.text();
+    
+    if (!proxyResponse.ok || !responseText) {
+      console.error("[fetchWithProxy] Proxy error:", responseText || "Empty response");
       // Fallback to direct request
+      console.log("[fetchWithProxy] Falling back to direct request");
       return fetch(url, options);
     }
 
-    // Create a Response object from the proxy result
+    let proxyResult;
+    try {
+      proxyResult = JSON.parse(responseText);
+    } catch {
+      console.error("[fetchWithProxy] Failed to parse proxy response:", responseText.slice(0, 200));
+      return fetch(url, options);
+    }
+
+    // Extract the actual response content
     const content = proxyResult.results?.[0]?.content || "";
     const statusCode = proxyResult.results?.[0]?.status_code || 200;
     
-    return new Response(content, {
+    console.log(`[fetchWithProxy] Got response with status ${statusCode}, content length: ${content.length}`);
+    
+    // If content is base64 encoded, decode it
+    let decodedContent = content;
+    if (proxyPayload.content_encoding === "base64" && content) {
+      try {
+        decodedContent = atob(content);
+      } catch {
+        // Content might not be base64
+        decodedContent = content;
+      }
+    }
+    
+    return new Response(decodedContent, {
       status: statusCode,
       headers: { "Content-Type": "application/json" },
     });
