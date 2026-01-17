@@ -119,6 +119,39 @@ const CLOB_API_URL = "https://clob.polymarket.com";
 const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
 
+async function getClobServerTimeSeconds(): Promise<number | null> {
+  try {
+    const res = await fetchWithProxy(`${CLOB_API_URL}/time`, { method: "GET" });
+    const text = (await res.text()).trim();
+
+    // Endpoint commonly returns a JSON number, but be defensive.
+    const asNumber = Number(text);
+    if (Number.isFinite(asNumber) && asNumber > 0) return Math.floor(asNumber);
+
+    try {
+      const json = JSON.parse(text);
+      if (typeof json === "number") return Math.floor(json);
+      if (typeof json?.timestamp === "number") return Math.floor(json.timestamp);
+      if (typeof json?.serverTime === "number") return Math.floor(json.serverTime);
+    } catch {
+      // ignore
+    }
+
+    console.warn("[getClobServerTimeSeconds] Unexpected /time response:", text.slice(0, 200));
+    return null;
+  } catch (err) {
+    console.error("[getClobServerTimeSeconds] Error:", err);
+    return null;
+  }
+}
+
+async function getClobTimestampString(): Promise<string> {
+  const serverTs = await getClobServerTimeSeconds();
+  const ts = serverTs ?? Math.floor(Date.now() / 1000);
+  if (serverTs) console.log("[getClobTimestampString] Using server time:", ts);
+  return String(ts);
+}
+
 // Multiple RPC endpoints for fallback (public, no auth)
 const POLYGON_RPCS = [
   "https://polygon-bor-rpc.publicnode.com",
@@ -577,7 +610,7 @@ async function initializeClobCredentials(): Promise<boolean> {
 
 async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
   try {
-    const timestamp = Math.floor(Date.now() / 1000);
+    const timestamp = (await getClobServerTimeSeconds()) ?? Math.floor(Date.now() / 1000);
     const nonce = 0;
 
     // L1 Authentication using EIP-712 typed data signature
@@ -794,7 +827,7 @@ async function createClobAuthHeaders(
     throw new Error("CLOB credentials not initialized");
   }
 
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const timestamp = await getClobTimestampString();
   const signature = await generateL2Signature(CLOB_API_SECRET, timestamp, method, requestPath, body);
 
   // Use BUILDER_ADDRESS as proxy wallet (1/1 Safe multisig that holds funds)
