@@ -519,8 +519,8 @@ export default function Autonomous() {
                 )} />
               </div>
               <div>
-                <h1 className="text-lg font-bold">Autonomous Trading</h1>
-                <p className="text-xs text-muted-foreground">Polymarket AI Agent</p>
+                <h1 className="text-lg font-bold">ElizaBAO Autonomy</h1>
+                <p className="text-xs text-muted-foreground">Powered by ElizaOS - Polymarket Agent</p>
               </div>
             </div>
           </div>
@@ -530,10 +530,6 @@ export default function Autonomous() {
             <Badge variant={isOnline ? "success" : "muted"}>
               <StatusDot active={isOnline} color={isOnline ? "green" : "gray"} />
               {isOnline ? "Online" : "Offline"}
-            </Badge>
-            <Badge variant="muted">
-              <Brain className="h-3 w-3" />
-              Claude Sonnet 4
             </Badge>
           </div>
         </div>
@@ -631,7 +627,7 @@ export default function Autonomous() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3">
               <img src={elizaAvatar} alt="Eliza" className="h-10 w-10 rounded-xl object-cover" />
-              Autonomous Trading
+              ElizaBAO Autonomy
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
