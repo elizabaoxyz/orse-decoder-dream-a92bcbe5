@@ -29,17 +29,28 @@ const API_BASE = "https://polymarket-agent-production.up.railway.app";
 interface AIDecision {
   shouldTrade: boolean;
   action: "BUY" | "SELL" | "HOLD";
-  market?: string;
+  market?: { question: string; id?: string };
+  price?: number;
+  size?: number;
   reasoning: string;
-  confidence: number;
+  confidence: number; // 0-100
 }
 
 interface Opportunity {
+  id: string;
   question: string;
-  price: number;
-  spread: number;
+  bestBid: number;
+  bestAsk: number;
+  spreadPercent: number;
+  midpoint: number;
   score: number;
-  conditionId?: string;
+}
+
+interface AgentStatus {
+  initialized: boolean;
+  openaiConfigured: boolean;
+  walletConfigured: boolean;
+  clobConfigured: boolean;
 }
 
 interface ActivityLog {
@@ -235,9 +246,14 @@ export default function Autonomous() {
                   </div>
                   
                   {aiDecision.market && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <span className="text-muted-foreground">Market: </span>
-                      <span className="font-medium">{aiDecision.market}</span>
+                    <div className="p-3 rounded-lg bg-muted/50 flex items-center justify-between">
+                      <div>
+                        <span className="text-muted-foreground">Market: </span>
+                        <span className="font-medium">{aiDecision.market.question}</span>
+                      </div>
+                      {aiDecision.price && (
+                        <span className="text-sm">@ {(aiDecision.price * 100).toFixed(1)}¢</span>
+                      )}
                     </div>
                   )}
                   
@@ -336,8 +352,9 @@ export default function Autonomous() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{opp.question}</p>
                       <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                        <span>Price: {(opp.price * 100).toFixed(1)}¢</span>
-                        <span>Spread: {(opp.spread * 100).toFixed(2)}%</span>
+                        <span>Bid: {(opp.bestBid * 100).toFixed(1)}¢</span>
+                        <span>Ask: {(opp.bestAsk * 100).toFixed(1)}¢</span>
+                        <span>Spread: {opp.spreadPercent.toFixed(2)}%</span>
                       </div>
                     </div>
                     <Badge variant="outline" className="ml-4">
