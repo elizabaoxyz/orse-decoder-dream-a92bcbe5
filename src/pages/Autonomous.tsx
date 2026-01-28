@@ -118,6 +118,12 @@ interface AnalysisResult {
   reasoning?: string;
 }
 
+interface WalletBalance {
+  address: string;
+  pol: { balance: string; symbol: string };
+  usdc: { balance: string; symbol: string };
+}
+
 // ============================================
 // Components
 // ============================================
@@ -239,6 +245,9 @@ export default function Autonomous() {
   
   // Scan state
   const [isScanning, setIsScanning] = useState(false);
+  
+  // Wallet balance state
+  const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
 
   // Add to activity log
   const addActivity = useCallback((message: string, type: "info" | "buy" | "sell" | "hold" | "error" = "info") => {
@@ -283,6 +292,18 @@ export default function Autonomous() {
     } catch (error) {
       console.error('Failed to fetch agent status:', error);
       setIsOnline(false);
+    }
+  }, []);
+
+  // Fetch wallet balance
+  const fetchWalletBalance = useCallback(async () => {
+    try {
+      const result = await callApi('/api/wallet', undefined, 'GET');
+      if (result.success && result.data) {
+        setWalletBalance(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch wallet balance:', error);
     }
   }, []);
 
@@ -458,14 +479,16 @@ export default function Autonomous() {
     fetchAgentStatus();
     fetchAutonomyStatus();
     fetchTradeHistory();
+    fetchWalletBalance();
     
     const interval = setInterval(() => {
       fetchAutonomyStatus();
       fetchTradeHistory();
+      fetchWalletBalance();
     }, POLL_INTERVAL);
     
     return () => clearInterval(interval);
-  }, [fetchAgentStatus, fetchAutonomyStatus, fetchTradeHistory]);
+  }, [fetchAgentStatus, fetchAutonomyStatus, fetchTradeHistory, fetchWalletBalance]);
 
   // ============================================
   // Render
@@ -552,6 +575,50 @@ export default function Autonomous() {
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Trades:</span>
                 <span className="font-bold text-primary">{autonomyStatus?.totalTrades || 0}</span>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* ============================================ */}
+        {/* Wallet Balance Card */}
+        {/* ============================================ */}
+        <GlassCard className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Wallet className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="font-semibold">Wallet Balance</h3>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-purple-400">POL</span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold">
+                    {walletBalance ? parseFloat(walletBalance.pol.balance).toFixed(2) : '—'} POL
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ~${walletBalance ? (parseFloat(walletBalance.pol.balance) * 0.12).toFixed(0) : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-green-400">USDC</span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold">
+                    {walletBalance ? parseFloat(walletBalance.usdc.balance).toFixed(2) : '—'} USDC
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ~${walletBalance ? parseFloat(walletBalance.usdc.balance).toFixed(0) : '—'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
