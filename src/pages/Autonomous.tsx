@@ -27,7 +27,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
-const API_BASE = "https://polymarket-agent-production.up.railway.app";
+const API_BASE = "http://152.42.181.178:3001";
 
 interface AIDecision {
   shouldTrade: boolean;
