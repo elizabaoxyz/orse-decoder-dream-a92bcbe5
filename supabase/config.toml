@@ -1,1 +1,4 @@
 project_id = "vtddgoktkwqsvodbgrgt"
+
+[functions.polymarket-agent-proxy]
+verify_jwt = false

@@ -26,8 +26,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-const API_BASE = "http://152.42.181.178:3001";
+// Helper to call proxy edge function
+const callProxyApi = async (endpoint: string, body: object) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/polymarket-agent-proxy?endpoint=${encodeURIComponent(endpoint)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(errorData.error || 'Request failed');
+  }
+  
+  return response.json();
+};
 
 interface AIDecision {
   shouldTrade: boolean;
@@ -95,18 +116,12 @@ export default function Autonomous() {
     
     try {
       // Use wider spread range to find more opportunities
-      const response = await fetch(`${API_BASE}/api/scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          riskLevel, 
-          maxOrderSize,
-          minSpread: 0.1,  // Lower minimum spread
-          maxSpread: 50    // Higher maximum spread
-        })
+      const result = await callProxyApi('/api/scan', { 
+        riskLevel, 
+        maxOrderSize,
+        minSpread: 0.1,  // Lower minimum spread
+        maxSpread: 50    // Higher maximum spread
       });
-      
-      const result = await response.json();
       
       if (result.success && result.data?.opportunities) {
         setOpportunities(result.data.opportunities);
@@ -140,18 +155,12 @@ export default function Autonomous() {
     addLog(isAuto ? "auto" : "analyze", isAuto ? "Auto AI analysis..." : "Running AI analysis...");
     
     try {
-      const response = await fetch(`${API_BASE}/api/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          riskLevel, 
-          maxOrderSize,
-          minSpread: 0.1,
-          maxSpread: 50
-        })
+      const result = await callProxyApi('/api/analyze', { 
+        riskLevel, 
+        maxOrderSize,
+        minSpread: 0.1,
+        maxSpread: 50
       });
-      
-      const result = await response.json();
       
       if (result.success && result.data) {
         if (result.data.aiDecision) {

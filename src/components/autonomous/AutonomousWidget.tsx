@@ -5,7 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-const API_BASE = "http://152.42.181.178:3001";
+// Helper to call proxy edge function
+const callProxyApi = async (endpoint: string, body: object) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/polymarket-agent-proxy?endpoint=${encodeURIComponent(endpoint)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(errorData.error || 'Request failed');
+  }
+  
+  return response.json();
+};
 
 interface AIDecision {
   shouldTrade: boolean;
@@ -24,13 +44,7 @@ const AutonomousWidget = () => {
     setIsAnalyzing(true);
     
     try {
-      const response = await fetch(`${API_BASE}/api/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ riskLevel: "moderate", maxOrderSize: 25 })
-      });
-      
-      const result = await response.json();
+      const result = await callProxyApi('/api/analyze', { riskLevel: "moderate", maxOrderSize: 25 });
       
       if (result.success && result.data?.aiDecision) {
         setAiDecision(result.data.aiDecision);
