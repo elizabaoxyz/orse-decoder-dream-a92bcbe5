@@ -100,8 +100,8 @@ export default function Autonomous() {
     await fetchAgentStatus();
     setRefreshing(false);
     toast({
-      title: "状态已刷新",
-      description: "代理状态已更新"
+      title: "Status Refreshed",
+      description: "Agent status has been updated"
     });
   };
 
@@ -119,22 +119,22 @@ export default function Autonomous() {
         if (response.ok) {
           setAgentStatus(prev => ({ ...prev, status: newStatus }));
           toast({
-            title: newStatus === "running" ? "代理已启动" : "代理已暂停",
-            description: newStatus === "running" ? "自主交易代理正在运行" : "自主交易代理已暂停"
+            title: newStatus === "running" ? "Agent Started" : "Agent Paused",
+            description: newStatus === "running" ? "Autonomous trading agent is now running" : "Autonomous trading agent has been paused"
           });
         }
       } else {
         // Demo mode
         setAgentStatus(prev => ({ ...prev, status: newStatus }));
         toast({
-          title: newStatus === "running" ? "代理已启动" : "代理已暂停",
-          description: "演示模式 - 未连接到实际代理"
+          title: newStatus === "running" ? "Agent Started" : "Agent Paused",
+          description: "Demo mode - Not connected to actual agent"
         });
       }
     } catch (error) {
       toast({
-        title: "操作失败",
-        description: "无法连接到代理服务",
+        title: "Operation Failed",
+        description: "Unable to connect to agent service",
         variant: "destructive"
       });
     }
@@ -157,10 +157,10 @@ export default function Autonomous() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "running": return "运行中";
-      case "paused": return "已暂停";
-      case "error": return "错误";
-      default: return "已停止";
+      case "running": return "Running";
+      case "paused": return "Paused";
+      case "error": return "Error";
+      default: return "Stopped";
     }
   };
 
@@ -186,7 +186,7 @@ export default function Autonomous() {
           </Button>
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-semibold">自主交易代理</h1>
+            <h1 className="text-lg font-semibold">Autonomous Trading Agent</h1>
           </div>
           <div className="flex-1" />
           <Button 
@@ -196,7 +196,7 @@ export default function Autonomous() {
             disabled={refreshing}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            刷新
+            Refresh
           </Button>
         </div>
       </header>
@@ -208,9 +208,9 @@ export default function Autonomous() {
             <CardContent className="flex items-center gap-3 py-4">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
               <div>
-                <p className="font-medium text-yellow-500">演示模式</p>
+                <p className="font-medium text-yellow-500">Demo Mode</p>
                 <p className="text-sm text-muted-foreground">
-                  未配置 VITE_POLYMARKET_AGENT_API 环境变量，显示模拟数据
+                  VITE_POLYMARKET_AGENT_API not configured. Showing simulated data.
                 </p>
               </div>
             </CardContent>
@@ -223,7 +223,7 @@ export default function Autonomous() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              代理状态
+              Agent Status
             </CardTitle>
             <Badge 
               variant="outline" 
@@ -236,7 +236,7 @@ export default function Autonomous() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">运行时间</p>
+                <p className="text-sm text-muted-foreground">Uptime</p>
                 <p className="text-2xl font-bold">{agentStatus.uptime}</p>
               </div>
               <Button
@@ -248,12 +248,12 @@ export default function Autonomous() {
                 {agentStatus.status === "running" ? (
                   <>
                     <Pause className="h-5 w-5" />
-                    暂停代理
+                    Pause Agent
                   </>
                 ) : (
                   <>
                     <Play className="h-5 w-5" />
-                    启动代理
+                    Start Agent
                   </>
                 )}
               </Button>
@@ -267,7 +267,7 @@ export default function Autonomous() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Wallet className="h-4 w-4" />
-                <span className="text-sm">余额</span>
+                <span className="text-sm">Balance</span>
               </div>
               <p className="text-2xl font-bold">
                 ${agentStatus.balance?.toLocaleString() || "0"}
@@ -279,7 +279,7 @@ export default function Autonomous() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">今日盈亏</span>
+                <span className="text-sm">Daily P&L</span>
               </div>
               <p className={`text-2xl font-bold ${(agentStatus.dailyPnL || 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
                 {(agentStatus.dailyPnL || 0) >= 0 ? "+" : ""}${agentStatus.dailyPnL?.toFixed(2) || "0.00"}
@@ -291,7 +291,7 @@ export default function Autonomous() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Target className="h-4 w-4" />
-                <span className="text-sm">持仓数量</span>
+                <span className="text-sm">Positions</span>
               </div>
               <p className="text-2xl font-bold">
                 {agentStatus.activePositions || 0}
@@ -303,7 +303,7 @@ export default function Autonomous() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Zap className="h-4 w-4" />
-                <span className="text-sm">总交易数</span>
+                <span className="text-sm">Total Trades</span>
               </div>
               <p className="text-2xl font-bold">
                 {agentStatus.totalTrades || 0}
@@ -317,14 +317,14 @@ export default function Autonomous() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              交易配置
+              Trading Configuration
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="font-medium">自动交易</p>
-                <p className="text-sm text-muted-foreground">允许代理自动执行交易</p>
+                <p className="font-medium">Auto Trading</p>
+                <p className="text-sm text-muted-foreground">Allow agent to execute trades automatically</p>
               </div>
               <Switch
                 checked={config.autoTrade}
@@ -337,7 +337,7 @@ export default function Autonomous() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">最大仓位大小</p>
+                  <p className="text-sm font-medium">Max Position Size</p>
                   <span className="text-sm text-muted-foreground">${config.maxPositionSize}</span>
                 </div>
                 <Progress value={config.maxPositionSize / 10} className="h-2" />
@@ -345,7 +345,7 @@ export default function Autonomous() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">每日限额</p>
+                  <p className="text-sm font-medium">Daily Limit</p>
                   <span className="text-sm text-muted-foreground">${config.dailyLimit}</span>
                 </div>
                 <Progress value={config.dailyLimit / 20} className="h-2" />
@@ -353,7 +353,7 @@ export default function Autonomous() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">风险容忍度</p>
+                  <p className="text-sm font-medium">Risk Tolerance</p>
                   <span className={`text-sm ${getRiskColor(agentStatus.riskLevel || "low")}`}>
                     {config.riskTolerance}%
                   </span>
@@ -369,7 +369,7 @@ export default function Autonomous() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              最近活动
+              Recent Activity
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -381,7 +381,7 @@ export default function Autonomous() {
                       <DollarSign className="h-4 w-4 text-green-500" />
                     </div>
                     <div>
-                      <p className="font-medium">最后交易</p>
+                      <p className="font-medium">Last Trade</p>
                       <p className="text-sm text-muted-foreground">{agentStatus.lastTrade}</p>
                     </div>
                   </div>
@@ -389,8 +389,8 @@ export default function Autonomous() {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>暂无交易记录</p>
-                  <p className="text-sm">启动代理开始自动交易</p>
+                  <p>No trade history yet</p>
+                  <p className="text-sm">Start the agent to begin autonomous trading</p>
                 </div>
               )}
             </div>
@@ -402,9 +402,9 @@ export default function Autonomous() {
           <CardContent className="flex items-start gap-3 py-4">
             <Shield className="h-5 w-5 text-primary mt-0.5" />
             <div>
-              <p className="font-medium">安全提示</p>
+              <p className="font-medium">Security Notice</p>
               <p className="text-sm text-muted-foreground">
-                自主交易代理使用独立的有限钱包，通过 HSM 安全签名。私钥永远不会暴露在环境变量中。
+                The autonomous trading agent uses a dedicated limited wallet with HSM-based signing. Private keys are never exposed in environment variables.
               </p>
             </div>
           </CardContent>
