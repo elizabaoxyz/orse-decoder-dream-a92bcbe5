@@ -26,21 +26,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
-// Helper to call proxy edge function
-const callProxyApi = async (endpoint: string, body?: object, method: 'POST' | 'GET' = 'POST') => {
-  const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/polymarket-agent-proxy`);
-  url.searchParams.set('endpoint', endpoint);
-  url.searchParams.set('method', method);
-  
-  const response = await fetch(url.toString(), {
-    method: 'POST', // Always POST to edge function, it uses the method param
+
+// Direct API call to HTTPS backend
+const API_BASE = 'https://polymarket.elizabao.xyz';
+
+const callApi = async (endpoint: string, body?: object, method: 'POST' | 'GET' = 'POST') => {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    method,
     headers: {
       'Content-Type': 'application/json',
-      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: method === 'POST' && body ? JSON.stringify(body) : undefined,
   });
   
   if (!response.ok) {
@@ -148,7 +145,7 @@ export default function Autonomous() {
   // Fetch autonomy status
   const fetchAutonomyStatus = useCallback(async () => {
     try {
-      const result = await callProxyApi('/api/autonomy/status', undefined, 'GET');
+      const result = await callApi('/api/autonomy/status', undefined, 'GET');
       if (result.success && result.data) {
         setAutonomyStatus(result.data);
       }
@@ -160,7 +157,7 @@ export default function Autonomous() {
   // Fetch trade history
   const fetchTradeHistory = useCallback(async () => {
     try {
-      const result = await callProxyApi('/api/history', undefined, 'GET');
+      const result = await callApi('/api/history', undefined, 'GET');
       if (result.success && result.data) {
         setTradeHistory(Array.isArray(result.data) ? result.data : result.data.trades || []);
       }
@@ -174,7 +171,7 @@ export default function Autonomous() {
     setIsTogglingAutonomy(true);
     addLog("auto", "Starting autonomous trading...");
     try {
-      const result = await callProxyApi('/api/autonomy/start', { riskLevel, maxOrderSize });
+      const result = await callApi('/api/autonomy/start', { riskLevel, maxOrderSize });
       if (result.success) {
         addLog("auto", "Autonomous trading started");
         toast({ title: "Autonomy Started", description: "AI is now trading autonomously" });
@@ -196,7 +193,7 @@ export default function Autonomous() {
     setIsTogglingAutonomy(true);
     addLog("auto", "Stopping autonomous trading...");
     try {
-      const result = await callProxyApi('/api/autonomy/stop', {});
+      const result = await callApi('/api/autonomy/stop', {});
       if (result.success) {
         addLog("auto", "Autonomous trading stopped");
         toast({ title: "Autonomy Stopped", description: "AI trading has been stopped" });
@@ -230,7 +227,7 @@ export default function Autonomous() {
     
     try {
       // Use wider spread range to find more opportunities
-      const result = await callProxyApi('/api/scan', { 
+      const result = await callApi('/api/scan', { 
         riskLevel, 
         maxOrderSize,
         minSpread: 0.1,  // Lower minimum spread
@@ -269,7 +266,7 @@ export default function Autonomous() {
     addLog(isAuto ? "auto" : "analyze", isAuto ? "Auto AI analysis..." : "Running AI analysis...");
     
     try {
-      const result = await callProxyApi('/api/analyze', { 
+      const result = await callApi('/api/analyze', { 
         riskLevel, 
         maxOrderSize,
         minSpread: 0.1,
