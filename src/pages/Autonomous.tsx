@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
-  Bot, 
   ArrowLeft,
   Scan,
   Brain,
@@ -26,6 +25,7 @@ import {
   Minus,
   Eye
 } from "lucide-react";
+import elizaAvatar from "@/assets/eliza-avatar.jpg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -511,8 +511,8 @@ export default function Autonomous() {
               </Button>
             </Link>
             <div className="flex items-center gap-3">
-              <div className="relative p-2 rounded-xl bg-primary/10">
-                <Bot className="h-6 w-6 text-primary" />
+              <div className="relative">
+                <img src={elizaAvatar} alt="Eliza" className="h-10 w-10 rounded-xl object-cover" />
                 <span className={cn(
                   "absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background",
                   isOnline ? "bg-green-500" : "bg-gray-500"
@@ -630,9 +630,7 @@ export default function Autonomous() {
         <GlassCard glow={autonomyStatus?.running} glowColor="primary">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10">
-                <Bot className="h-5 w-5 text-primary" />
-              </div>
+              <img src={elizaAvatar} alt="Eliza" className="h-10 w-10 rounded-xl object-cover" />
               Autonomous Trading
             </CardTitle>
           </CardHeader>
