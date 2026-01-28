@@ -690,7 +690,7 @@ export default function Autonomous() {
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         {trade.confidence !== undefined && (
-                          <span>{(trade.confidence * 100).toFixed(0)}%</span>
+                          <span>{trade.confidence > 1 ? trade.confidence.toFixed(0) : (trade.confidence * 100).toFixed(0)}%</span>
                         )}
                         <span>{new Date(trade.timestamp).toLocaleTimeString()}</span>
                         {trade.scanNumber !== undefined && (
