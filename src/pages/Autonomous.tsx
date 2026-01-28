@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { 
   Bot, 
@@ -12,7 +12,10 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Pause,
+  Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +58,7 @@ interface AgentStatus {
 
 interface ActivityLog {
   timestamp: Date;
-  type: "scan" | "analyze" | "error";
+  type: "scan" | "analyze" | "error" | "auto";
   message: string;
 }
 
@@ -68,9 +71,16 @@ export default function Autonomous() {
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   
   // Settings
-  const [riskLevel, setRiskLevel] = useState<"conservative" | "moderate" | "aggressive">("moderate");
+  const [riskLevel, setRiskLevel] = useState<"conservative" | "moderate" | "aggressive">("aggressive");
   const [maxOrderSize, setMaxOrderSize] = useState(25);
   const [autoExecute, setAutoExecute] = useState(false);
+  
+  // Auto-refresh settings
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [nextRefreshIn, setNextRefreshIn] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const addLog = useCallback((type: ActivityLog["type"], message: string) => {
     setActivityLog(prev => [
@@ -79,51 +89,66 @@ export default function Autonomous() {
     ]);
   }, []);
 
-  const handleScan = async () => {
+  const handleScan = useCallback(async (isAuto = false) => {
     setIsScanning(true);
-    addLog("scan", "Starting market scan...");
+    addLog(isAuto ? "auto" : "scan", isAuto ? "Auto-scanning markets..." : "Starting market scan...");
     
     try {
+      // Use wider spread range to find more opportunities
       const response = await fetch(`${API_BASE}/api/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ riskLevel, maxOrderSize })
+        body: JSON.stringify({ 
+          riskLevel, 
+          maxOrderSize,
+          minSpread: 0.1,  // Lower minimum spread
+          maxSpread: 50    // Higher maximum spread
+        })
       });
       
       const result = await response.json();
       
       if (result.success && result.data?.opportunities) {
         setOpportunities(result.data.opportunities);
-        addLog("scan", `Found ${result.data.opportunities.length} opportunities`);
-        toast({
-          title: "Scan Complete",
-          description: `Found ${result.data.opportunities.length} market opportunities`
-        });
+        addLog(isAuto ? "auto" : "scan", `Found ${result.data.opportunities.length} opportunities`);
+        if (!isAuto) {
+          toast({
+            title: "Scan Complete",
+            description: `Found ${result.data.opportunities.length} market opportunities`
+          });
+        }
       } else {
         throw new Error(result.error || "Scan failed");
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       addLog("error", `Scan failed: ${message}`);
-      toast({
-        title: "Scan Failed",
-        description: message,
-        variant: "destructive"
-      });
+      if (!isAuto) {
+        toast({
+          title: "Scan Failed",
+          description: message,
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsScanning(false);
     }
-  };
+  }, [addLog, riskLevel, maxOrderSize, toast]);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = useCallback(async (isAuto = false) => {
     setIsAnalyzing(true);
-    addLog("analyze", "Running AI analysis...");
+    addLog(isAuto ? "auto" : "analyze", isAuto ? "Auto AI analysis..." : "Running AI analysis...");
     
     try {
       const response = await fetch(`${API_BASE}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ riskLevel, maxOrderSize })
+        body: JSON.stringify({ 
+          riskLevel, 
+          maxOrderSize,
+          minSpread: 0.1,
+          maxSpread: 50
+        })
       });
       
       const result = await response.json();
@@ -135,26 +160,71 @@ export default function Autonomous() {
         if (result.data.topOpportunities) {
           setOpportunities(result.data.topOpportunities);
         }
-        addLog("analyze", `AI recommends: ${result.data.aiDecision?.action || "HOLD"}`);
-        toast({
-          title: "Analysis Complete",
-          description: `AI Decision: ${result.data.aiDecision?.action || "No action"}`
-        });
+        addLog(isAuto ? "auto" : "analyze", `AI recommends: ${result.data.aiDecision?.action || "HOLD"}`);
+        if (!isAuto) {
+          toast({
+            title: "Analysis Complete",
+            description: `AI Decision: ${result.data.aiDecision?.action || "No action"}`
+          });
+        }
       } else {
         throw new Error(result.error || "Analysis failed");
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       addLog("error", `Analysis failed: ${message}`);
-      toast({
-        title: "Analysis Failed",
-        description: message,
-        variant: "destructive"
-      });
+      if (!isAuto) {
+        toast({
+          title: "Analysis Failed",
+          description: message,
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [addLog, riskLevel, maxOrderSize, toast]);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (autoRefresh) {
+      // Start countdown
+      setNextRefreshIn(refreshInterval);
+      
+      countdownRef.current = setInterval(() => {
+        setNextRefreshIn(prev => {
+          if (prev <= 1) return refreshInterval;
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Run analysis immediately when enabled
+      handleAnalyze(true);
+      
+      // Set up interval for auto-refresh
+      intervalRef.current = setInterval(() => {
+        handleAnalyze(true);
+      }, refreshInterval * 1000);
+      
+      addLog("auto", `Auto-refresh enabled (every ${refreshInterval}s)`);
+    } else {
+      // Clear intervals when disabled
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+      setNextRefreshIn(0);
+    }
+    
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [autoRefresh, refreshInterval, handleAnalyze, addLog]);
 
   const getActionColor = (action: string) => {
     switch (action) {
@@ -195,7 +265,7 @@ export default function Autonomous() {
           <Button 
             size="lg" 
             variant="outline" 
-            onClick={handleScan}
+            onClick={() => handleScan(false)}
             disabled={isScanning}
             className="flex-1"
           >
@@ -204,12 +274,30 @@ export default function Autonomous() {
           </Button>
           <Button 
             size="lg" 
-            onClick={handleAnalyze}
+            onClick={() => handleAnalyze(false)}
             disabled={isAnalyzing}
             className="flex-1"
           >
             <Brain className={`h-5 w-5 mr-2 ${isAnalyzing ? "animate-pulse" : ""}`} />
             {isAnalyzing ? "Analyzing..." : "Analyze"}
+          </Button>
+          <Button
+            size="lg"
+            variant={autoRefresh ? "destructive" : "secondary"}
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className="min-w-[140px]"
+          >
+            {autoRefresh ? (
+              <>
+                <Pause className="h-5 w-5 mr-2" />
+                Stop ({nextRefreshIn}s)
+              </>
+            ) : (
+              <>
+                <Play className="h-5 w-5 mr-2" />
+                Auto Scan
+              </>
+            )}
           </Button>
         </div>
 
@@ -305,6 +393,22 @@ export default function Autonomous() {
                   min={1}
                   max={100}
                   step={1}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium">Auto Scan Interval</label>
+                  <span className="text-sm text-muted-foreground">{refreshInterval}s</span>
+                </div>
+                <Slider
+                  value={[refreshInterval]}
+                  onValueChange={([v]) => setRefreshInterval(v)}
+                  min={10}
+                  max={120}
+                  step={5}
                 />
               </div>
 
