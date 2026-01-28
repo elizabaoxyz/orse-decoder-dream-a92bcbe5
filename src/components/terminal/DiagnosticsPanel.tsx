@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import FoxMascot from "./FoxMascot";
 import AsciiMouseEffect from "./AsciiMouseEffect";
+import AutonomousWidget from "@/components/autonomous/AutonomousWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
@@ -171,7 +172,10 @@ const DiagnosticsPanel = () => {
   };
 
   return (
-    <aside className="w-56 border-r border-border bg-card flex flex-col">
+    <aside className="w-56 border-r border-border bg-card flex flex-col overflow-y-auto">
+      {/* Autonomous AI Trading Widget */}
+      <AutonomousWidget />
+
       {/* ElizaOSCloud Deploy */}
       <div className="terminal-panel flex-shrink-0 relative">
         <AsciiMouseEffect />

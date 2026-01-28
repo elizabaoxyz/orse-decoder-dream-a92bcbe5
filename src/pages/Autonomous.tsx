@@ -1,412 +1,393 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { 
   Bot, 
-  Activity, 
-  Wallet, 
-  TrendingUp, 
-  Play, 
-  Pause, 
-  RefreshCw,
-  Settings,
   ArrowLeft,
-  Zap,
-  Shield,
+  Scan,
+  Brain,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Settings,
+  AlertCircle,
+  CheckCircle,
   Clock,
-  DollarSign,
-  Target,
-  AlertTriangle
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
-const AGENT_API = import.meta.env.VITE_POLYMARKET_AGENT_API || "";
+const API_BASE = "https://polymarket-agent-production.up.railway.app";
 
-interface AgentStatus {
-  status: "running" | "paused" | "stopped" | "error";
-  uptime?: string;
-  lastTrade?: string;
-  totalTrades?: number;
-  dailyPnL?: number;
-  balance?: number;
-  activePositions?: number;
-  riskLevel?: "low" | "medium" | "high";
+interface AIDecision {
+  shouldTrade: boolean;
+  action: "BUY" | "SELL" | "HOLD";
+  market?: string;
+  reasoning: string;
+  confidence: number;
 }
 
-interface AgentConfig {
-  autoTrade: boolean;
-  maxPositionSize: number;
-  dailyLimit: number;
-  riskTolerance: number;
+interface Opportunity {
+  question: string;
+  price: number;
+  spread: number;
+  score: number;
+  conditionId?: string;
+}
+
+interface ActivityLog {
+  timestamp: Date;
+  type: "scan" | "analyze" | "error";
+  message: string;
 }
 
 export default function Autonomous() {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [agentStatus, setAgentStatus] = useState<AgentStatus>({
-    status: "stopped",
-    uptime: "0h 0m",
-    lastTrade: "N/A",
-    totalTrades: 0,
-    dailyPnL: 0,
-    balance: 0,
-    activePositions: 0,
-    riskLevel: "low"
-  });
-  const [config, setConfig] = useState<AgentConfig>({
-    autoTrade: false,
-    maxPositionSize: 100,
-    dailyLimit: 500,
-    riskTolerance: 50
-  });
+  const [isScanning, setIsScanning] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiDecision, setAiDecision] = useState<AIDecision | null>(null);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
+  
+  // Settings
+  const [riskLevel, setRiskLevel] = useState<"conservative" | "moderate" | "aggressive">("moderate");
+  const [maxOrderSize, setMaxOrderSize] = useState(25);
+  const [autoExecute, setAutoExecute] = useState(false);
 
-  const fetchAgentStatus = async () => {
-    if (!AGENT_API) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${AGENT_API}/status`);
-      if (response.ok) {
-        const data = await response.json();
-        setAgentStatus({
-          status: data.status || "stopped",
-          uptime: data.uptime || "0h 0m",
-          lastTrade: data.lastTrade || "N/A",
-          totalTrades: data.totalTrades || 0,
-          dailyPnL: data.dailyPnL || 0,
-          balance: data.balance || 0,
-          activePositions: data.activePositions || 0,
-          riskLevel: data.riskLevel || "low"
-        });
-      }
-    } catch (error) {
-      console.error("Failed to fetch agent status:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchAgentStatus();
-    setRefreshing(false);
-    toast({
-      title: "Status Refreshed",
-      description: "Agent status has been updated"
-    });
-  };
-
-  const toggleAgent = async () => {
-    const newStatus = agentStatus.status === "running" ? "paused" : "running";
-    
-    try {
-      if (AGENT_API) {
-        const response = await fetch(`${AGENT_API}/control`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: newStatus === "running" ? "start" : "pause" })
-        });
-        
-        if (response.ok) {
-          setAgentStatus(prev => ({ ...prev, status: newStatus }));
-          toast({
-            title: newStatus === "running" ? "Agent Started" : "Agent Paused",
-            description: newStatus === "running" ? "Autonomous trading agent is now running" : "Autonomous trading agent has been paused"
-          });
-        }
-      } else {
-        // Demo mode
-        setAgentStatus(prev => ({ ...prev, status: newStatus }));
-        toast({
-          title: newStatus === "running" ? "Agent Started" : "Agent Paused",
-          description: "Demo mode - Not connected to actual agent"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Operation Failed",
-        description: "Unable to connect to agent service",
-        variant: "destructive"
-      });
-    }
-  };
-
-  useEffect(() => {
-    fetchAgentStatus();
-    const interval = setInterval(fetchAgentStatus, 30000);
-    return () => clearInterval(interval);
+  const addLog = useCallback((type: ActivityLog["type"], message: string) => {
+    setActivityLog(prev => [
+      { timestamp: new Date(), type, message },
+      ...prev.slice(0, 49)
+    ]);
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "running": return "bg-green-500";
-      case "paused": return "bg-yellow-500";
-      case "error": return "bg-red-500";
-      default: return "bg-gray-500";
+  const handleScan = async () => {
+    setIsScanning(true);
+    addLog("scan", "Starting market scan...");
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ riskLevel, maxOrderSize })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data?.opportunities) {
+        setOpportunities(result.data.opportunities);
+        addLog("scan", `Found ${result.data.opportunities.length} opportunities`);
+        toast({
+          title: "Scan Complete",
+          description: `Found ${result.data.opportunities.length} market opportunities`
+        });
+      } else {
+        throw new Error(result.error || "Scan failed");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      addLog("error", `Scan failed: ${message}`);
+      toast({
+        title: "Scan Failed",
+        description: message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsScanning(false);
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "running": return "Running";
-      case "paused": return "Paused";
-      case "error": return "Error";
-      default: return "Stopped";
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    addLog("analyze", "Running AI analysis...");
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ riskLevel, maxOrderSize })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        if (result.data.aiDecision) {
+          setAiDecision(result.data.aiDecision);
+        }
+        if (result.data.topOpportunities) {
+          setOpportunities(result.data.topOpportunities);
+        }
+        addLog("analyze", `AI recommends: ${result.data.aiDecision?.action || "HOLD"}`);
+        toast({
+          title: "Analysis Complete",
+          description: `AI Decision: ${result.data.aiDecision?.action || "No action"}`
+        });
+      } else {
+        throw new Error(result.error || "Analysis failed");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      addLog("error", `Analysis failed: ${message}`);
+      toast({
+        title: "Analysis Failed",
+        description: message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "high": return "text-red-500";
-      case "medium": return "text-yellow-500";
-      default: return "text-green-500";
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case "BUY": return "text-green-500 bg-green-500/10 border-green-500/30";
+      case "SELL": return "text-red-500 bg-red-500/10 border-red-500/30";
+      default: return "text-yellow-500 bg-yellow-500/10 border-yellow-500/30";
     }
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString("en-US", { 
+      hour: "2-digit", 
+      minute: "2-digit", 
+      second: "2-digit" 
+    });
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center gap-4 px-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <Link to="/">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-semibold">Autonomous Trading Agent</h1>
+            <h1 className="text-lg font-semibold">Autonomous AI Trading</h1>
           </div>
-          <div className="flex-1" />
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
         </div>
       </header>
 
       <main className="container px-4 py-6 space-y-6">
-        {/* Connection Status */}
-        {!AGENT_API && (
-          <Card className="border-yellow-500/50 bg-yellow-500/10">
-            <CardContent className="flex items-center gap-3 py-4">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              <div>
-                <p className="font-medium text-yellow-500">Demo Mode</p>
-                <p className="text-sm text-muted-foreground">
-                  VITE_POLYMARKET_AGENT_API not configured. Showing simulated data.
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            onClick={handleScan}
+            disabled={isScanning}
+            className="flex-1"
+          >
+            <Scan className={`h-5 w-5 mr-2 ${isScanning ? "animate-spin" : ""}`} />
+            {isScanning ? "Scanning..." : "Scan Markets"}
+          </Button>
+          <Button 
+            size="lg" 
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+            className="flex-1"
+          >
+            <Brain className={`h-5 w-5 mr-2 ${isAnalyzing ? "animate-pulse" : ""}`} />
+            {isAnalyzing ? "Analyzing..." : "Analyze"}
+          </Button>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* AI Decision Panel */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                AI Decision
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {aiDecision ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Badge className={`text-lg px-4 py-2 ${getActionColor(aiDecision.action)}`}>
+                      {aiDecision.action === "BUY" && <TrendingUp className="h-4 w-4 mr-2" />}
+                      {aiDecision.action === "SELL" && <TrendingDown className="h-4 w-4 mr-2" />}
+                      {aiDecision.action}
+                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Confidence:</span>
+                      <span className="font-bold">{(aiDecision.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {aiDecision.shouldTrade ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                      )}
+                      <span>{aiDecision.shouldTrade ? "Trade Recommended" : "No Trade"}</span>
+                    </div>
+                  </div>
+                  
+                  {aiDecision.market && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <span className="text-muted-foreground">Market: </span>
+                      <span className="font-medium">{aiDecision.market}</span>
+                    </div>
+                  )}
+                  
+                  <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                    <p className="text-muted-foreground text-sm mb-1">Reasoning</p>
+                    <p>{aiDecision.reasoning}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Bot className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <p>Click "Analyze" to get AI trading recommendations</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Settings Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Risk Level</label>
+                <Select value={riskLevel} onValueChange={(v) => setRiskLevel(v as typeof riskLevel)}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="conservative">Conservative</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="aggressive">Aggressive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium">Max Order Size</label>
+                  <span className="text-sm text-muted-foreground">${maxOrderSize}</span>
+                </div>
+                <Slider
+                  value={[maxOrderSize]}
+                  onValueChange={([v]) => setMaxOrderSize(v)}
+                  min={1}
+                  max={100}
+                  step={1}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Auto-Execute</p>
+                  <p className="text-xs text-muted-foreground">Execute trades automatically</p>
+                </div>
+                <Switch
+                  checked={autoExecute}
+                  onCheckedChange={setAutoExecute}
+                />
+              </div>
+              {autoExecute && (
+                <p className="text-xs text-yellow-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Caution: Trades will execute automatically
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Status Overview */}
-        <Card className="relative overflow-hidden">
-          <div className={`absolute top-0 left-0 right-0 h-1 ${getStatusColor(agentStatus.status)}`} />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Agent Status
-            </CardTitle>
-            <Badge 
-              variant="outline" 
-              className={`${getStatusColor(agentStatus.status)} bg-opacity-20`}
-            >
-              <span className={`w-2 h-2 rounded-full ${getStatusColor(agentStatus.status)} mr-2`} />
-              {getStatusText(agentStatus.status)}
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Uptime</p>
-                <p className="text-2xl font-bold">{agentStatus.uptime}</p>
-              </div>
-              <Button
-                size="lg"
-                variant={agentStatus.status === "running" ? "destructive" : "default"}
-                onClick={toggleAgent}
-                className="gap-2"
-              >
-                {agentStatus.status === "running" ? (
-                  <>
-                    <Pause className="h-5 w-5" />
-                    Pause Agent
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-5 w-5" />
-                    Start Agent
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <Wallet className="h-4 w-4" />
-                <span className="text-sm">Balance</span>
-              </div>
-              <p className="text-2xl font-bold">
-                ${agentStatus.balance?.toLocaleString() || "0"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">Daily P&L</span>
-              </div>
-              <p className={`text-2xl font-bold ${(agentStatus.dailyPnL || 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {(agentStatus.dailyPnL || 0) >= 0 ? "+" : ""}${agentStatus.dailyPnL?.toFixed(2) || "0.00"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <Target className="h-4 w-4" />
-                <span className="text-sm">Positions</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {agentStatus.activePositions || 0}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <Zap className="h-4 w-4" />
-                <span className="text-sm">Total Trades</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {agentStatus.totalTrades || 0}
-              </p>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Configuration */}
+        {/* Opportunities List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Trading Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="font-medium">Auto Trading</p>
-                <p className="text-sm text-muted-foreground">Allow agent to execute trades automatically</p>
-              </div>
-              <Switch
-                checked={config.autoTrade}
-                onCheckedChange={(checked) => setConfig(prev => ({ ...prev, autoTrade: checked }))}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Max Position Size</p>
-                  <span className="text-sm text-muted-foreground">${config.maxPositionSize}</span>
-                </div>
-                <Progress value={config.maxPositionSize / 10} className="h-2" />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Daily Limit</p>
-                  <span className="text-sm text-muted-foreground">${config.dailyLimit}</span>
-                </div>
-                <Progress value={config.dailyLimit / 20} className="h-2" />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Risk Tolerance</p>
-                  <span className={`text-sm ${getRiskColor(agentStatus.riskLevel || "low")}`}>
-                    {config.riskTolerance}%
-                  </span>
-                </div>
-                <Progress value={config.riskTolerance} className="h-2" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Recent Activity
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Top Opportunities
+              {opportunities.length > 0 && (
+                <Badge variant="secondary">{opportunities.length}</Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {agentStatus.lastTrade !== "N/A" ? (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-green-500/20">
-                      <DollarSign className="h-4 w-4 text-green-500" />
+            {opportunities.length > 0 ? (
+              <div className="space-y-3">
+                {opportunities.map((opp, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{opp.question}</p>
+                      <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                        <span>Price: {(opp.price * 100).toFixed(1)}¢</span>
+                        <span>Spread: {(opp.spread * 100).toFixed(2)}%</span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">Last Trade</p>
-                      <p className="text-sm text-muted-foreground">{agentStatus.lastTrade}</p>
-                    </div>
+                    <Badge variant="outline" className="ml-4">
+                      Score: {opp.score.toFixed(2)}
+                    </Badge>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No trade history yet</p>
-                  <p className="text-sm">Start the agent to begin autonomous trading</p>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Scan className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>No opportunities yet. Click "Scan Markets" to find opportunities.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Security Notice */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="flex items-start gap-3 py-4">
-            <Shield className="h-5 w-5 text-primary mt-0.5" />
-            <div>
-              <p className="font-medium">Security Notice</p>
-              <p className="text-sm text-muted-foreground">
-                The autonomous trading agent uses a dedicated limited wallet with HSM-based signing. Private keys are never exposed in environment variables.
-              </p>
-            </div>
+        {/* Activity Log */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Activity Log
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-48">
+              {activityLog.length > 0 ? (
+                <div className="space-y-2">
+                  {activityLog.map((log, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-start gap-3 text-sm p-2 rounded bg-muted/20"
+                    >
+                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <span className="text-muted-foreground shrink-0">
+                        {formatTime(log.timestamp)}
+                      </span>
+                      <span className={log.type === "error" ? "text-red-500" : ""}>
+                        {log.message}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No activity yet</p>
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </main>
