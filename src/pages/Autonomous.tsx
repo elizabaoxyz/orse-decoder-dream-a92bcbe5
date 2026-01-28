@@ -94,13 +94,17 @@ interface AutonomyStatus {
 }
 
 interface TradeHistoryItem {
-  id: string;
+  id?: string;
   timestamp: string;
   action: string;
-  market: string;
-  price: number;
-  size: number;
-  status: string;
+  market?: { question?: string; id?: string } | null;
+  price?: number;
+  size?: number;
+  status?: string;
+  shouldTrade?: boolean;
+  reasoning?: string;
+  confidence?: number;
+  scanNumber?: number;
 }
 
 interface ActivityLog {
@@ -677,16 +681,21 @@ export default function Autonomous() {
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border"
                     >
                       <div className="flex items-center gap-4">
-                        <Badge className={trade.action === 'BUY' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}>
+                        <Badge className={trade.action === 'BUY' ? 'bg-green-500/20 text-green-500' : trade.action === 'SELL' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}>
                           {trade.action}
                         </Badge>
-                        <span className="font-medium truncate max-w-[300px]">{trade.market}</span>
+                        <span className="font-medium truncate max-w-[300px]">
+                          {trade.market?.question || trade.reasoning?.substring(0, 50) || 'N/A'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{(trade.price * 100).toFixed(1)}¢</span>
-                        <span>${trade.size?.toFixed(2)}</span>
+                        {trade.confidence !== undefined && (
+                          <span>{(trade.confidence * 100).toFixed(0)}%</span>
+                        )}
                         <span>{new Date(trade.timestamp).toLocaleTimeString()}</span>
-                        <Badge variant="outline">{trade.status}</Badge>
+                        {trade.scanNumber !== undefined && (
+                          <Badge variant="outline">Scan #{trade.scanNumber}</Badge>
+                        )}
                       </div>
                     </div>
                   ))}
