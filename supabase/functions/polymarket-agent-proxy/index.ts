@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const API_BASE = "http://152.42.181.178:3001";
 
-const ALLOWED_ENDPOINTS = ['/api/scan', '/api/analyze', '/api/search', '/api/chat'];
+const ALLOWED_ENDPOINTS = ['/api/scan', '/api/analyze', '/api/search', '/api/chat', '/api/autonomy/start', '/api/autonomy/stop', '/api/autonomy/status', '/api/history'];
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -37,20 +37,23 @@ serve(async (req) => {
     const targetUrl = `${API_BASE}${endpoint}`;
     console.log(`Proxying ${req.method} request to: ${targetUrl}`);
 
-    // Get request body if present
+    // Get request body if present (for POST requests)
     let body = null;
     if (req.method === 'POST') {
       body = await req.text();
       console.log('Request body:', body);
     }
 
+    // Determine the HTTP method to use
+    const method = url.searchParams.get('method') || req.method;
+
     // Forward the request
     const response = await fetch(targetUrl, {
-      method: req.method,
+      method: method,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: body,
+      body: method === 'POST' ? body : undefined,
     });
 
     const responseText = await response.text();
