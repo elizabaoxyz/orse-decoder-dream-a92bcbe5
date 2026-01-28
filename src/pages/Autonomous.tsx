@@ -366,7 +366,11 @@ export default function Autonomous() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Scan className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>No opportunities yet. Click "Scan Markets" to find opportunities.</p>
+                {activityLog.some(log => log.type === 'analyze') ? (
+                  <p className="text-warning">No opportunities found in current market conditions. Try adjusting settings or scan again later.</p>
+                ) : (
+                  <p>No opportunities yet. Click "Scan Markets" to find opportunities.</p>
+                )}
               </div>
             )}
           </CardContent>
