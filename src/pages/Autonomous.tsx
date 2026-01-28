@@ -63,11 +63,14 @@ interface AIDecision {
 interface Opportunity {
   id: string;
   question: string;
-  bestBid: number;
-  bestAsk: number;
-  spreadPercent: number;
-  midpoint: number;
+  yesPrice?: number;
+  volume24h?: number;
+  liquidity?: number;
   score: number;
+  // Legacy fields for backwards compatibility
+  bestBid?: number;
+  bestAsk?: number;
+  spreadPercent?: number;
 }
 
 interface AgentStatus {
@@ -465,13 +468,19 @@ export default function Autonomous() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{opp.question}</p>
                       <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                        <span>Bid: {(opp.bestBid * 100).toFixed(1)}¢</span>
-                        <span>Ask: {(opp.bestAsk * 100).toFixed(1)}¢</span>
-                        <span>Spread: {opp.spreadPercent.toFixed(2)}%</span>
+                        {opp.yesPrice !== undefined && (
+                          <span>Price: {(opp.yesPrice * 100).toFixed(1)}¢</span>
+                        )}
+                        {opp.volume24h !== undefined && (
+                          <span>Vol: ${(opp.volume24h / 1000).toFixed(0)}K</span>
+                        )}
+                        {opp.liquidity !== undefined && (
+                          <span>Liq: ${(opp.liquidity / 1000).toFixed(0)}K</span>
+                        )}
                       </div>
                     </div>
                     <Badge variant="outline" className="ml-4">
-                      Score: {opp.score.toFixed(2)}
+                      Score: {opp.score?.toFixed(2) ?? 'N/A'}
                     </Badge>
                   </div>
                 ))}
