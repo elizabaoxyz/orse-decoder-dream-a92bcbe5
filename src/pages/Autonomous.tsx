@@ -15,7 +15,10 @@ import {
   Sparkles,
   RefreshCw,
   Pause,
-  Play
+  Play,
+  Power,
+  PowerOff,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +86,7 @@ interface AutonomyStatus {
   running: boolean;
   totalScans: number;
   totalTrades: number;
+  tradingEnabled?: boolean;
   lastDecision?: {
     action: string;
     market?: string;
@@ -122,6 +126,8 @@ export default function Autonomous() {
   const [autonomyStatus, setAutonomyStatus] = useState<AutonomyStatus | null>(null);
   const [tradeHistory, setTradeHistory] = useState<TradeHistoryItem[]>([]);
   const [isTogglingAutonomy, setIsTogglingAutonomy] = useState(false);
+  const [isTogglingTrading, setIsTogglingTrading] = useState(false);
+  const [tradingEnabled, setTradingEnabled] = useState(false);
   
   // Settings
   const [riskLevel, setRiskLevel] = useState<"conservative" | "moderate" | "aggressive">("aggressive");
@@ -209,6 +215,57 @@ export default function Autonomous() {
       setIsTogglingAutonomy(false);
     }
   }, [addLog, toast, fetchAutonomyStatus]);
+
+  // Enable real trading
+  const handleEnableTrading = useCallback(async () => {
+    setIsTogglingTrading(true);
+    addLog("auto", "Enabling real trading...");
+    try {
+      const result = await callApi('/api/trade/enable', {});
+      if (result.success) {
+        setTradingEnabled(true);
+        addLog("auto", "Real trading ENABLED - trades will execute!");
+        toast({ 
+          title: "Trading Enabled", 
+          description: "Real trades will now execute on the blockchain",
+          variant: "default"
+        });
+      } else {
+        throw new Error(result.error || "Failed to enable");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      addLog("error", `Failed to enable trading: ${message}`);
+      toast({ title: "Enable Failed", description: message, variant: "destructive" });
+    } finally {
+      setIsTogglingTrading(false);
+    }
+  }, [addLog, toast]);
+
+  // Disable real trading
+  const handleDisableTrading = useCallback(async () => {
+    setIsTogglingTrading(true);
+    addLog("auto", "Disabling real trading...");
+    try {
+      const result = await callApi('/api/trade/disable', {});
+      if (result.success) {
+        setTradingEnabled(false);
+        addLog("auto", "Real trading DISABLED - scan only mode");
+        toast({ 
+          title: "Trading Disabled", 
+          description: "No real trades will execute (scan only)",
+        });
+      } else {
+        throw new Error(result.error || "Failed to disable");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      addLog("error", `Failed to disable trading: ${message}`);
+      toast({ title: "Disable Failed", description: message, variant: "destructive" });
+    } finally {
+      setIsTogglingTrading(false);
+    }
+  }, [addLog, toast]);
 
   // Initial fetch
   useEffect(() => {
@@ -382,11 +439,12 @@ export default function Autonomous() {
       <main className="container px-4 py-6 space-y-6">
         {/* Autonomy Status Card */}
         <Card className="border-primary/50">
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-4">
+            {/* Autonomy Controls Row */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <div className={`h-3 w-3 rounded-full ${autonomyStatus?.running ? 'bg-green-500 animate-pulse' : autonomyStatus?.enabled ? 'bg-yellow-500' : 'bg-muted'}`} />
+                  <div className={`h-3 w-3 rounded-full ${autonomyStatus?.running ? 'bg-primary animate-pulse' : autonomyStatus?.enabled ? 'bg-yellow-500' : 'bg-muted'}`} />
                   <span className="font-medium">
                     {autonomyStatus?.running ? 'Running' : autonomyStatus?.enabled ? 'Enabled' : 'Stopped'}
                   </span>
@@ -401,7 +459,7 @@ export default function Autonomous() {
                     </div>
                     {autonomyStatus.lastDecision && (
                       <div className="text-sm text-muted-foreground">
-                        Last: <span className={`font-medium ${autonomyStatus.lastDecision.action === 'BUY' ? 'text-green-500' : autonomyStatus.lastDecision.action === 'SELL' ? 'text-red-500' : 'text-yellow-500'}`}>
+                        Last: <span className={`font-medium ${autonomyStatus.lastDecision.action === 'BUY' ? 'text-primary' : autonomyStatus.lastDecision.action === 'SELL' ? 'text-destructive' : 'text-yellow-500'}`}>
                           {autonomyStatus.lastDecision.action}
                         </span>
                       </div>
@@ -416,7 +474,7 @@ export default function Autonomous() {
                   disabled={isTogglingAutonomy || autonomyStatus?.running}
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  Start Autonomy
+                  Start Scanning
                 </Button>
                 <Button
                   variant="destructive"
@@ -424,7 +482,46 @@ export default function Autonomous() {
                   disabled={isTogglingAutonomy || !autonomyStatus?.running}
                 >
                   <Pause className="h-4 w-4 mr-2" />
-                  Stop Autonomy
+                  Stop Scanning
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Trading Enable/Disable Row */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Zap className={`h-5 w-5 ${tradingEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className="font-medium">Real Trading:</span>
+                  <Badge variant={tradingEnabled ? "default" : "secondary"} className={tradingEnabled ? "bg-primary" : ""}>
+                    {tradingEnabled ? "ENABLED" : "DISABLED"}
+                  </Badge>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {tradingEnabled 
+                    ? "⚠️ Trades will execute on blockchain with real funds" 
+                    : "Safe mode - AI scanning only, no real trades"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={tradingEnabled ? "outline" : "default"}
+                  onClick={handleEnableTrading}
+                  disabled={isTogglingTrading || tradingEnabled}
+                  className={!tradingEnabled ? "bg-primary hover:bg-primary/90" : ""}
+                >
+                  <Power className="h-4 w-4 mr-2" />
+                  Enable Trading
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDisableTrading}
+                  disabled={isTogglingTrading || !tradingEnabled}
+                >
+                  <PowerOff className="h-4 w-4 mr-2" />
+                  Disable Trading
                 </Button>
               </div>
             </div>
