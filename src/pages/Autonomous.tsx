@@ -29,18 +29,19 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 // Helper to call proxy edge function
-const callProxyApi = async (endpoint: string, body: object) => {
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/polymarket-agent-proxy?endpoint=${encodeURIComponent(endpoint)}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-      body: JSON.stringify(body),
-    }
-  );
+const callProxyApi = async (endpoint: string, body?: object, method: 'POST' | 'GET' = 'POST') => {
+  const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/polymarket-agent-proxy`);
+  url.searchParams.set('endpoint', endpoint);
+  url.searchParams.set('method', method);
+  
+  const response = await fetch(url.toString(), {
+    method: 'POST', // Always POST to edge function, it uses the method param
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -80,6 +81,28 @@ interface AgentStatus {
   clobConfigured: boolean;
 }
 
+interface AutonomyStatus {
+  enabled: boolean;
+  running: boolean;
+  totalScans: number;
+  totalTrades: number;
+  lastDecision?: {
+    action: string;
+    market?: string;
+    timestamp?: string;
+  };
+}
+
+interface TradeHistoryItem {
+  id: string;
+  timestamp: string;
+  action: string;
+  market: string;
+  price: number;
+  size: number;
+  status: string;
+}
+
 interface ActivityLog {
   timestamp: Date;
   type: "scan" | "analyze" | "error" | "auto";
@@ -93,6 +116,11 @@ export default function Autonomous() {
   const [aiDecision, setAiDecision] = useState<AIDecision | null>(null);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
+  
+  // Autonomy controls
+  const [autonomyStatus, setAutonomyStatus] = useState<AutonomyStatus | null>(null);
+  const [tradeHistory, setTradeHistory] = useState<TradeHistoryItem[]>([]);
+  const [isTogglingAutonomy, setIsTogglingAutonomy] = useState(false);
   
   // Settings
   const [riskLevel, setRiskLevel] = useState<"conservative" | "moderate" | "aggressive">("aggressive");
@@ -112,6 +140,85 @@ export default function Autonomous() {
       ...prev.slice(0, 49)
     ]);
   }, []);
+
+  // Fetch autonomy status
+  const fetchAutonomyStatus = useCallback(async () => {
+    try {
+      const result = await callProxyApi('/api/autonomy/status', undefined, 'GET');
+      if (result.success && result.data) {
+        setAutonomyStatus(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch autonomy status:', error);
+    }
+  }, []);
+
+  // Fetch trade history
+  const fetchTradeHistory = useCallback(async () => {
+    try {
+      const result = await callProxyApi('/api/history', undefined, 'GET');
+      if (result.success && result.data) {
+        setTradeHistory(Array.isArray(result.data) ? result.data : result.data.trades || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch trade history:', error);
+    }
+  }, []);
+
+  // Start autonomy
+  const handleStartAutonomy = useCallback(async () => {
+    setIsTogglingAutonomy(true);
+    addLog("auto", "Starting autonomous trading...");
+    try {
+      const result = await callProxyApi('/api/autonomy/start', { riskLevel, maxOrderSize });
+      if (result.success) {
+        addLog("auto", "Autonomous trading started");
+        toast({ title: "Autonomy Started", description: "AI is now trading autonomously" });
+        fetchAutonomyStatus();
+      } else {
+        throw new Error(result.error || "Failed to start");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      addLog("error", `Failed to start autonomy: ${message}`);
+      toast({ title: "Start Failed", description: message, variant: "destructive" });
+    } finally {
+      setIsTogglingAutonomy(false);
+    }
+  }, [addLog, riskLevel, maxOrderSize, toast, fetchAutonomyStatus]);
+
+  // Stop autonomy
+  const handleStopAutonomy = useCallback(async () => {
+    setIsTogglingAutonomy(true);
+    addLog("auto", "Stopping autonomous trading...");
+    try {
+      const result = await callProxyApi('/api/autonomy/stop', {});
+      if (result.success) {
+        addLog("auto", "Autonomous trading stopped");
+        toast({ title: "Autonomy Stopped", description: "AI trading has been stopped" });
+        fetchAutonomyStatus();
+      } else {
+        throw new Error(result.error || "Failed to stop");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      addLog("error", `Failed to stop autonomy: ${message}`);
+      toast({ title: "Stop Failed", description: message, variant: "destructive" });
+    } finally {
+      setIsTogglingAutonomy(false);
+    }
+  }, [addLog, toast, fetchAutonomyStatus]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchAutonomyStatus();
+    fetchTradeHistory();
+    const interval = setInterval(() => {
+      fetchAutonomyStatus();
+      fetchTradeHistory();
+    }, 10000); // Refresh every 10s
+    return () => clearInterval(interval);
+  }, [fetchAutonomyStatus, fetchTradeHistory]);
 
   const handleScan = useCallback(async (isAuto = false) => {
     setIsScanning(true);
@@ -272,6 +379,57 @@ export default function Autonomous() {
       </header>
 
       <main className="container px-4 py-6 space-y-6">
+        {/* Autonomy Status Card */}
+        <Card className="border-primary/50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${autonomyStatus?.running ? 'bg-green-500 animate-pulse' : autonomyStatus?.enabled ? 'bg-yellow-500' : 'bg-muted'}`} />
+                  <span className="font-medium">
+                    {autonomyStatus?.running ? 'Running' : autonomyStatus?.enabled ? 'Enabled' : 'Stopped'}
+                  </span>
+                </div>
+                {autonomyStatus && (
+                  <>
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">{autonomyStatus.totalScans || 0}</span> scans
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">{autonomyStatus.totalTrades || 0}</span> trades
+                    </div>
+                    {autonomyStatus.lastDecision && (
+                      <div className="text-sm text-muted-foreground">
+                        Last: <span className={`font-medium ${autonomyStatus.lastDecision.action === 'BUY' ? 'text-green-500' : autonomyStatus.lastDecision.action === 'SELL' ? 'text-red-500' : 'text-yellow-500'}`}>
+                          {autonomyStatus.lastDecision.action}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={autonomyStatus?.running ? "outline" : "default"}
+                  onClick={handleStartAutonomy}
+                  disabled={isTogglingAutonomy || autonomyStatus?.running}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Autonomy
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleStopAutonomy}
+                  disabled={isTogglingAutonomy || !autonomyStatus?.running}
+                >
+                  <Pause className="h-4 w-4 mr-2" />
+                  Stop Autonomy
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Action Buttons */}
         <div className="flex gap-4">
           <Button 
@@ -495,6 +653,50 @@ export default function Autonomous() {
                 )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Trade History */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Trade History
+              {tradeHistory.length > 0 && (
+                <Badge variant="secondary">{tradeHistory.length}</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-48">
+              {tradeHistory.length > 0 ? (
+                <div className="space-y-2">
+                  {tradeHistory.map((trade, idx) => (
+                    <div 
+                      key={trade.id || idx} 
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Badge className={trade.action === 'BUY' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}>
+                          {trade.action}
+                        </Badge>
+                        <span className="font-medium truncate max-w-[300px]">{trade.market}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{(trade.price * 100).toFixed(1)}¢</span>
+                        <span>${trade.size?.toFixed(2)}</span>
+                        <span>{new Date(trade.timestamp).toLocaleTimeString()}</span>
+                        <Badge variant="outline">{trade.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No trades yet</p>
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
 
