@@ -42,7 +42,6 @@ import { cn } from "@/lib/utils";
 // Configuration
 // ============================================
 const API_BASE = 'https://polymarket.elizabao.xyz';
-const WALLET_ADDRESS = '0xb05cA5145C37eb051B33Cb571607570f2CB74002';
 const POLL_INTERVAL = 10000; // 10 seconds
 
 // ============================================
@@ -128,8 +127,9 @@ interface AnalysisResult {
 
 interface WalletBalance {
   address: string;
-  pol: { balance: string; symbol: string };
-  usdc: { balance: string; symbol: string };
+  proxyWallet: string;
+  pol: { balance: string };
+  usdc: { balance: string };
 }
 
 interface OpenPosition {
@@ -670,18 +670,20 @@ export default function Autonomous() {
                 <StatusDot active={isOnline} color={isOnline ? "green" : "gray"} />
                 <span className="text-sm font-medium">{isOnline ? "Agent Online" : "Agent Offline"}</span>
               </div>
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                <Wallet className="h-4 w-4" />
-                <code className="font-mono">{truncateAddress(WALLET_ADDRESS)}</code>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(WALLET_ADDRESS)}>
-                  <Copy className="h-3 w-3" />
-                </Button>
-                <a href={`https://polygonscan.com/address/${WALLET_ADDRESS}`} target="_blank" rel="noopener noreferrer">
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <ExternalLink className="h-3 w-3" />
+              {walletBalance && (
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                  <Wallet className="h-4 w-4" />
+                  <code className="font-mono">{truncateAddress(walletBalance.proxyWallet)}</code>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(walletBalance.proxyWallet)}>
+                    <Copy className="h-3 w-3" />
                   </Button>
-                </a>
-              </div>
+                  <a href={`https://polygonscan.com/address/${walletBalance.proxyWallet}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </a>
+                </div>
+              )}
             </div>
             
             {/* Quick stats */}
@@ -702,12 +704,48 @@ export default function Autonomous() {
         {/* Wallet Balance Card */}
         {/* ============================================ */}
         <GlassCard className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <Wallet className="h-5 w-5 text-primary" />
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Wallet className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-semibold">Wallet Balance</h3>
             </div>
-            <h3 className="font-semibold">Wallet Balance</h3>
+            <span className="text-xs text-muted-foreground">On-chain balance (trading funds in Polymarket)</span>
           </div>
+          
+          {/* Wallet Addresses */}
+          {walletBalance && (
+            <div className="mb-4 p-3 rounded-xl bg-muted/30 border border-border/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Trading Wallet:</span>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono">{truncateAddress(walletBalance.proxyWallet)}</code>
+                  <span className="text-xs text-green-400">(holds funds)</span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(walletBalance.proxyWallet)}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <a href={`https://polygonscan.com/address/${walletBalance.proxyWallet}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Signer:</span>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono">{truncateAddress(walletBalance.address)}</code>
+                  <span className="text-xs text-muted-foreground">(controls it)</span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(walletBalance.address)}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <a href={`https://polygonscan.com/address/${walletBalance.address}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
               <div className="flex items-center gap-3">
@@ -734,7 +772,7 @@ export default function Autonomous() {
                     {walletBalance ? parseFloat(walletBalance.usdc.balance).toFixed(2) : '—'} USDC
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    ~${walletBalance ? parseFloat(walletBalance.usdc.balance).toFixed(0) : '—'}
+                    On-chain balance
                   </p>
                 </div>
               </div>
