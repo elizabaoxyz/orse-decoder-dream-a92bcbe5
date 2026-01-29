@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 // Configuration
 // ============================================
 const API_BASE = 'https://polymarket.elizabao.xyz';
-const POLL_INTERVAL = 10000; // 10 seconds
+const POLL_INTERVAL = 30000; // 30 seconds
 
 // ============================================
 // API Helper
@@ -79,7 +79,21 @@ interface AgentStatus {
   totalTrades: number;
   totalPnl?: number;
   openPositions?: number;
+  openElonPositions?: number;
+  maxElonPositions?: number;
+  elonTradeSize?: number;
+  regularTradeSize?: number;
   settings?: PositionSettings;
+}
+
+interface ElonPrediction {
+  currentCount: number;
+  predicted: number;
+  lowerBound: number;
+  upperBound: number;
+  confidence: number;
+  elapsedHours: number;
+  remainingHours: number;
 }
 
 interface AutonomyStatus {
@@ -143,6 +157,8 @@ interface OpenPosition {
   amount: number;
   openedAt: string;
   status: string;
+  category?: string;
+  tpPrice?: number;
 }
 
 interface ClosedPosition {
@@ -165,7 +181,8 @@ interface PositionsData {
   open: OpenPosition[];
   closed: ClosedPosition[];
   totalPnl: number;
-  settings: PositionSettings;
+  openElonPositions?: number;
+  settings?: PositionSettings;
 }
 
 // ============================================
@@ -301,6 +318,9 @@ export default function Autonomous() {
   const [takeProfitPercent, setTakeProfitPercent] = useState(20);
   const [stopLossPercent, setStopLossPercent] = useState(15);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  
+  // Elon Prediction state
+  const [elonPrediction, setElonPrediction] = useState<ElonPrediction | null>(null);
   const addActivity = useCallback((message: string, type: "info" | "buy" | "sell" | "hold" | "error" = "info", uniqueKey?: string) => {
     const id = uniqueKey || `${Date.now()}-${message}`;
     setActivityLog(prev => {
@@ -383,6 +403,18 @@ export default function Autonomous() {
       console.error('Failed to fetch positions:', error);
     } finally {
       setIsFetchingPositions(false);
+    }
+  }, []);
+
+  // Fetch Elon prediction
+  const fetchElonPrediction = useCallback(async () => {
+    try {
+      const result = await callApi('/api/elon-prediction', undefined, 'GET');
+      if (result.success && result.data) {
+        setElonPrediction(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch elon prediction:', error);
     }
   }, []);
 
@@ -581,16 +613,37 @@ export default function Autonomous() {
     fetchTradeHistory();
     fetchWalletBalance();
     fetchPositions();
+    fetchElonPrediction();
     
     const interval = setInterval(() => {
+      fetchAgentStatus();
       fetchAutonomyStatus();
       fetchTradeHistory();
       fetchWalletBalance();
       fetchPositions();
+      fetchElonPrediction();
     }, POLL_INTERVAL);
     
     return () => clearInterval(interval);
-  }, [fetchAgentStatus, fetchAutonomyStatus, fetchTradeHistory, fetchWalletBalance, fetchPositions]);
+  }, [fetchAgentStatus, fetchAutonomyStatus, fetchTradeHistory, fetchWalletBalance, fetchPositions, fetchElonPrediction]);
+
+  // Get category badge color
+  const getCategoryBadge = (category?: string) => {
+    const categoryMap: Record<string, { variant: "default" | "success" | "warning" | "danger" | "muted"; label: string }> = {
+      elon: { variant: "warning", label: "🐦 Elon" },
+      crypto: { variant: "default", label: "₿ Crypto" },
+      politics: { variant: "muted", label: "🏛️ Politics" },
+      sports: { variant: "success", label: "⚽ Sports" },
+    };
+    return categoryMap[category || ''] || { variant: "muted" as const, label: category || 'Other' };
+  };
+
+  // Format hours to readable time
+  const formatHours = (hours: number) => {
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 24) return `${Math.round(hours)}h`;
+    return `${Math.round(hours / 24)}d ${Math.round(hours % 24)}h`;
+  };
 
   // Calculate PnL for open positions
   const calculateOpenPnl = (position: OpenPosition) => {
@@ -902,9 +955,9 @@ export default function Autonomous() {
         </GlassCard>
 
         {/* ============================================ */}
-        {/* Total PnL + Trading Settings Row */}
+        {/* Bot Status + Trade Settings Row */}
         {/* ============================================ */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Total PnL Display */}
           <GlassCard glow={positionsData && positionsData.totalPnl !== 0} glowColor={positionsData && positionsData.totalPnl >= 0 ? "green" : "red"}>
             <CardHeader className="pb-2">
@@ -914,84 +967,164 @@ export default function Autonomous() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className={cn(
-                  "text-4xl font-bold",
-                  positionsData && positionsData.totalPnl >= 0 ? "text-green-400" : "text-red-400"
-                )}>
-                  {positionsData ? formatCurrency(positionsData.totalPnl) : '$0.00'}
+              <div className={cn(
+                "text-4xl font-bold mb-4",
+                positionsData && positionsData.totalPnl >= 0 ? "text-green-400" : "text-red-400"
+              )}>
+                {positionsData ? formatCurrency(positionsData.totalPnl) : '$0.00'}
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="p-2 rounded-lg bg-muted/30">
+                  <p className="text-muted-foreground text-xs">Open Positions</p>
+                  <p className="font-bold text-primary">{agentStatus?.openPositions || positionsData?.open.length || 0}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Open Positions</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {positionsData?.open.length || 0}
+                <div className="p-2 rounded-lg bg-muted/30">
+                  <p className="text-muted-foreground text-xs">Total Trades</p>
+                  <p className="font-bold text-primary">{agentStatus?.totalTrades || autonomyStatus?.totalTrades || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </GlassCard>
+
+          {/* Trade Settings Card */}
+          <GlassCard>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-3 text-base">
+                <Settings className="h-4 w-4 text-primary" />
+                Trade Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="p-2 rounded-lg bg-muted/30">
+                  <p className="text-muted-foreground text-xs">Elon Trade Size</p>
+                  <p className="font-bold text-yellow-400">${agentStatus?.elonTradeSize || 20}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/30">
+                  <p className="text-muted-foreground text-xs">Regular Trade Size</p>
+                  <p className="font-bold text-primary">${agentStatus?.regularTradeSize || 1}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/30">
+                  <p className="text-muted-foreground text-xs">Max Elon Positions</p>
+                  <p className="font-bold">{positionsData?.openElonPositions || 0}/{agentStatus?.maxElonPositions || 3}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/30">
+                  <p className="text-muted-foreground text-xs">TP / SL</p>
+                  <p className="font-bold">
+                    <span className="text-green-400">+{takeProfitPercent}%</span>
+                    {' / '}
+                    <span className="text-red-400">-{stopLossPercent}%</span>
                   </p>
                 </div>
               </div>
             </CardContent>
           </GlassCard>
 
-          {/* Trading Settings Panel */}
-          <GlassCard>
+          {/* Elon Tweet Prediction Card */}
+          <GlassCard glow={!!elonPrediction} glowColor="primary">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-3 text-base">
-                <Settings className="h-4 w-4 text-primary" />
-                Trading Settings
+                <span className="text-lg">🐦</span>
+                Elon Tweet Prediction
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Target className="h-3 w-3 text-green-400" />
-                    Take Profit
-                  </label>
-                  <Select value={takeProfitPercent.toString()} onValueChange={(v) => setTakeProfitPercent(parseInt(v))}>
-                    <SelectTrigger className="border-green-500/30">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">+10%</SelectItem>
-                      <SelectItem value="15">+15%</SelectItem>
-                      <SelectItem value="20">+20%</SelectItem>
-                      <SelectItem value="25">+25%</SelectItem>
-                      <SelectItem value="30">+30%</SelectItem>
-                      <SelectItem value="50">+50%</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Auto-sell when profit</p>
+            <CardContent>
+              {!elonPrediction ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  Loading prediction...
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-3 w-3 text-red-400" />
-                    Stop Loss
-                  </label>
-                  <Select value={stopLossPercent.toString()} onValueChange={(v) => setStopLossPercent(parseInt(v))}>
-                    <SelectTrigger className="border-red-500/30">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">-5%</SelectItem>
-                      <SelectItem value="10">-10%</SelectItem>
-                      <SelectItem value="15">-15%</SelectItem>
-                      <SelectItem value="20">-20%</SelectItem>
-                      <SelectItem value="25">-25%</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Auto-sell when loss</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Current Count</span>
+                    <span className="text-2xl font-bold text-yellow-400">{elonPrediction.currentCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Predicted Total</span>
+                    <span className="text-xl font-bold text-primary">{elonPrediction.predicted}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Range</span>
+                    <span className="text-foreground">{elonPrediction.lowerBound} - {elonPrediction.upperBound}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Confidence</span>
+                    <Badge variant={elonPrediction.confidence >= 0.7 ? "success" : elonPrediction.confidence >= 0.5 ? "warning" : "muted"}>
+                      {(elonPrediction.confidence * 100).toFixed(1)}%
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Time Remaining</span>
+                    <span className="text-foreground font-medium">{formatHours(elonPrediction.remainingHours)}</span>
+                  </div>
                 </div>
-              </div>
-              <Button 
-                onClick={handleSaveSettings} 
-                disabled={isSavingSettings}
-                className="w-full gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {isSavingSettings ? 'Saving...' : 'Save Settings'}
-              </Button>
+              )}
             </CardContent>
           </GlassCard>
         </div>
+
+        {/* ============================================ */}
+        {/* Trading Settings Panel (Editable) */}
+        {/* ============================================ */}
+        <GlassCard>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-3 text-base">
+              <Settings className="h-4 w-4 text-primary" />
+              Risk Management Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Target className="h-3 w-3 text-green-400" />
+                  Take Profit
+                </label>
+                <Select value={takeProfitPercent.toString()} onValueChange={(v) => setTakeProfitPercent(parseInt(v))}>
+                  <SelectTrigger className="border-green-500/30">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">+10%</SelectItem>
+                    <SelectItem value="15">+15%</SelectItem>
+                    <SelectItem value="20">+20%</SelectItem>
+                    <SelectItem value="25">+25%</SelectItem>
+                    <SelectItem value="30">+30%</SelectItem>
+                    <SelectItem value="50">+50%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Shield className="h-3 w-3 text-red-400" />
+                  Stop Loss
+                </label>
+                <Select value={stopLossPercent.toString()} onValueChange={(v) => setStopLossPercent(parseInt(v))}>
+                  <SelectTrigger className="border-red-500/30">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">-5%</SelectItem>
+                    <SelectItem value="10">-10%</SelectItem>
+                    <SelectItem value="15">-15%</SelectItem>
+                    <SelectItem value="20">-20%</SelectItem>
+                    <SelectItem value="25">-25%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 flex items-end">
+                <Button 
+                  onClick={handleSaveSettings} 
+                  disabled={isSavingSettings}
+                  className="w-full gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSavingSettings ? 'Saving...' : 'Save Settings'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </GlassCard>
 
         {/* ============================================ */}
         {/* Open Positions Card */}
@@ -1022,40 +1155,57 @@ export default function Autonomous() {
                 <p className="text-sm">No open positions</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {positionsData.open.map((position) => {
-                  const { pnl, pnlPercent } = calculateOpenPnl(position);
-                  const isProfit = pnl >= 0;
-                  return (
-                    <div key={position.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all">
-                      <h4 className="font-medium text-sm mb-3 line-clamp-2">{position.question}</h4>
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <div className="flex items-center gap-4 text-muted-foreground">
-                          <span>Entry: <strong className="text-foreground">${position.entryPrice.toFixed(2)}</strong></span>
-                          <span>Current: <strong className="text-foreground">${(position.currentPrice ?? position.entryPrice).toFixed(2)}</strong></span>
-                          <span>Size: <strong className="text-foreground">${position.size.toFixed(2)}</strong></span>
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-3 pr-4">
+                  {positionsData.open.map((position) => {
+                    const { pnl, pnlPercent } = calculateOpenPnl(position);
+                    const isProfit = pnl >= 0;
+                    const categoryInfo = getCategoryBadge(position.category);
+                    return (
+                      <div key={position.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all">
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <h4 className="font-medium text-sm line-clamp-2 flex-1">{position.question}</h4>
+                          <Badge variant={categoryInfo.variant}>{categoryInfo.label}</Badge>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "font-bold",
-                            isProfit ? "text-green-400" : "text-red-400"
-                          )}>
-                            {formatCurrency(pnl)} ({formatPercent(pnlPercent)})
-                          </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Entry</p>
+                            <p className="font-medium">${position.entryPrice.toFixed(3)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Current</p>
+                            <p className="font-medium">${(position.currentPrice ?? position.entryPrice).toFixed(3)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Size</p>
+                            <p className="font-medium">{position.size.toFixed(2)} shares</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">TP Price</p>
+                            <p className="font-medium text-green-400">${(position.tpPrice || position.entryPrice * 1.2).toFixed(3)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">PnL</p>
+                            <p className={cn("font-bold", isProfit ? "text-green-400" : "text-red-400")}>
+                              {formatPercent(pnlPercent)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-end">
                           <a 
                             href={`https://polymarket.com/event/${position.marketId}`}
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-xs text-primary hover:underline flex items-center gap-1"
                           >
-                            View <ExternalLink className="h-3 w-3" />
+                            View on Polymarket <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
             )}
           </CardContent>
         </GlassCard>
