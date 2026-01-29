@@ -231,7 +231,7 @@ export default function Autonomous() {
   // Data state
   const [tradeHistory, setTradeHistory] = useState<TradeHistoryItem[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [activityLog, setActivityLog] = useState<{ time: Date; message: string; type: "info" | "buy" | "sell" | "hold" | "error" }[]>([]);
+  const [activityLog, setActivityLog] = useState<{ id: string; time: Date; message: string; type: "info" | "buy" | "sell" | "hold" | "error" }[]>([]);
   
   // Analysis state
   const [riskLevel, setRiskLevel] = useState<"conservative" | "moderate" | "aggressive">("moderate");
@@ -249,9 +249,17 @@ export default function Autonomous() {
   // Wallet balance state
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
 
-  // Add to activity log
-  const addActivity = useCallback((message: string, type: "info" | "buy" | "sell" | "hold" | "error" = "info") => {
-    setActivityLog(prev => [{ time: new Date(), message, type }, ...prev.slice(0, 99)]);
+  // Add to activity log with deduplication
+  const addActivity = useCallback((message: string, type: "info" | "buy" | "sell" | "hold" | "error" = "info", uniqueKey?: string) => {
+    const id = uniqueKey || `${Date.now()}-${message}`;
+    setActivityLog(prev => {
+      // Check if this entry already exists
+      if (prev.some(entry => entry.id === id)) {
+        return prev;
+      }
+      // Add new entry and limit to 20 unique entries
+      return [{ id, time: new Date(), message, type }, ...prev].slice(0, 20);
+    });
   }, []);
 
   // Copy to clipboard
@@ -312,25 +320,26 @@ export default function Autonomous() {
     try {
       const result = await callApi('/api/autonomy/status', undefined, 'GET');
       if (result.success && result.data) {
-        const prev = autonomyStatus;
         setAutonomyStatus(result.data);
         
-        // Add activity for new decisions
-        if (result.data.lastDecision && 
-            (!prev?.lastDecision || 
-             prev.lastDecision.timestamp !== result.data.lastDecision.timestamp)) {
+        // Add activity for new decisions with unique key (timestamp + market id)
+        if (result.data.lastDecision) {
           const decision = result.data.lastDecision;
           const action = decision.action || 'HOLD';
           const market = decision.market?.question || 'No market';
+          const marketId = decision.market?.id || 'unknown';
+          const timestamp = decision.timestamp || new Date().toISOString();
           const confidence = decision.confidence ? `(${decision.confidence}%)` : '';
           const type = action === 'BUY' ? 'buy' : action === 'SELL' ? 'sell' : 'hold';
-          addActivity(`${action} Signal - "${market}" ${confidence}`, type);
+          // Use timestamp + marketId as unique key to prevent duplicates
+          const uniqueKey = `${timestamp}-${marketId}`;
+          addActivity(`${action} Signal - "${market}" ${confidence}`, type, uniqueKey);
         }
       }
     } catch (error) {
       console.error('Failed to fetch autonomy status:', error);
     }
-  }, [autonomyStatus, addActivity]);
+  }, [addActivity]);
 
   // Fetch trade history
   const fetchTradeHistory = useCallback(async () => {
