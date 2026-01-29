@@ -754,7 +754,7 @@ export default function Autonomous() {
         </GlassCard>
 
         {/* ============================================ */}
-        {/* Wallet Balance Card */}
+        {/* Wallet & Trading Balance Card */}
         {/* ============================================ */}
         <GlassCard className="p-4">
           <div className="flex items-center justify-between mb-3">
@@ -762,75 +762,109 @@ export default function Autonomous() {
               <div className="p-2 rounded-xl bg-primary/10">
                 <Wallet className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="font-semibold">Wallet Balance</h3>
+              <h3 className="font-semibold">Trading Wallet</h3>
             </div>
-            <span className="text-xs text-muted-foreground">On-chain balance (trading funds in Polymarket)</span>
+            <Badge variant="muted">Polymarket Proxy</Badge>
           </div>
           
           {/* Wallet Addresses */}
           {walletBalance && (
-            <div className="mb-4 p-3 rounded-xl bg-muted/30 border border-border/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Trading Wallet:</span>
+            <div className="mb-4 p-3 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+              {/* Trading Wallet (Proxy) - Main */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono">{truncateAddress(walletBalance.proxyWallet)}</code>
+                  <span className="text-sm font-medium text-primary">Trading Wallet:</span>
                   <span className="text-xs text-green-400">(holds funds)</span>
-                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(walletBalance.proxyWallet)}>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm font-mono bg-muted/50 px-2 py-1 rounded">
+                    {walletBalance.proxyWallet}
+                  </code>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(walletBalance.proxyWallet)}>
                     <Copy className="h-3 w-3" />
                   </Button>
                   <a href={`https://polygonscan.com/address/${walletBalance.proxyWallet}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
                   </a>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Signer:</span>
+              
+              {/* Signer Address */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-border/30">
                 <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono">{truncateAddress(walletBalance.address)}</code>
-                  <span className="text-xs text-muted-foreground">(controls it)</span>
+                  <span className="text-xs text-muted-foreground">Signer (EOA):</span>
+                  <span className="text-xs text-muted-foreground">(controls proxy)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono text-muted-foreground">{truncateAddress(walletBalance.address)}</code>
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(walletBalance.address)}>
                     <Copy className="h-3 w-3" />
                   </Button>
-                  <a href={`https://polygonscan.com/address/${walletBalance.address}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                  </a>
                 </div>
               </div>
             </div>
           )}
           
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
+          {/* Balance Display */}
+          <div className="grid sm:grid-cols-3 gap-4">
+            {/* Positions Value - Main Trading Balance */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-primary">
+                    ${positionsData?.open ? positionsData.open.reduce((sum, p) => sum + p.amount, 0).toFixed(2) : '0.00'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    In Polymarket Positions
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* On-chain POL */}
+            <div className="p-3 rounded-xl bg-muted/50 border border-border/50">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                   <span className="text-xs font-bold text-purple-400">POL</span>
                 </div>
                 <div>
                   <p className="text-lg font-bold">
-                    {walletBalance ? parseFloat(walletBalance.pol.balance).toFixed(2) : '—'} POL
+                    {walletBalance ? parseFloat(walletBalance.pol.balance).toFixed(4) : '—'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    ~${walletBalance ? (parseFloat(walletBalance.pol.balance) * 0.12).toFixed(0) : '—'}
+                    On-chain (gas)
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
+            
+            {/* On-chain USDC */}
+            <div className="p-3 rounded-xl bg-muted/50 border border-border/50">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center">
                   <span className="text-xs font-bold text-green-400">USDC</span>
                 </div>
                 <div>
                   <p className="text-lg font-bold">
-                    {walletBalance ? parseFloat(walletBalance.usdc.balance).toFixed(2) : '—'} USDC
+                    {walletBalance ? parseFloat(walletBalance.usdc.balance).toFixed(2) : '—'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    On-chain balance
+                    On-chain (not in Poly)
                   </p>
                 </div>
               </div>
             </div>
           </div>
+          
+          {/* Info note */}
+          <p className="mt-3 text-xs text-muted-foreground text-center">
+            💡 Trading funds are held inside Polymarket's system. On-chain balances show funds not yet deposited.
+          </p>
         </GlassCard>
 
         {/* ============================================ */}
