@@ -23,7 +23,11 @@ import {
   CheckCircle2,
   XCircle,
   Minus,
-  Eye
+  Eye,
+  Settings,
+  DollarSign,
+  Target,
+  Save
 } from "lucide-react";
 import elizaAvatar from "@/assets/eliza-avatar.jpg";
 import { Button } from "@/components/ui/button";
@@ -74,6 +78,9 @@ interface AgentStatus {
   };
   totalScans: number;
   totalTrades: number;
+  totalPnl?: number;
+  openPositions?: number;
+  settings?: PositionSettings;
 }
 
 interface AutonomyStatus {
@@ -83,6 +90,7 @@ interface AutonomyStatus {
   autoTradeEnabled: boolean;
   totalScans: number;
   totalTrades: number;
+  totalPnl?: number;
   lastDecision?: {
     action: string;
     market?: { question?: string; id?: string; yesPrice?: number };
@@ -122,6 +130,42 @@ interface WalletBalance {
   address: string;
   pol: { balance: string; symbol: string };
   usdc: { balance: string; symbol: string };
+}
+
+interface OpenPosition {
+  id: string;
+  marketId: string;
+  question: string;
+  side: string;
+  entryPrice: number;
+  currentPrice?: number;
+  size: number;
+  amount: number;
+  openedAt: string;
+  status: string;
+}
+
+interface ClosedPosition {
+  id: string;
+  question: string;
+  entryPrice: number;
+  exitPrice: number;
+  pnl: number;
+  closeReason: string;
+  closedAt: string;
+  status: string;
+}
+
+interface PositionSettings {
+  takeProfitPercent: number;
+  stopLossPercent: number;
+}
+
+interface PositionsData {
+  open: OpenPosition[];
+  closed: ClosedPosition[];
+  totalPnl: number;
+  settings: PositionSettings;
 }
 
 // ============================================
@@ -248,8 +292,15 @@ export default function Autonomous() {
   
   // Wallet balance state
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
-
-  // Add to activity log with deduplication
+  
+  // Positions state
+  const [positionsData, setPositionsData] = useState<PositionsData | null>(null);
+  const [isFetchingPositions, setIsFetchingPositions] = useState(false);
+  
+  // Settings state
+  const [takeProfitPercent, setTakeProfitPercent] = useState(20);
+  const [stopLossPercent, setStopLossPercent] = useState(15);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const addActivity = useCallback((message: string, type: "info" | "buy" | "sell" | "hold" | "error" = "info", uniqueKey?: string) => {
     const id = uniqueKey || `${Date.now()}-${message}`;
     setActivityLog(prev => {
@@ -314,6 +365,46 @@ export default function Autonomous() {
       console.error('Failed to fetch wallet balance:', error);
     }
   }, []);
+
+  // Fetch positions
+  const fetchPositions = useCallback(async () => {
+    setIsFetchingPositions(true);
+    try {
+      const result = await callApi('/api/positions', undefined, 'GET');
+      if (result.success && result.data) {
+        setPositionsData(result.data);
+        // Update settings from API response
+        if (result.data.settings) {
+          setTakeProfitPercent(result.data.settings.takeProfitPercent);
+          setStopLossPercent(result.data.settings.stopLossPercent);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch positions:', error);
+    } finally {
+      setIsFetchingPositions(false);
+    }
+  }, []);
+
+  // Save position settings
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const result = await callApi('/api/positions/settings', {
+        takeProfitPercent,
+        stopLossPercent
+      });
+      if (result.success) {
+        toast({ title: "Settings Saved", description: "Take profit and stop loss updated" });
+        addActivity(`⚙️ Settings updated: TP ${takeProfitPercent}% / SL ${stopLossPercent}%`, 'info');
+        fetchPositions();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: String(error), variant: "destructive" });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   // Fetch autonomy status
   const fetchAutonomyStatus = useCallback(async () => {
@@ -489,15 +580,37 @@ export default function Autonomous() {
     fetchAutonomyStatus();
     fetchTradeHistory();
     fetchWalletBalance();
+    fetchPositions();
     
     const interval = setInterval(() => {
       fetchAutonomyStatus();
       fetchTradeHistory();
       fetchWalletBalance();
+      fetchPositions();
     }, POLL_INTERVAL);
     
     return () => clearInterval(interval);
-  }, [fetchAgentStatus, fetchAutonomyStatus, fetchTradeHistory, fetchWalletBalance]);
+  }, [fetchAgentStatus, fetchAutonomyStatus, fetchTradeHistory, fetchWalletBalance, fetchPositions]);
+
+  // Calculate PnL for open positions
+  const calculateOpenPnl = (position: OpenPosition) => {
+    const currentPrice = position.currentPrice ?? position.entryPrice;
+    const pnl = (currentPrice - position.entryPrice) * position.size;
+    const pnlPercent = ((currentPrice - position.entryPrice) / position.entryPrice) * 100;
+    return { pnl, pnlPercent };
+  };
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    const prefix = value >= 0 ? '+' : '';
+    return `${prefix}$${Math.abs(value).toFixed(2)}`;
+  };
+
+  // Format percent
+  const formatPercent = (value: number) => {
+    const prefix = value >= 0 ? '+' : '';
+    return `${prefix}${value.toFixed(1)}%`;
+  };
 
   // ============================================
   // Render
@@ -751,6 +864,226 @@ export default function Autonomous() {
         </GlassCard>
 
         {/* ============================================ */}
+        {/* Total PnL + Trading Settings Row */}
+        {/* ============================================ */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Total PnL Display */}
+          <GlassCard glow={positionsData && positionsData.totalPnl !== 0} glowColor={positionsData && positionsData.totalPnl >= 0 ? "green" : "red"}>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-3 text-base">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Total PnL
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className={cn(
+                  "text-4xl font-bold",
+                  positionsData && positionsData.totalPnl >= 0 ? "text-green-400" : "text-red-400"
+                )}>
+                  {positionsData ? formatCurrency(positionsData.totalPnl) : '$0.00'}
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Open Positions</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {positionsData?.open.length || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </GlassCard>
+
+          {/* Trading Settings Panel */}
+          <GlassCard>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-3 text-base">
+                <Settings className="h-4 w-4 text-primary" />
+                Trading Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Target className="h-3 w-3 text-green-400" />
+                    Take Profit
+                  </label>
+                  <Select value={takeProfitPercent.toString()} onValueChange={(v) => setTakeProfitPercent(parseInt(v))}>
+                    <SelectTrigger className="border-green-500/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">+10%</SelectItem>
+                      <SelectItem value="15">+15%</SelectItem>
+                      <SelectItem value="20">+20%</SelectItem>
+                      <SelectItem value="25">+25%</SelectItem>
+                      <SelectItem value="30">+30%</SelectItem>
+                      <SelectItem value="50">+50%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Auto-sell when profit</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Shield className="h-3 w-3 text-red-400" />
+                    Stop Loss
+                  </label>
+                  <Select value={stopLossPercent.toString()} onValueChange={(v) => setStopLossPercent(parseInt(v))}>
+                    <SelectTrigger className="border-red-500/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">-5%</SelectItem>
+                      <SelectItem value="10">-10%</SelectItem>
+                      <SelectItem value="15">-15%</SelectItem>
+                      <SelectItem value="20">-20%</SelectItem>
+                      <SelectItem value="25">-25%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Auto-sell when loss</p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleSaveSettings} 
+                disabled={isSavingSettings}
+                className="w-full gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {isSavingSettings ? 'Saving...' : 'Save Settings'}
+              </Button>
+            </CardContent>
+          </GlassCard>
+        </div>
+
+        {/* ============================================ */}
+        {/* Open Positions Card */}
+        {/* ============================================ */}
+        <GlassCard>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-base">
+                <TrendingUp className="h-4 w-4 text-green-400" />
+                Open Positions ({positionsData?.open.length || 0})
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={fetchPositions}
+                disabled={isFetchingPositions}
+                className="gap-2"
+              >
+                <RefreshCw className={cn("h-3 w-3", isFetchingPositions && "animate-spin")} />
+                Refresh
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!positionsData?.open.length ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No open positions</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {positionsData.open.map((position) => {
+                  const { pnl, pnlPercent } = calculateOpenPnl(position);
+                  const isProfit = pnl >= 0;
+                  return (
+                    <div key={position.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all">
+                      <h4 className="font-medium text-sm mb-3 line-clamp-2">{position.question}</h4>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <div className="flex items-center gap-4 text-muted-foreground">
+                          <span>Entry: <strong className="text-foreground">${position.entryPrice.toFixed(2)}</strong></span>
+                          <span>Current: <strong className="text-foreground">${(position.currentPrice ?? position.entryPrice).toFixed(2)}</strong></span>
+                          <span>Size: <strong className="text-foreground">${position.size.toFixed(2)}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "font-bold",
+                            isProfit ? "text-green-400" : "text-red-400"
+                          )}>
+                            {formatCurrency(pnl)} ({formatPercent(pnlPercent)})
+                          </span>
+                          <a 
+                            href={`https://polymarket.com/event/${position.marketId}`}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            View <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </GlassCard>
+
+        {/* ============================================ */}
+        {/* Closed Positions / Trade History Table */}
+        {/* ============================================ */}
+        <GlassCard>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-3 text-base">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              Closed Positions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!positionsData?.closed.length ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No closed positions</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[250px]">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="pb-2 font-medium">Market</th>
+                      <th className="pb-2 font-medium text-right">Entry</th>
+                      <th className="pb-2 font-medium text-right">Exit</th>
+                      <th className="pb-2 font-medium text-right">PnL</th>
+                      <th className="pb-2 font-medium hidden sm:table-cell">Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {positionsData.closed.map((position) => {
+                      const isProfit = position.pnl >= 0;
+                      return (
+                        <tr key={position.id} className="border-b border-border/30 last:border-0">
+                          <td className="py-2 max-w-[200px] truncate">
+                            {position.question}
+                          </td>
+                          <td className="py-2 text-right text-muted-foreground">
+                            ${position.entryPrice.toFixed(2)}
+                          </td>
+                          <td className="py-2 text-right text-muted-foreground">
+                            ${position.exitPrice.toFixed(2)}
+                          </td>
+                          <td className={cn(
+                            "py-2 text-right font-bold",
+                            isProfit ? "text-green-400" : "text-red-400"
+                          )}>
+                            {formatCurrency(position.pnl)}
+                          </td>
+                          <td className="py-2 hidden sm:table-cell">
+                            <Badge variant={isProfit ? "success" : "danger"}>
+                              {position.closeReason}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </GlassCard>
         {/* 3. Live Activity Feed + 4. Trade History */}
         {/* ============================================ */}
         <div className="grid lg:grid-cols-2 gap-6">
