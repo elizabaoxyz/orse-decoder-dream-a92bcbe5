@@ -801,10 +801,12 @@ export default function Autonomous() {
                   <span className="text-xs text-muted-foreground">(controls proxy)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono text-muted-foreground">{truncateAddress(walletBalance.address)}</code>
-                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(walletBalance.address)}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                  <code className="text-xs font-mono text-muted-foreground">{truncateAddress(walletBalance?.address)}</code>
+                  {walletBalance?.address && (
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(walletBalance.address)}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
