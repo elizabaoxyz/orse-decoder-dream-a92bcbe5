@@ -339,8 +339,11 @@ export default function Autonomous() {
     toast({ title: "Copied!", description: "Address copied to clipboard" });
   };
 
-  // Truncate address
-  const truncateAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  // Truncate address - with null check
+  const truncateAddress = (addr?: string) => {
+    if (!addr) return '—';
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
 
   // Format time
   const formatTime = (date: Date | string) => {
