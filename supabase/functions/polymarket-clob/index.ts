@@ -2,15 +2,26 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const CLOB_API_URL = "https://clob.polymarket.com";
+const GAMMA_API_URL = "https://gamma-api.polymarket.com";
 
 interface ClobMarketsParams {
   limit?: number;
   offset?: number;
   active?: boolean;
+}
+
+interface GammaMarketsParams {
+  limit?: number;
+  offset?: number;
+  active?: boolean;
+  closed?: boolean;
+  tag_slug?: string;
+  _q?: string;
 }
 
 interface PriceHistoryParams {
@@ -26,7 +37,7 @@ interface OrderBookParams {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -50,6 +61,9 @@ serve(async (req) => {
       case "getLastTradePrice":
         data = await getLastTradePrice(params as OrderBookParams);
         break;
+      case "getGammaMarkets":
+        data = await getGammaMarkets(params as GammaMarketsParams);
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -58,53 +72,54 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error("CLOB API Error:", errorMessage);
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("CLOB/Gamma API Error:", errorMessage);
+    return new Response(JSON.stringify({ success: false, error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
-async function getMarkets(params: ClobMarketsParams = {}) {
-  const url = new URL(`${CLOB_API_URL}/markets`);
-  
-  if (params.limit) url.searchParams.set("limit", String(params.limit));
-  if (params.offset) url.searchParams.set("offset", String(params.offset));
-  if (params.active !== undefined) url.searchParams.set("active", String(params.active));
-
-  const response = await fetch(url.toString(), {
-    headers: { "Accept": "application/json" },
+async function fetchJson(url: string, init?: RequestInit) {
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      ...(init?.headers ?? {}),
+    },
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch markets: ${response.statusText}`);
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Upstream request failed (${response.status} ${response.statusText}) for ${url}${
+        body ? `: ${body.slice(0, 500)}` : ""
+      }`
+    );
   }
 
-  const data = await response.json();
-  return data;
+  return await response.json();
+}
+
+async function getMarkets(params: ClobMarketsParams = {}) {
+  const url = new URL(`${CLOB_API_URL}/markets`);
+
+  if (params.limit) url.searchParams.set("limit", String(params.limit));
+  if (params.offset) url.searchParams.set("offset", String(params.offset));
+  if (params.active !== undefined)
+    url.searchParams.set("active", String(params.active));
+
+  return await fetchJson(url.toString());
 }
 
 async function getSimplifiedMarkets(params: ClobMarketsParams = {}) {
   const url = new URL(`${CLOB_API_URL}/simplified-markets`);
-  
+
   if (params.limit) url.searchParams.set("limit", String(params.limit));
   if (params.offset) url.searchParams.set("offset", String(params.offset));
 
-  const response = await fetch(url.toString(), {
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch simplified markets: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data;
+  return await fetchJson(url.toString());
 }
 
 async function getPriceHistory(params: PriceHistoryParams) {
@@ -117,16 +132,7 @@ async function getPriceHistory(params: PriceHistoryParams) {
   if (params.interval) url.searchParams.set("interval", params.interval);
   if (params.fidelity) url.searchParams.set("fidelity", String(params.fidelity));
 
-  const response = await fetch(url.toString(), {
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch price history: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data;
+  return await fetchJson(url.toString());
 }
 
 async function getOrderBook(params: OrderBookParams) {
@@ -137,16 +143,7 @@ async function getOrderBook(params: OrderBookParams) {
   const url = new URL(`${CLOB_API_URL}/book`);
   url.searchParams.set("token_id", params.tokenId);
 
-  const response = await fetch(url.toString(), {
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch order book: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data;
+  return await fetchJson(url.toString());
 }
 
 async function getLastTradePrice(params: OrderBookParams) {
@@ -157,14 +154,24 @@ async function getLastTradePrice(params: OrderBookParams) {
   const url = new URL(`${CLOB_API_URL}/last-trade-price`);
   url.searchParams.set("token_id", params.tokenId);
 
-  const response = await fetch(url.toString(), {
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch last trade price: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data;
+  return await fetchJson(url.toString());
 }
+
+async function getGammaMarkets(params: GammaMarketsParams = {}) {
+  const url = new URL(`${GAMMA_API_URL}/markets`);
+
+  if (params.limit !== undefined) url.searchParams.set("limit", String(params.limit));
+  if (params.offset !== undefined)
+    url.searchParams.set("offset", String(params.offset));
+
+  if (params.active !== undefined)
+    url.searchParams.set("active", String(params.active));
+  if (params.closed !== undefined)
+    url.searchParams.set("closed", String(params.closed));
+
+  if (params.tag_slug) url.searchParams.set("tag_slug", params.tag_slug);
+  if (params._q) url.searchParams.set("_q", params._q);
+
+  return await fetchJson(url.toString());
+}
+
