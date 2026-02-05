@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 import { ClobMarket } from '@/lib/api/polymarket-clob';
-
-const GAMMA_API_BASE = 'https://gamma-api.polymarket.com';
 
 interface GammaMarket {
   id: string;
@@ -49,11 +48,14 @@ const CATEGORY_TAGS: MarketTag[] = [
 
 // Convert Gamma API response to ClobMarket format
 const convertGammaToClob = (market: GammaMarket): ClobMarket => {
-  const tokens = market.outcomes?.map((outcome, idx) => ({
-    token_id: `${market.id}-${idx}`,
-    outcome,
-    price: market.outcomePrices?.[idx] ? parseFloat(market.outcomePrices[idx]) : 0.5,
-  })) || [];
+  const tokens =
+    market.outcomes?.map((outcome, idx) => ({
+      token_id: `${market.id}-${idx}`,
+      outcome,
+      price: market.outcomePrices?.[idx]
+        ? parseFloat(market.outcomePrices[idx])
+        : 0.5,
+    })) || [];
 
   return {
     condition_id: market.conditionId || market.id,
@@ -84,78 +86,79 @@ const MarketsExplorer = () => {
   const [hasMore, setHasMore] = useState(true);
   const LIMIT = 50;
 
-  const fetchMarkets = useCallback(async (resetOffset = true) => {
-    setLoading(true);
-    setError(null);
-    
-    if (resetOffset) {
-      setOffset(0);
-      setMarkets([]);
-    }
+  const fetchMarkets = useCallback(
+    async (opts?: { reset?: boolean; offset?: number }) => {
+      const reset = opts?.reset ?? true;
+      const currentOffset = reset ? 0 : (opts?.offset ?? offset);
 
-    try {
-      const currentOffset = resetOffset ? 0 : offset;
-      
-      // Build query params for Polymarket Gamma API
-      const params = new URLSearchParams();
-      params.set('limit', LIMIT.toString());
-      params.set('offset', currentOffset.toString());
-      
-      // Filter by active/closed status
-      if (!showClosed) {
-        params.set('active', 'true');
-        params.set('closed', 'false');
-      }
-      
-      // Filter by category/tag
-      if (activeCategory !== 'all') {
-        params.set('tag_slug', activeCategory);
-      }
-      
-      // Search by text
-      if (searchQuery.trim()) {
-        params.set('_q', searchQuery.trim());
-      }
+      setLoading(true);
+      setError(null);
 
-      const url = `${GAMMA_API_BASE}/markets?${params.toString()}`;
-      console.log('Fetching markets from:', url);
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Polymarket Gamma API response:', data);
-
-      // Handle response - Gamma API returns array directly
-      const gammaMarkets: GammaMarket[] = Array.isArray(data) ? data : [];
-      
-      // Convert to ClobMarket format
-      const marketsData = gammaMarkets.map(convertGammaToClob);
-
-      setHasMore(marketsData.length === LIMIT);
-
-      if (resetOffset) {
-        setMarkets(marketsData);
-      } else {
-        setMarkets(prev => [...prev, ...marketsData]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch markets:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch markets');
-      if (resetOffset) {
+      if (reset) {
+        setOffset(0);
         setMarkets([]);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, activeCategory, showClosed, offset]);
+
+      try {
+        const params = {
+          limit: LIMIT,
+          offset: currentOffset,
+          ...(showClosed
+            ? {}
+            : {
+                active: true,
+                closed: false,
+              }),
+          ...(activeCategory !== 'all' ? { tag_slug: activeCategory } : {}),
+          ...(searchQuery.trim() ? { _q: searchQuery.trim() } : {}),
+        };
+
+        console.log('Fetching markets via backend function:', params);
+
+        const { data, error: fnError } = await supabase.functions.invoke(
+          'polymarket-clob',
+          {
+            body: {
+              action: 'getGammaMarkets',
+              params,
+            },
+          }
+        );
+
+        if (fnError) throw fnError;
+        if (!data?.success) {
+          throw new Error(data?.error || 'Failed to fetch markets');
+        }
+
+        const gammaMarkets: GammaMarket[] = Array.isArray(data.data)
+          ? data.data
+          : [];
+
+        const marketsData = gammaMarkets.map(convertGammaToClob);
+
+        setHasMore(marketsData.length === LIMIT);
+
+        if (reset) {
+          setMarkets(marketsData);
+        } else {
+          setMarkets((prev) => [...prev, ...marketsData]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch markets:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch markets');
+        if (reset) {
+          setMarkets([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, activeCategory, showClosed, offset]
+  );
 
   // Initial fetch and when filters change
   useEffect(() => {
-    fetchMarkets(true);
+    fetchMarkets({ reset: true });
   }, [activeCategory, showClosed]);
 
   // Handle search with debounce
@@ -170,16 +173,14 @@ const MarketsExplorer = () => {
 
   // Fetch when search query changes
   useEffect(() => {
-    if (searchQuery !== undefined) {
-      fetchMarkets(true);
-    }
+    fetchMarkets({ reset: true });
   }, [searchQuery]);
 
   const loadMore = () => {
-    if (!loading && hasMore) {
-      setOffset(prev => prev + LIMIT);
-      fetchMarkets(false);
-    }
+    if (loading || !hasMore) return;
+    const nextOffset = offset + LIMIT;
+    setOffset(nextOffset);
+    fetchMarkets({ reset: false, offset: nextOffset });
   };
 
   const clearSearch = () => {
@@ -204,7 +205,7 @@ const MarketsExplorer = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchMarkets(true)}
+            onClick={() => fetchMarkets({ reset: true })}
             disabled={loading}
             className="gap-2"
           >
@@ -292,7 +293,7 @@ const MarketsExplorer = () => {
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <p className="text-destructive">{error}</p>
-            <Button onClick={() => fetchMarkets(true)} variant="outline">
+            <Button onClick={() => fetchMarkets({ reset: true })} variant="outline">
               {t('retry')}
             </Button>
           </div>
