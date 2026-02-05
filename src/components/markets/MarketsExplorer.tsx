@@ -1,86 +1,179 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, TrendingUp, TrendingDown, Search, Filter } from 'lucide-react';
-import { polymarketClobApi, ClobMarket } from '@/lib/api/polymarket-clob';
+import { RefreshCw, TrendingUp, Search, X, Filter } from 'lucide-react';
 import MarketCard from './MarketCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+
+const VPS_BASE_URL = 'https://polymarket.elizabao.xyz';
+
+interface VPSMarket {
+  id: string;
+  condition_id?: string;
+  question: string;
+  description?: string;
+  category?: string;
+  slug?: string;
+  market_slug?: string;
+  active?: boolean;
+  closed?: boolean;
+  end_date_iso?: string;
+  tokens?: Array<{
+    token_id: string;
+    outcome: string;
+    price: number;
+    winner?: boolean;
+  }>;
+  minimum_order_size?: string;
+  accepting_orders?: boolean;
+  image?: string;
+  icon?: string;
+  volume?: number;
+  liquidity?: number;
+  tag_id?: string;
+}
+
+interface Category {
+  id: string;
+  label: string;
+  slug: string;
+}
+
+const CATEGORIES: Category[] = [
+  { id: 'all', label: 'All', slug: '' },
+  { id: 'politics', label: 'Politics', slug: 'politics' },
+  { id: 'crypto', label: 'Crypto', slug: 'crypto' },
+  { id: 'sports', label: 'Sports', slug: 'sports' },
+  { id: 'pop-culture', label: 'Pop Culture', slug: 'pop-culture' },
+  { id: 'business', label: 'Business', slug: 'business' },
+  { id: 'science', label: 'Science', slug: 'science' },
+];
 
 const MarketsExplorer = () => {
   const { t } = useTranslation();
-  const [markets, setMarkets] = useState<ClobMarket[]>([]);
-  const [filteredMarkets, setFilteredMarkets] = useState<ClobMarket[]>([]);
+  const [markets, setMarkets] = useState<VPSMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'closed'>('active');
+  const [searchInput, setSearchInput] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [hideRestricted, setHideRestricted] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 50;
 
-  const fetchMarkets = async () => {
+  const fetchMarkets = useCallback(async (resetOffset = true) => {
     setLoading(true);
     setError(null);
+    
+    if (resetOffset) {
+      setOffset(0);
+      setMarkets([]);
+    }
+
     try {
-      // For 'closed' filter, we need to fetch all markets; otherwise fetch active ones
-      const fetchActive = activeFilter !== 'closed';
-      const data = await polymarketClobApi.getMarkets(500, 0, fetchActive);
-      // Ensure we always have an array
-      let marketsArray = Array.isArray(data) ? data : [];
-      
-      console.log('Fetched markets:', marketsArray.length, 'sample:', marketsArray[0]);
-      
-      // Filter based on active filter selection - use less strict criteria
-      if (activeFilter === 'active') {
-        // Show markets that are not explicitly closed
-        marketsArray = marketsArray.filter(m => !m.closed);
-      } else if (activeFilter === 'closed') {
-        marketsArray = marketsArray.filter(m => m.closed === true);
+      let url: string;
+      const currentOffset = resetOffset ? 0 : offset;
+
+      if (searchQuery.trim()) {
+        // Use search endpoint
+        const page = Math.floor(currentOffset / LIMIT) + 1;
+        url = `${VPS_BASE_URL}/api/markets/search?q=${encodeURIComponent(searchQuery)}&limit=${LIMIT}&page=${page}`;
+      } else if (activeCategory !== 'all') {
+        // Use category filter
+        url = `${VPS_BASE_URL}/api/markets?tag_id=${activeCategory}&active=true&closed=${showClosed}&limit=${LIMIT}&offset=${currentOffset}`;
+        if (hideRestricted) {
+          url += '&restricted=false';
+        }
+      } else {
+        // All active markets
+        url = `${VPS_BASE_URL}/api/markets?active=true&closed=${showClosed}&limit=${LIMIT}&offset=${currentOffset}`;
+        if (hideRestricted) {
+          url += '&restricted=false';
+        }
       }
-      // 'all' shows everything
+
+      console.log('Fetching markets from:', url);
+      const response = await fetch(url);
       
-      // Sort by end date (upcoming first)
-      marketsArray.sort((a, b) => {
-        const dateA = a.end_date_iso ? new Date(a.end_date_iso).getTime() : 0;
-        const dateB = b.end_date_iso ? new Date(b.end_date_iso).getTime() : 0;
-        return dateB - dateA;
-      });
-      
-      setMarkets(marketsArray);
-      setFilteredMarkets(marketsArray);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('VPS Markets response:', data);
+
+      // Handle different response formats
+      let marketsData: VPSMarket[] = [];
+      if (Array.isArray(data)) {
+        marketsData = data;
+      } else if (data.markets && Array.isArray(data.markets)) {
+        marketsData = data.markets;
+      } else if (data.data && Array.isArray(data.data)) {
+        marketsData = data.data;
+      }
+
+      // Map VPS format to our format if needed
+      marketsData = marketsData.map(m => ({
+        ...m,
+        condition_id: m.condition_id || m.id,
+        market_slug: m.market_slug || m.slug,
+      }));
+
+      setHasMore(marketsData.length === LIMIT);
+
+      if (resetOffset) {
+        setMarkets(marketsData);
+      } else {
+        setMarkets(prev => [...prev, ...marketsData]);
+      }
     } catch (err) {
       console.error('Failed to fetch markets:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch markets');
-      setMarkets([]);
-      setFilteredMarkets([]);
+      if (resetOffset) {
+        setMarkets([]);
+      }
     } finally {
       setLoading(false);
     }
+  }, [searchQuery, activeCategory, hideRestricted, showClosed, offset]);
+
+  // Initial fetch and when filters change
+  useEffect(() => {
+    fetchMarkets(true);
+  }, [activeCategory, hideRestricted, showClosed]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== searchInput) {
+        setSearchQuery(searchInput);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Fetch when search query changes
+  useEffect(() => {
+    if (searchQuery !== undefined) {
+      fetchMarkets(true);
+    }
+  }, [searchQuery]);
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      setOffset(prev => prev + LIMIT);
+      fetchMarkets(false);
+    }
   };
 
-  useEffect(() => {
-    fetchMarkets();
-  }, [activeFilter]);
-
-  useEffect(() => {
-    // Ensure markets is always an array before filtering
-    const marketsArray = Array.isArray(markets) ? markets : [];
-    
-    if (searchQuery.trim() === '') {
-      setFilteredMarkets(marketsArray);
-    } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredMarkets(
-        marketsArray.filter(
-          (m) =>
-            m.question?.toLowerCase().includes(query) ||
-            m.description?.toLowerCase().includes(query) ||
-            m.category?.toLowerCase().includes(query)
-        )
-      );
-    }
-  }, [searchQuery, markets]);
-
-  const formatPrice = (price: number | undefined) => {
-    if (price === undefined) return '—';
-    return `${(price * 100).toFixed(1)}¢`;
+  const clearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
   };
 
   return (
@@ -100,7 +193,7 @@ const MarketsExplorer = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchMarkets}
+            onClick={() => fetchMarkets(true)}
             disabled={loading}
             className="gap-2"
           >
@@ -109,29 +202,61 @@ const MarketsExplorer = () => {
           </Button>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder={t('searchMarkets')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex gap-1">
-            {(['all', 'active', 'closed'] as const).map((filter) => (
-              <Button
-                key={filter}
-                variant={activeFilter === filter ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter(filter)}
-                className="text-xs"
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder={t('searchMarkets')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchInput && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Category Tabs */}
+        <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-4">
+          <TabsList className="w-full flex-wrap h-auto gap-1 bg-transparent p-0">
+            {CATEGORIES.map((cat) => (
+              <TabsTrigger
+                key={cat.id}
+                value={cat.id}
+                className="text-xs px-3 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                {t(filter)}
-              </Button>
+                {cat.label}
+              </TabsTrigger>
             ))}
+          </TabsList>
+        </Tabs>
+
+        {/* Filters */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="hide-restricted"
+              checked={hideRestricted}
+              onCheckedChange={setHideRestricted}
+            />
+            <Label htmlFor="hide-restricted" className="text-xs text-muted-foreground cursor-pointer">
+              Hide restricted
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-closed"
+              checked={showClosed}
+              onCheckedChange={setShowClosed}
+            />
+            <Label htmlFor="show-closed" className="text-xs text-muted-foreground cursor-pointer">
+              Show closed
+            </Label>
           </div>
         </div>
       </div>
@@ -140,20 +265,19 @@ const MarketsExplorer = () => {
       <div className="p-3 border-b border-border bg-muted/30 flex items-center gap-4 text-xs">
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{t('totalMarkets')}:</span>
-          <span className="text-foreground font-medium">{Array.isArray(filteredMarkets) ? filteredMarkets.length : 0}</span>
+          <span className="text-foreground font-medium">{markets.length}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-3 h-3 text-green-500" />
-          <span className="text-muted-foreground">{t('activeMarkets')}:</span>
-          <span className="text-foreground font-medium">
-            {Array.isArray(filteredMarkets) ? filteredMarkets.filter((m) => m.active && !m.closed).length : 0}
-          </span>
-        </div>
+        {searchQuery && (
+          <div className="flex items-center gap-2">
+            <Search className="w-3 h-3 text-primary" />
+            <span className="text-primary">"{searchQuery}"</span>
+          </div>
+        )}
       </div>
 
       {/* Markets Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-        {loading ? (
+        {loading && markets.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex items-center gap-2 text-muted-foreground">
               <RefreshCw className="w-5 h-5 animate-spin" />
@@ -163,20 +287,43 @@ const MarketsExplorer = () => {
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <p className="text-destructive">{error}</p>
-            <Button onClick={fetchMarkets} variant="outline">
+            <Button onClick={() => fetchMarkets(true)} variant="outline">
               {t('retry')}
             </Button>
           </div>
-        ) : filteredMarkets.length === 0 ? (
+        ) : markets.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             {t('noMarketsFound')}
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {filteredMarkets.map((market) => (
-              <MarketCard key={market.condition_id} market={market} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {markets.map((market) => (
+                <MarketCard key={market.condition_id || market.id} market={market as any} />
+              ))}
+            </div>
+            
+            {/* Load More */}
+            {hasMore && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More'
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
