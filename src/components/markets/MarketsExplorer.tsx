@@ -1,48 +1,43 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, TrendingUp, Search, X, Filter } from 'lucide-react';
+import { RefreshCw, TrendingUp, Search, X } from 'lucide-react';
 import MarketCard from './MarketCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { ClobMarket } from '@/lib/api/polymarket-clob';
 
-const VPS_BASE_URL = 'https://polymarket.elizabao.xyz';
+const GAMMA_API_BASE = 'https://gamma-api.polymarket.com';
 
-interface VPSMarket {
+interface GammaMarket {
   id: string;
-  condition_id?: string;
-  question: string;
+  slug: string;
+  title: string;
+  question?: string;
   description?: string;
-  category?: string;
-  slug?: string;
-  market_slug?: string;
+  outcomes?: string[];
+  outcomePrices?: string[];
+  conditionId?: string;
   active?: boolean;
   closed?: boolean;
-  end_date_iso?: string;
-  tokens?: Array<{
-    token_id: string;
-    outcome: string;
-    price: number;
-    winner?: boolean;
-  }>;
-  minimum_order_size?: string;
-  accepting_orders?: boolean;
+  acceptingOrders?: boolean;
+  endDate?: string;
+  category?: string;
   image?: string;
-  icon?: string;
   volume?: number;
   liquidity?: number;
-  tag_id?: string;
 }
 
-interface Category {
+interface MarketTag {
   id: string;
   label: string;
   slug: string;
 }
 
-const CATEGORIES: Category[] = [
+// Common category tags from Polymarket
+const CATEGORY_TAGS: MarketTag[] = [
   { id: 'all', label: 'All', slug: '' },
   { id: 'politics', label: 'Politics', slug: 'politics' },
   { id: 'crypto', label: 'Crypto', slug: 'crypto' },
@@ -52,15 +47,38 @@ const CATEGORIES: Category[] = [
   { id: 'science', label: 'Science', slug: 'science' },
 ];
 
+// Convert Gamma API response to ClobMarket format
+const convertGammaToClob = (market: GammaMarket): ClobMarket => {
+  const tokens = market.outcomes?.map((outcome, idx) => ({
+    token_id: `${market.id}-${idx}`,
+    outcome,
+    price: market.outcomePrices?.[idx] ? parseFloat(market.outcomePrices[idx]) : 0.5,
+  })) || [];
+
+  return {
+    condition_id: market.conditionId || market.id,
+    question: market.question || market.title,
+    description: market.description,
+    category: market.category,
+    end_date_iso: market.endDate,
+    market_slug: market.slug,
+    active: market.active,
+    closed: market.closed,
+    accepting_orders: market.acceptingOrders,
+    tokens,
+    minimum_order_size: '1',
+    minimum_tick_size: '0.01',
+  };
+};
+
 const MarketsExplorer = () => {
   const { t } = useTranslation();
-  const [markets, setMarkets] = useState<VPSMarket[]>([]);
+  const [markets, setMarkets] = useState<ClobMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-  const [hideRestricted, setHideRestricted] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -76,28 +94,32 @@ const MarketsExplorer = () => {
     }
 
     try {
-      let url: string;
       const currentOffset = resetOffset ? 0 : offset;
-
+      
+      // Build query params for Polymarket Gamma API
+      const params = new URLSearchParams();
+      params.set('limit', LIMIT.toString());
+      params.set('offset', currentOffset.toString());
+      
+      // Filter by active/closed status
+      if (!showClosed) {
+        params.set('active', 'true');
+        params.set('closed', 'false');
+      }
+      
+      // Filter by category/tag
+      if (activeCategory !== 'all') {
+        params.set('tag_slug', activeCategory);
+      }
+      
+      // Search by text
       if (searchQuery.trim()) {
-        // Use search endpoint
-        const page = Math.floor(currentOffset / LIMIT) + 1;
-        url = `${VPS_BASE_URL}/api/markets/search?q=${encodeURIComponent(searchQuery)}&limit=${LIMIT}&page=${page}`;
-      } else if (activeCategory !== 'all') {
-        // Use category filter
-        url = `${VPS_BASE_URL}/api/markets?tag_id=${activeCategory}&active=true&closed=${showClosed}&limit=${LIMIT}&offset=${currentOffset}`;
-        if (hideRestricted) {
-          url += '&restricted=false';
-        }
-      } else {
-        // All active markets
-        url = `${VPS_BASE_URL}/api/markets?active=true&closed=${showClosed}&limit=${LIMIT}&offset=${currentOffset}`;
-        if (hideRestricted) {
-          url += '&restricted=false';
-        }
+        params.set('_q', searchQuery.trim());
       }
 
+      const url = `${GAMMA_API_BASE}/markets?${params.toString()}`;
       console.log('Fetching markets from:', url);
+      
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -105,24 +127,13 @@ const MarketsExplorer = () => {
       }
 
       const data = await response.json();
-      console.log('VPS Markets response:', data);
+      console.log('Polymarket Gamma API response:', data);
 
-      // Handle different response formats
-      let marketsData: VPSMarket[] = [];
-      if (Array.isArray(data)) {
-        marketsData = data;
-      } else if (data.markets && Array.isArray(data.markets)) {
-        marketsData = data.markets;
-      } else if (data.data && Array.isArray(data.data)) {
-        marketsData = data.data;
-      }
-
-      // Map VPS format to our format if needed
-      marketsData = marketsData.map(m => ({
-        ...m,
-        condition_id: m.condition_id || m.id,
-        market_slug: m.market_slug || m.slug,
-      }));
+      // Handle response - Gamma API returns array directly
+      const gammaMarkets: GammaMarket[] = Array.isArray(data) ? data : [];
+      
+      // Convert to ClobMarket format
+      const marketsData = gammaMarkets.map(convertGammaToClob);
 
       setHasMore(marketsData.length === LIMIT);
 
@@ -140,12 +151,12 @@ const MarketsExplorer = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, activeCategory, hideRestricted, showClosed, offset]);
+  }, [searchQuery, activeCategory, showClosed, offset]);
 
   // Initial fetch and when filters change
   useEffect(() => {
     fetchMarkets(true);
-  }, [activeCategory, hideRestricted, showClosed]);
+  }, [activeCategory, showClosed]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -224,7 +235,7 @@ const MarketsExplorer = () => {
         {/* Category Tabs */}
         <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-4">
           <TabsList className="w-full flex-wrap h-auto gap-1 bg-transparent p-0">
-            {CATEGORIES.map((cat) => (
+            {CATEGORY_TAGS.map((cat) => (
               <TabsTrigger
                 key={cat.id}
                 value={cat.id}
@@ -240,22 +251,12 @@ const MarketsExplorer = () => {
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <Switch
-              id="hide-restricted"
-              checked={hideRestricted}
-              onCheckedChange={setHideRestricted}
-            />
-            <Label htmlFor="hide-restricted" className="text-xs text-muted-foreground cursor-pointer">
-              Hide restricted
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
               id="show-closed"
               checked={showClosed}
               onCheckedChange={setShowClosed}
             />
             <Label htmlFor="show-closed" className="text-xs text-muted-foreground cursor-pointer">
-              Show closed
+              Show closed markets
             </Label>
           </div>
         </div>
@@ -273,6 +274,10 @@ const MarketsExplorer = () => {
             <span className="text-primary">"{searchQuery}"</span>
           </div>
         )}
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-muted-foreground">Source:</span>
+          <span className="text-foreground font-mono text-[10px]">gamma-api.polymarket.com</span>
+        </div>
       </div>
 
       {/* Markets Grid */}
@@ -299,7 +304,7 @@ const MarketsExplorer = () => {
           <>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {markets.map((market) => (
-                <MarketCard key={market.condition_id || market.id} market={market as any} />
+                <MarketCard key={market.condition_id} market={market} />
               ))}
             </div>
             
