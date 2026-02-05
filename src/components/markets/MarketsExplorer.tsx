@@ -46,16 +46,31 @@ const CATEGORY_TAGS: MarketTag[] = [
   { id: 'science', label: 'Science', slug: 'science' },
 ];
 
+// Safely parse JSON string or return array as-is
+const parseArrayField = (field: unknown): string[] => {
+  if (!field) return [];
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'string') {
+    try {
+      const parsed = JSON.parse(field);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 // Convert Gamma API response to ClobMarket format
 const convertGammaToClob = (market: GammaMarket): ClobMarket => {
-  const tokens =
-    market.outcomes?.map((outcome, idx) => ({
-      token_id: `${market.id}-${idx}`,
-      outcome,
-      price: market.outcomePrices?.[idx]
-        ? parseFloat(market.outcomePrices[idx])
-        : 0.5,
-    })) || [];
+  const outcomes = parseArrayField(market.outcomes);
+  const outcomePrices = parseArrayField(market.outcomePrices);
+
+  const tokens = outcomes.map((outcome, idx) => ({
+    token_id: `${market.id}-${idx}`,
+    outcome,
+    price: outcomePrices[idx] ? parseFloat(outcomePrices[idx]) : 0.5,
+  }));
 
   return {
     condition_id: market.conditionId || market.id,
