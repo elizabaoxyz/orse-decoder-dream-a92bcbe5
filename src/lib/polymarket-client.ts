@@ -431,9 +431,12 @@ export async function deploySafeWallet(
   signerUrl: string = "https://sign.elizabao.xyz/sign"
 ): Promise<{ success: boolean; proxyAddress?: string; error?: string }> {
   try {
-    const path = "/deploy";
+    // The relayer uses POST /submit for all operations including deploy
+    const path = "/submit";
     const body = JSON.stringify({
       owner: ownerAddress,
+      txType: "SAFE",
+      action: "deploy",
       remoteBuilderConfig: {
         url: signerUrl,
         token: privyAccessToken,
