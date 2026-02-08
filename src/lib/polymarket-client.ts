@@ -440,7 +440,7 @@ function deriveSafeAddress(ownerAddress: string): string {
 export async function deploySafeWallet(
   privyAccessToken: string,
   ownerAddress: string,
-  walletClient: WalletClient,
+  provider: any, // EIP-1193 provider from Privy
   signerUrl: string = "https://sign.elizabao.xyz/sign"
 ): Promise<{ success: boolean; proxyAddress?: string; transactionHash?: string; error?: string }> {
   try {
@@ -454,17 +454,16 @@ export async function deploySafeWallet(
       return { success: true, proxyAddress: expectedSafe, error: undefined };
     }
 
-    // 2. Sign EIP-712 typed data for Safe creation (using number chainId, not BigInt)
-    console.log("[deploySafe] Signing EIP-712 for Safe creation...");
-    const account = walletClient.account ?? (await walletClient.requestAddresses())[0];
-    const signature = await walletClient.signTypedData({
-      account,
-      domain: {
-        name: "Polymarket Contract Proxy Factory",
-        chainId: CHAIN_ID,  // number, not BigInt
-        verifyingContract: SAFE_FACTORY,
-      },
+    // 2. Sign EIP-712 via eth_signTypedData_v4 directly on the provider
+    //    (bypasses viem which can cause issues with Privy server-controlled wallets)
+    console.log("[deploySafe] Signing EIP-712 via eth_signTypedData_v4...");
+    const typedData = {
       types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" },
+        ],
         CreateProxy: [
           { name: "paymentToken", type: "address" },
           { name: "payment", type: "uint256" },
@@ -472,13 +471,23 @@ export async function deploySafeWallet(
         ],
       },
       primaryType: "CreateProxy",
+      domain: {
+        name: "Polymarket Contract Proxy Factory",
+        chainId: CHAIN_ID,
+        verifyingContract: SAFE_FACTORY,
+      },
       message: {
         paymentToken: zeroAddress,
-        payment: 0n,
+        payment: "0",
         paymentReceiver: zeroAddress,
       },
+    };
+
+    const signature = await provider.request({
+      method: "eth_signTypedData_v4",
+      params: [ownerAddress, JSON.stringify(typedData)],
     });
-    console.log("[deploySafe] Signature obtained");
+    console.log("[deploySafe] Signature obtained:", signature?.slice(0, 10) + "...");
 
     // 3. Build request payload (same shape as SDK)
     const request = {
