@@ -140,6 +140,7 @@ export async function createOrDeriveClobCredentials(
   address: `0x${string}`,
   clobApiUrl: string = "https://api.elizabao.xyz/clob"
 ): Promise<ClobCredentials> {
+  console.log("[createOrDeriveClobCredentials] Using CLOB base URL:", clobApiUrl);
   const timestamp = await getClobServerTime(clobApiUrl);
   const nonce = 0;
 
@@ -381,8 +382,11 @@ export async function placeOrder(
     allHeaders["POLY-PROXY-ADDRESS"] = funderAddress;
   }
 
-  // 5. Submit order
-  const res = await fetch(`${clobApiUrl}${requestPath}`, {
+  // 5. Submit order — log the actual URL for debugging
+  const orderUrl = `${clobApiUrl}${requestPath}`;
+  console.log("[placeOrder] Submitting to:", orderUrl);
+  console.log("[placeOrder] Headers:", Object.keys(allHeaders).join(", "));
+  const res = await fetch(orderUrl, {
     method: "POST",
     headers: allHeaders,
     body: bodyString,
