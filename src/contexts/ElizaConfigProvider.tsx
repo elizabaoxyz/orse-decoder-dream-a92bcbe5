@@ -42,6 +42,7 @@ interface TradingContextValue {
 
   // Wallet
   walletClient: WalletClient | null;
+  ethProvider: any; // raw EIP-1193 provider
   walletReady: boolean;
   walletCreateError: string;
   retryCreateWallet: () => void;
@@ -69,6 +70,7 @@ const TradingContext = createContext<TradingContextValue>({
   logout: () => {},
   refreshToken: async () => null,
   walletClient: null,
+  ethProvider: null,
   walletReady: false,
   walletCreateError: "",
   retryCreateWallet: () => {},
@@ -93,6 +95,7 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
 
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
+  const [ethProvider, setEthProvider] = useState<any>(null);
   const [walletReady, setWalletReady] = useState(false);
   const [userAddress, setUserAddress] = useState<`0x${string}` | null>(null);
   const [walletCreateError, setWalletCreateError] = useState("");
@@ -210,6 +213,7 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
         });
 
         setWalletClient(client);
+        setEthProvider(provider);
         setUserAddress(embeddedWallet.address as `0x${string}`);
         setWalletReady(true);
       } catch (err) {
@@ -236,6 +240,7 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
         logout,
         refreshToken,
         walletClient,
+        ethProvider,
         walletReady: privyReady && authenticated && walletsReady && wallets.length > 0,
         walletCreateError,
         retryCreateWallet,

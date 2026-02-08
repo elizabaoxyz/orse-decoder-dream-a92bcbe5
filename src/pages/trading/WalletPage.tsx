@@ -28,6 +28,7 @@ export default function WalletPage() {
     accessToken,
     refreshToken,
     walletClient,
+    ethProvider,
     walletReady,
     safeAddress,
     setSafeAddress,
@@ -66,8 +67,8 @@ export default function WalletPage() {
       return;
     }
 
-    if (!walletClient) {
-      toast.error("Wallet client not ready");
+    if (!ethProvider) {
+      toast.error("Wallet provider not ready");
       return;
     }
 
@@ -86,7 +87,7 @@ export default function WalletPage() {
       const result = await deploySafeWallet(
         token,
         userAddress!,
-        walletClient,
+        ethProvider,
         config?.signerUrl
       );
       if (result.success && result.proxyAddress) {
