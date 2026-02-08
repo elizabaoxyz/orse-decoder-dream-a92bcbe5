@@ -144,11 +144,10 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authenticated, refreshToken]);
 
-  // Auto-create embedded wallet if user is authenticated but has no embedded wallet
+  // Auto-create embedded wallet if user is authenticated but has no wallet
   useEffect(() => {
-    const hasEmbeddedWallet = wallets.some((w) => w.walletClientType === "privy");
-    if (authenticated && walletsReady && !hasEmbeddedWallet && !creatingWallet) {
-      console.log("[TradingProvider] No embedded wallet found, creating one...");
+    if (privyReady && authenticated && walletsReady && wallets.length === 0 && !creatingWallet) {
+      console.log("[TradingProvider] No wallet found, creating one...");
       setCreatingWallet(true);
       privyCreateWallet()
         .then((wallet) => {
@@ -161,7 +160,7 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
           setCreatingWallet(false);
         });
     }
-  }, [authenticated, walletsReady, wallets, privyCreateWallet, creatingWallet]);
+  }, [privyReady, authenticated, walletsReady, wallets, privyCreateWallet, creatingWallet]);
 
   // Set up wallet client from Privy embedded wallet
   useEffect(() => {
@@ -215,7 +214,7 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
         logout,
         refreshToken,
         walletClient,
-        walletReady,
+        walletReady: privyReady && authenticated && walletsReady && wallets.length > 0,
         safeAddress,
         setSafeAddress,
         clobCredentials,
@@ -296,7 +295,7 @@ export function ElizaConfigProvider({
     <ConfigContext.Provider value={{ config, loading, error }}>
       <PrivyProvider
         appId={config.privyAppId}
-        clientId={config.privyClientId as string}
+        {...(config.privyClientId ? { clientId: config.privyClientId } : {})}
         config={{
           loginMethods: ["email"],
           appearance: {
