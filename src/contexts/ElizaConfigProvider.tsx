@@ -103,42 +103,46 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
   const [walletCreateError, setWalletCreateError] = useState("");
   const walletCreateStartedRef = useRef(false);
 
-  // Safe address from localStorage
-  const [safeAddress, setSafeAddressState] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem("elizabao_safe_address");
-    } catch {
-      return null;
-    }
-  });
+  // Safe address & CLOB credentials — keyed by user address
+  const [safeAddress, setSafeAddressState] = useState<string | null>(null);
+  const [clobCredentials, setClobCredentialsState] = useState<ClobCredentials | null>(null);
 
-  // CLOB credentials from localStorage
-  const [clobCredentials, setClobCredentialsState] = useState<ClobCredentials | null>(() => {
-    try {
-      const stored = localStorage.getItem("elizabao_clob_creds");
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
+  // Load user-specific data from localStorage when userAddress changes
+  useEffect(() => {
+    if (!userAddress) {
+      setSafeAddressState(null);
+      setClobCredentialsState(null);
+      return;
     }
-  });
+    try {
+      const safe = localStorage.getItem(`elizabao_safe_${userAddress}`);
+      setSafeAddressState(safe);
+    } catch { setSafeAddressState(null); }
+    try {
+      const creds = localStorage.getItem(`elizabao_clob_${userAddress}`);
+      setClobCredentialsState(creds ? JSON.parse(creds) : null);
+    } catch { setClobCredentialsState(null); }
+  }, [userAddress]);
 
   const setSafeAddress = useCallback((addr: string | null) => {
     setSafeAddressState(addr);
+    if (!userAddress) return;
     if (addr) {
-      localStorage.setItem("elizabao_safe_address", addr);
+      localStorage.setItem(`elizabao_safe_${userAddress}`, addr);
     } else {
-      localStorage.removeItem("elizabao_safe_address");
+      localStorage.removeItem(`elizabao_safe_${userAddress}`);
     }
-  }, []);
+  }, [userAddress]);
 
   const setClobCredentials = useCallback((creds: ClobCredentials | null) => {
     setClobCredentialsState(creds);
+    if (!userAddress) return;
     if (creds) {
-      localStorage.setItem("elizabao_clob_creds", JSON.stringify(creds));
+      localStorage.setItem(`elizabao_clob_${userAddress}`, JSON.stringify(creds));
     } else {
-      localStorage.removeItem("elizabao_clob_creds");
+      localStorage.removeItem(`elizabao_clob_${userAddress}`);
     }
-  }, []);
+  }, [userAddress]);
 
   const refreshToken = useCallback(async (): Promise<string | null> => {
     try {
