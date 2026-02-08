@@ -21,6 +21,8 @@ import { toast } from "sonner";
 export default function WalletPage() {
   const {
     isAuthenticated,
+    privyReady,
+    walletsReady,
     login,
     userAddress,
     accessToken,
@@ -45,9 +47,18 @@ export default function WalletPage() {
     toast.success(`${label} copied`);
   };
 
+  const getBlockingReason = (): string | null => {
+    if (!privyReady) return "Waiting for Privy SDK…";
+    if (!isAuthenticated) return "Please login first";
+    if (!walletsReady) return "Waiting for wallets…";
+    if (!userAddress) return "No embedded wallet found — creating one…";
+    return null;
+  };
+
   const handleDeploySafe = async () => {
-    if (!userAddress) {
-      toast.error("Wallet not ready yet. Please wait a moment.");
+    const blockReason = getBlockingReason();
+    if (blockReason) {
+      toast.error(blockReason);
       return;
     }
 
@@ -168,14 +179,22 @@ export default function WalletPage() {
           />
         )}
         {!safeAddress && (
-          <Button
-            onClick={handleDeploySafe}
-            disabled={deploying || !accessToken}
-            className="w-full mt-3"
-          >
-            {deploying && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            Deploy Safe Wallet
-          </Button>
+          <>
+            {getBlockingReason() && (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {getBlockingReason()}
+              </p>
+            )}
+            <Button
+              onClick={handleDeploySafe}
+              disabled={deploying || !!getBlockingReason()}
+              className="w-full mt-3"
+            >
+              {deploying && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Deploy Safe Wallet
+            </Button>
+          </>
         )}
       </Section>
 
