@@ -482,10 +482,10 @@ export async function deploySafeWallet(
     // 5. Deploy via SDK (handles EIP-712 signing internally through ethers)
     console.log("[deploySafe] Calling client.deploy()...");
     const response = await client.deploy();
-    console.log("[deploySafe] Deploy response:", JSON.stringify(response));
+    console.log("[deploySafe] Deploy response received");
 
     // 6. Wait for confirmation using SDK's built-in polling
-    if (response.transactionID) {
+    if (response?.transactionID) {
       console.log("[deploySafe] Waiting for tx confirmation:", response.transactionID);
       const confirmed = await client.pollUntilState(
         response.transactionID,
@@ -502,8 +502,21 @@ export async function deploySafeWallet(
 
     return { success: true, proxyAddress: expectedSafe };
   } catch (err: any) {
-    console.error("[deploySafe] Full error:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    // Safe-stringify to avoid circular reference errors
     const msg = err?.message ?? String(err);
+    console.error("[deploySafe] Error:", msg);
+
+    // If the SDK threw but the deploy actually went through, check on-chain
+    try {
+      const expectedSafe = deriveSafeAddress(ownerAddress);
+      const checkRes = await fetch(`${RELAYER_URL}/deployed?address=${expectedSafe}`);
+      const checkData = await checkRes.json();
+      if (checkData.deployed) {
+        console.log("[deploySafe] Deploy succeeded despite SDK error");
+        return { success: true, proxyAddress: expectedSafe };
+      }
+    } catch { /* ignore check error */ }
+
     return { success: false, error: msg };
   }
 }
