@@ -57,7 +57,7 @@ const MainTerminal = () => {
       tools: ["GET_ALL_MARKETS", "GET_CLOB_MARKETS", "GET_ORDER_BOOK", "GET_PRICE_HISTORY", "GET_TRADE_EVENTS", "GET_LAST_TRADE_PRICE", "PLACE_ORDER", "CANCEL_ORDER"],
       pricing: t('pluginPolymarketPricing'),
       enabled: true,
-      endpoint: "https://api.elizabao.xyz/clob",
+      endpoint: "https://api.elizabao.xyz",
       serverKey: "polymarket",
       serverType: "http",
     },

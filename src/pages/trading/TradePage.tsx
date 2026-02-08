@@ -159,7 +159,7 @@ export default function TradePage() {
         funder,
         { tokenId, price: priceNum, size: sizeNum, side, tickSize, negRisk },
         token,
-        config?.clobApiUrl || "https://api.elizabao.xyz/clob"
+        config?.clobApiUrl || "https://api.elizabao.xyz"
       );
 
       if (result.success) {
