@@ -3,9 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { ElizaConfigProvider } from "@/contexts/ElizaConfigProvider";
 import "@/lib/i18n";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -17,6 +18,12 @@ import Credits from "./pages/Credits";
 import Markets from "./pages/Markets";
 import Builder from "./pages/Builder";
 import Autonomous from "./pages/Autonomous";
+import TradingLayout from "./pages/trading/TradingLayout";
+import MarketsPage from "./pages/trading/MarketsPage";
+import TradePage from "./pages/trading/TradePage";
+import WalletPage from "./pages/trading/WalletPage";
+import BuilderStatsPage from "./pages/trading/BuilderStatsPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +45,23 @@ const App = () => (
               <Route path="/builder" element={<Builder />} />
               <Route path="/autonomous" element={<Autonomous />} />
               <Route path="/legal/transparency" element={<Transparency />} />
+
+              {/* Trading app routes — wrapped in ElizaConfigProvider */}
+              <Route
+                path="/app"
+                element={
+                  <ElizaConfigProvider>
+                    <TradingLayout />
+                  </ElizaConfigProvider>
+                }
+              >
+                <Route index element={<Navigate to="/app/markets" replace />} />
+                <Route path="markets" element={<MarketsPage />} />
+                <Route path="trade" element={<TradePage />} />
+                <Route path="wallet" element={<WalletPage />} />
+                <Route path="builder" element={<BuilderStatsPage />} />
+              </Route>
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
