@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
+import { PrivyProvider, usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { createWalletClient, custom } from "viem";
 import { polygon } from "viem/chains";
 import type { WalletClient } from "viem";
@@ -79,11 +79,13 @@ export const useTrading = () => useContext(TradingContext);
 function TradingProvider({ children }: { children: React.ReactNode }) {
   const { login, logout, authenticated, ready: privyReady, getAccessToken } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
+  const { createWallet: privyCreateWallet } = useCreateWallet();
 
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
   const [walletReady, setWalletReady] = useState(false);
   const [userAddress, setUserAddress] = useState<`0x${string}` | null>(null);
+  const [creatingWallet, setCreatingWallet] = useState(false);
 
   // Safe address from localStorage
   const [safeAddress, setSafeAddressState] = useState<string | null>(() => {
@@ -141,6 +143,25 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(null);
     }
   }, [authenticated, refreshToken]);
+
+  // Auto-create embedded wallet if user is authenticated but has no embedded wallet
+  useEffect(() => {
+    const hasEmbeddedWallet = wallets.some((w) => w.walletClientType === "privy");
+    if (authenticated && walletsReady && !hasEmbeddedWallet && !creatingWallet) {
+      console.log("[TradingProvider] No embedded wallet found, creating one...");
+      setCreatingWallet(true);
+      privyCreateWallet()
+        .then((wallet) => {
+          console.log("[TradingProvider] Embedded wallet created:", wallet.address);
+        })
+        .catch((err) => {
+          console.error("[TradingProvider] Failed to create wallet:", err);
+        })
+        .finally(() => {
+          setCreatingWallet(false);
+        });
+    }
+  }, [authenticated, walletsReady, wallets, privyCreateWallet, creatingWallet]);
 
   // Set up wallet client from Privy embedded wallet
   useEffect(() => {
