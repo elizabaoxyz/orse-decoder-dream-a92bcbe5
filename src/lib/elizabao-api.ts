@@ -157,7 +157,7 @@ export async function getBuilderHeaders(
       "Content-Type": "application/json",
       "Authorization": `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ method, requestPath, body }),
+    body: JSON.stringify({ method, path: requestPath, body }),
   });
 
   if (!res.ok) {
