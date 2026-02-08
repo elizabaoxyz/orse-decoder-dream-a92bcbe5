@@ -29,6 +29,7 @@ export default function WalletPage() {
     refreshToken,
     walletClient,
     ethProvider,
+    switchToPolygon,
     walletReady,
     safeAddress,
     setSafeAddress,
@@ -84,10 +85,14 @@ export default function WalletPage() {
 
     setDeploying(true);
     try {
+      // Force switch to Polygon and get fresh provider
+      console.log("[WalletPage] Switching to Polygon before deploy...");
+      const freshProvider = await switchToPolygon();
+      
       const result = await deploySafeWallet(
         token,
         userAddress!,
-        ethProvider,
+        freshProvider,
         config?.signerUrl
       );
       if (result.success && result.proxyAddress) {
