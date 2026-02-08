@@ -46,20 +46,23 @@ export default function WalletPage() {
   };
 
   const handleDeploySafe = async () => {
-    if (!accessToken || !userAddress) {
-      toast.error("Please login first");
+    if (!userAddress) {
+      toast.error("Wallet not ready yet. Please wait a moment.");
+      return;
+    }
+
+    // Token may not be populated yet — try refreshing it
+    let token = accessToken;
+    if (!token) {
+      token = await refreshToken();
+    }
+    if (!token) {
+      toast.error("Could not get access token. Please try logging in again.");
       return;
     }
 
     setDeploying(true);
     try {
-      // Refresh token to ensure it's fresh
-      const token = await refreshToken();
-      if (!token) {
-        toast.error("Session expired. Please login again.");
-        return;
-      }
-
       const result = await deploySafeWallet(token, userAddress);
       if (result.success && result.proxyAddress) {
         setSafeAddress(result.proxyAddress);
