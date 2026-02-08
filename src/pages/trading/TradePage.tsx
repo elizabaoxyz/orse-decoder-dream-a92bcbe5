@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useTrading } from "@/contexts/ElizaConfigProvider";
+import { useTrading, useAppConfig } from "@/contexts/ElizaConfigProvider";
 import {
   fetchGammaMarkets,
   fetchOrderbook,
@@ -41,6 +41,7 @@ export default function TradePage() {
     safeAddress,
     clobCredentials,
   } = useTrading();
+  const { config } = useAppConfig();
 
   // Market selection
   const [markets, setMarkets] = useState<GammaMarket[]>([]);
@@ -157,7 +158,8 @@ export default function TradePage() {
         walletClient,
         funder,
         { tokenId, price: priceNum, size: sizeNum, side, tickSize, negRisk },
-        token
+        token,
+        config?.clobApiUrl || "https://api.elizabao.xyz/clob"
       );
 
       if (result.success) {

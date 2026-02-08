@@ -298,7 +298,7 @@ export function ElizaConfigProvider({
           privyClientId: clientId,
           signerUrl: cfg.signerUrl || (cfg as any).signer_url || "https://sign.elizabao.xyz/sign",
           gammaApiUrl: cfg.gammaApiUrl || (cfg as any).gamma_api_url || "https://gamma-api.polymarket.com",
-          clobApiUrl: cfg.clobApiUrl || (cfg as any).clob_api_url || "https://clob.polymarket.com",
+          clobApiUrl: cfg.clobApiUrl || (cfg as any).clob_api_url || "https://api.elizabao.xyz/clob",
           dataApiUrl: cfg.dataApiUrl || (cfg as any).data_api_url || "https://data-api.polymarket.com",
         };
         console.log("[ElizaConfigProvider] Using privyAppId:", normalized.privyAppId);
@@ -311,7 +311,7 @@ export function ElizaConfigProvider({
           privyAppId: "cmldzu68301iwl70cpcnj0xbf",
           signerUrl: "https://sign.elizabao.xyz/sign",
           gammaApiUrl: "https://gamma-api.polymarket.com",
-          clobApiUrl: "https://clob.polymarket.com",
+          clobApiUrl: "https://api.elizabao.xyz/clob",
           dataApiUrl: "https://data-api.polymarket.com",
         });
         setError(err instanceof Error ? err.message : "Config fetch failed");
