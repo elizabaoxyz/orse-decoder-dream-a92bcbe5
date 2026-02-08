@@ -216,12 +216,22 @@ export function ElizaConfigProvider({
   useEffect(() => {
     fetchConfig()
       .then((cfg) => {
-        setConfig(cfg);
+        console.log("[ElizaConfigProvider] Raw config:", JSON.stringify(cfg));
+        // Normalize: the API may return the field under different names
+        const appId = cfg.privyAppId || (cfg as any).privy_app_id || (cfg as any).appId || "cmldzu68301iwl70cpcnj0xbf";
+        const normalized: AppConfig = {
+          privyAppId: appId,
+          signerUrl: cfg.signerUrl || (cfg as any).signer_url || "https://sign.elizabao.xyz/sign",
+          gammaApiUrl: cfg.gammaApiUrl || (cfg as any).gamma_api_url || "https://gamma-api.polymarket.com",
+          clobApiUrl: cfg.clobApiUrl || (cfg as any).clob_api_url || "https://clob.polymarket.com",
+          dataApiUrl: cfg.dataApiUrl || (cfg as any).data_api_url || "https://data-api.polymarket.com",
+        };
+        console.log("[ElizaConfigProvider] Using privyAppId:", normalized.privyAppId);
+        setConfig(normalized);
         setLoading(false);
       })
       .catch((err) => {
         console.error("[ElizaConfigProvider] Config fetch failed:", err);
-        // Fallback to hardcoded appId
         setConfig({
           privyAppId: "cmldzu68301iwl70cpcnj0xbf",
           signerUrl: "https://sign.elizabao.xyz/sign",
