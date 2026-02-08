@@ -66,6 +66,11 @@ export default function WalletPage() {
       return;
     }
 
+    if (!walletClient) {
+      toast.error("Wallet client not ready");
+      return;
+    }
+
     // Token may not be populated yet — try refreshing it
     let token = accessToken;
     if (!token) {
@@ -78,7 +83,12 @@ export default function WalletPage() {
 
     setDeploying(true);
     try {
-      const result = await deploySafeWallet(token, userAddress, config?.signerUrl);
+      const result = await deploySafeWallet(
+        token,
+        userAddress!,
+        walletClient,
+        config?.signerUrl
+      );
       if (result.success && result.proxyAddress) {
         setSafeAddress(result.proxyAddress);
         toast.success("Safe wallet deployed!");

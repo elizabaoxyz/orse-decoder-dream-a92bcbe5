@@ -4,6 +4,8 @@
 
 import type { WalletClient } from "viem";
 import { getBuilderHeaders } from "./elizabao-api";
+import { RelayClient, RelayerTxType } from "@polymarket/builder-relayer-client";
+import { BuilderConfig } from "@polymarket/builder-signing-sdk";
 
 const CLOB_API = "https://clob.polymarket.com";
 const RELAYER_URL = "https://relayer-v2.polymarket.com";
@@ -428,50 +430,55 @@ async function getRelayerHeaders(
 export async function deploySafeWallet(
   privyAccessToken: string,
   ownerAddress: string,
-  signerUrl?: string
-): Promise<{ success: boolean; proxyAddress?: string; error?: string }> {
+  walletClient: WalletClient,
+  signerUrl: string = "https://sign.elizabao.xyz/sign"
+): Promise<{ success: boolean; proxyAddress?: string; transactionHash?: string; error?: string }> {
   try {
-    const path = "/submit";
-    const body = JSON.stringify({ owner: ownerAddress });
+    console.log("[deploySafe] Using SDK with RelayClient + BuilderConfig");
+    console.log("[deploySafe] signerUrl:", signerUrl);
+    console.log("[deploySafe] ownerAddress:", ownerAddress);
 
-    // Get builder HMAC headers from remote signer
-    const builderHeaders = await getBuilderHeaders(
-      privyAccessToken,
-      "POST",
-      path,
-      body
-    );
-
-    console.log("[deploySafe] POST", `${RELAYER_URL}${path}`);
-    console.log("[deploySafe] Builder header keys:", Object.keys(builderHeaders));
-
-    const res = await fetch(`${RELAYER_URL}${path}`, {
-      method: "POST",
-      headers: {
-        ...builderHeaders,
-        "Content-Type": "application/json",
-        Accept: "application/json",
+    // Create BuilderConfig pointing to remote signing server
+    const builderConfig = new BuilderConfig({
+      remoteBuilderConfig: {
+        url: signerUrl,
+        token: privyAccessToken,
       },
-      body,
     });
 
-    const responseText = await res.text();
-    console.log("[deploySafe] Response:", res.status, responseText);
+    // Create RelayClient with viem WalletClient
+    const relayClient = new RelayClient(
+      `${RELAYER_URL}/`,
+      CHAIN_ID,
+      walletClient,
+      builderConfig,
+      RelayerTxType.SAFE
+    );
 
-    if (!res.ok) {
-      return { success: false, error: `Deploy failed (${res.status}): ${responseText}` };
+    // Deploy the Safe wallet
+    const response = await relayClient.deploy();
+    console.log("[deploySafe] Deploy submitted, waiting for confirmation...");
+
+    const result = await response.wait();
+
+    if (result) {
+      console.log("[deploySafe] Safe deployed!", result);
+      return {
+        success: true,
+        proxyAddress: result.proxyAddress || result.to,
+        transactionHash: result.transactionHash,
+      };
+    } else {
+      return { success: false, error: "Safe deployment failed or timed out" };
     }
-
-    const data = JSON.parse(responseText);
-    return {
-      success: true,
-      proxyAddress: data.proxyAddress || data.address || data.safe,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
+  } catch (err: any) {
+    console.error("[deploySafe] Error:", err);
+    const msg = err?.message ?? String(err);
+    // If already deployed, extract the safe address
+    if (msg.includes("already deployed") || msg.includes("SAFE_DEPLOYED")) {
+      return { success: false, error: "Safe wallet is already deployed" };
+    }
+    return { success: false, error: msg };
   }
 }
 
