@@ -116,7 +116,7 @@ export default function WalletPage() {
 
     setInitializingCreds(true);
     try {
-      const creds = await createOrDeriveClobCredentials(walletClient, userAddress);
+      const creds = await createOrDeriveClobCredentials(walletClient, userAddress, config?.clobApiUrl || "https://api.elizabao.xyz/clob");
       setClobCredentials(creds);
       toast.success("Trading credentials initialized!");
     } catch (err) {

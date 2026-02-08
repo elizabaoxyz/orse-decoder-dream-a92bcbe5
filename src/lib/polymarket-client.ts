@@ -9,7 +9,7 @@ import { RelayClient, RelayerTxType } from "@polymarket/builder-relayer-client";
 import { BuilderConfig } from "@polymarket/builder-signing-sdk";
 import { getBuilderHeaders } from "./elizabao-api";
 
-const CLOB_API = "https://clob.polymarket.com";
+// CLOB_API is now passed as a parameter — no hardcoded URL
 const RELAYER_URL = "https://relayer-v2.polymarket.com";
 const CHAIN_ID = 137;
 
@@ -121,9 +121,9 @@ const CLOB_AUTH_TYPES = {
   ],
 } as const;
 
-async function getClobServerTime(): Promise<number> {
+async function getClobServerTime(clobApiUrl: string): Promise<number> {
   try {
-    const res = await fetch(`${CLOB_API}/time`);
+    const res = await fetch(`${clobApiUrl}/time`);
     const text = await res.text();
     const num = Number(text.trim());
     if (Number.isFinite(num) && num > 0) return Math.floor(num);
@@ -137,9 +137,10 @@ async function getClobServerTime(): Promise<number> {
 
 export async function createOrDeriveClobCredentials(
   walletClient: WalletClient,
-  address: `0x${string}`
+  address: `0x${string}`,
+  clobApiUrl: string = "https://api.elizabao.xyz/clob"
 ): Promise<ClobCredentials> {
-  const timestamp = await getClobServerTime();
+  const timestamp = await getClobServerTime(clobApiUrl);
   const nonce = 0;
 
   const signature = await walletClient.signTypedData({
@@ -164,7 +165,7 @@ export async function createOrDeriveClobCredentials(
   };
 
   // Try create first
-  let res = await fetch(`${CLOB_API}/auth/api-key`, {
+  let res = await fetch(`${clobApiUrl}/auth/api-key`, {
     method: "POST",
     headers: l1Headers,
     body: JSON.stringify({
@@ -178,7 +179,7 @@ export async function createOrDeriveClobCredentials(
   // If already exists (409) or bad request (400), try derive
   if (!res.ok && (res.status === 409 || res.status === 400 || res.status === 401)) {
     console.log("[CLOB] Create failed, trying derive...");
-    res = await fetch(`${CLOB_API}/auth/derive-api-key`, {
+    res = await fetch(`${clobApiUrl}/auth/derive-api-key`, {
       method: "GET",
       headers: l1Headers,
     });
@@ -337,7 +338,8 @@ export async function placeOrder(
   walletClient: WalletClient,
   funderAddress: `0x${string}`,
   params: OrderParams,
-  privyAccessToken: string
+  privyAccessToken: string,
+  clobApiUrl: string = "https://api.elizabao.xyz/clob"
 ): Promise<OrderResult> {
   // 1. Create and sign the order
   const { order, orderType } = await createAndSignOrder(
@@ -380,7 +382,7 @@ export async function placeOrder(
   }
 
   // 5. Submit order
-  const res = await fetch(`${CLOB_API}${requestPath}`, {
+  const res = await fetch(`${clobApiUrl}${requestPath}`, {
     method: "POST",
     headers: allHeaders,
     body: bodyString,
@@ -527,12 +529,13 @@ export async function deploySafeWallet(
 
 export async function getClobBalance(
   creds: ClobCredentials,
-  address: string
+  address: string,
+  clobApiUrl: string = "https://api.elizabao.xyz/clob"
 ): Promise<string> {
   try {
     const path = "/balance-allowance?asset_type=0";
     const headers = await generateL2Headers(creds, address, "GET", path);
-    const res = await fetch(`${CLOB_API}${path}`, { method: "GET", headers });
+    const res = await fetch(`${clobApiUrl}${path}`, { method: "GET", headers });
 
     if (!res.ok) return "0";
     const data = await res.json();
@@ -544,12 +547,13 @@ export async function getClobBalance(
 
 export async function getOpenOrders(
   creds: ClobCredentials,
-  address: string
+  address: string,
+  clobApiUrl: string = "https://api.elizabao.xyz/clob"
 ): Promise<unknown[]> {
   try {
     const path = "/orders";
     const headers = await generateL2Headers(creds, address, "GET", path);
-    const res = await fetch(`${CLOB_API}${path}`, { method: "GET", headers });
+    const res = await fetch(`${clobApiUrl}${path}`, { method: "GET", headers });
     if (!res.ok) return [];
     return res.json();
   } catch {
