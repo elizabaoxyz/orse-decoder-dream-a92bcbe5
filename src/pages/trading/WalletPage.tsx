@@ -78,7 +78,7 @@ export default function WalletPage() {
 
     setDeploying(true);
     try {
-      const result = await deploySafeWallet(token, userAddress);
+      const result = await deploySafeWallet(token, userAddress, config?.signerUrl);
       if (result.success && result.proxyAddress) {
         setSafeAddress(result.proxyAddress);
         toast.success("Safe wallet deployed!");

@@ -427,16 +427,28 @@ async function getRelayerHeaders(
 
 export async function deploySafeWallet(
   privyAccessToken: string,
-  ownerAddress: string
+  ownerAddress: string,
+  signerUrl: string = "https://sign.elizabao.xyz/sign"
 ): Promise<{ success: boolean; proxyAddress?: string; error?: string }> {
   try {
     const path = "/deploy";
-    const body = JSON.stringify({ owner: ownerAddress });
-    const headers = await getRelayerHeaders(privyAccessToken, "POST", path, body);
+    const body = JSON.stringify({
+      owner: ownerAddress,
+      remoteBuilderConfig: {
+        url: signerUrl,
+        token: privyAccessToken,
+      },
+    });
+
+    console.log("[deploySafe] POST", `${RELAYER_URL}${path}`, body);
 
     const res = await fetch(`${RELAYER_URL}${path}`, {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${privyAccessToken}`,
+      },
       body,
     });
 
