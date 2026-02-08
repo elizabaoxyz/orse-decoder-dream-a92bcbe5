@@ -43,6 +43,7 @@ interface TradingContextValue {
   // Wallet
   walletClient: WalletClient | null;
   ethProvider: any; // raw EIP-1193 provider
+  switchToPolygon: () => Promise<any>; // switch chain & return fresh provider
   walletReady: boolean;
   walletCreateError: string;
   retryCreateWallet: () => void;
@@ -71,6 +72,7 @@ const TradingContext = createContext<TradingContextValue>({
   refreshToken: async () => null,
   walletClient: null,
   ethProvider: null,
+  switchToPolygon: async () => null,
   walletReady: false,
   walletCreateError: "",
   retryCreateWallet: () => {},
@@ -228,6 +230,15 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authenticated, wallets]);
 
+  const switchToPolygon = useCallback(async () => {
+    const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
+    if (!embeddedWallet) throw new Error("No embedded wallet found");
+    await embeddedWallet.switchChain(137);
+    const provider = await embeddedWallet.getEthereumProvider();
+    setEthProvider(provider);
+    return provider;
+  }, [wallets]);
+
   return (
     <TradingContext.Provider
       value={{
@@ -241,6 +252,7 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
         refreshToken,
         walletClient,
         ethProvider,
+        switchToPolygon,
         walletReady: privyReady && authenticated && walletsReady && wallets.length > 0,
         walletCreateError,
         retryCreateWallet,

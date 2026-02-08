@@ -4,6 +4,9 @@
 
 import type { WalletClient } from "viem";
 import { getCreate2Address, keccak256, encodeAbiParameters, zeroAddress } from "viem";
+import { ethers } from "ethers";
+import { RelayClient, RelayerTxType } from "@polymarket/builder-relayer-client";
+import { BuilderConfig } from "@polymarket/builder-signing-sdk";
 import { getBuilderHeaders } from "./elizabao-api";
 
 const CLOB_API = "https://clob.polymarket.com";
@@ -440,7 +443,7 @@ function deriveSafeAddress(ownerAddress: string): string {
 export async function deploySafeWallet(
   privyAccessToken: string,
   ownerAddress: string,
-  provider: any, // EIP-1193 provider from Privy
+  eip1193Provider: any, // EIP-1193 provider from Privy (already on Polygon 137)
   signerUrl: string = "https://sign.elizabao.xyz/sign"
 ): Promise<{ success: boolean; proxyAddress?: string; transactionHash?: string; error?: string }> {
   try {
@@ -451,102 +454,55 @@ export async function deploySafeWallet(
     const deployedRes = await fetch(`${RELAYER_URL}/deployed?address=${expectedSafe}`);
     const deployedData = await deployedRes.json();
     if (deployedData.deployed) {
+      console.log("[deploySafe] Already deployed");
       return { success: true, proxyAddress: expectedSafe, error: undefined };
     }
 
-    // 2. Sign EIP-712 via eth_signTypedData_v4 directly on the provider
-    //    (bypasses viem which can cause issues with Privy server-controlled wallets)
-    console.log("[deploySafe] Signing EIP-712 via eth_signTypedData_v4...");
-    const typedData = {
-      types: {
-        EIP712Domain: [
-          { name: "name", type: "string" },
-          { name: "chainId", type: "uint256" },
-          { name: "verifyingContract", type: "address" },
-        ],
-        CreateProxy: [
-          { name: "paymentToken", type: "address" },
-          { name: "payment", type: "uint256" },
-          { name: "paymentReceiver", type: "address" },
-        ],
-      },
-      primaryType: "CreateProxy",
-      domain: {
-        name: "Polymarket Contract Proxy Factory",
-        chainId: CHAIN_ID,
-        verifyingContract: SAFE_FACTORY,
-      },
-      message: {
-        paymentToken: zeroAddress,
-        payment: "0",
-        paymentReceiver: zeroAddress,
-      },
-    };
+    // 2. Wrap EIP-1193 provider in ethers v5 JsonRpcSigner
+    console.log("[deploySafe] Creating ethers Web3Provider + signer...");
+    const web3Provider = new ethers.providers.Web3Provider(eip1193Provider);
+    const signer = web3Provider.getSigner();
+    const signerAddr = await signer.getAddress();
+    console.log("[deploySafe] Signer address:", signerAddr);
 
-    const signature = await provider.request({
-      method: "eth_signTypedData_v4",
-      params: [ownerAddress, JSON.stringify(typedData)],
+    // 3. Build BuilderConfig with remote signing (uses Privy access token)
+    const builderConfig = new BuilderConfig({
+      remoteBuilderConfig: { url: signerUrl, token: privyAccessToken },
     });
-    console.log("[deploySafe] Signature obtained:", signature?.slice(0, 10) + "...");
 
-    // 3. Build request payload (same shape as SDK)
-    const request = {
-      from: ownerAddress,
-      to: SAFE_FACTORY,
-      proxyWallet: expectedSafe,
-      data: "0x",
-      signature,
-      signatureParams: {
-        paymentToken: zeroAddress,
-        payment: "0",
-        paymentReceiver: zeroAddress,
-      },
-      type: "SAFE_CREATE",
-    };
+    // 4. Create RelayClient with ethers signer + builder config
+    const client = new RelayClient(
+      RELAYER_URL,
+      CHAIN_ID,
+      signer,
+      builderConfig,
+      RelayerTxType.SAFE,
+    );
 
-    // 4. Get builder HMAC headers from remote signer
-    const body = JSON.stringify(request);
-    const builderHeaders = await getBuilderHeaders(privyAccessToken, "POST", "/submit", body);
+    // 5. Deploy via SDK (handles EIP-712 signing internally through ethers)
+    console.log("[deploySafe] Calling client.deploy()...");
+    const response = await client.deploy();
+    console.log("[deploySafe] Deploy response:", JSON.stringify(response));
 
-    // 5. Submit to relayer
-    console.log("[deploySafe] Submitting to relayer...");
-    const res = await fetch(`${RELAYER_URL}/submit`, {
-      method: "POST",
-      headers: { ...builderHeaders, "Content-Type": "application/json" },
-      body,
-    });
-    const responseText = await res.text();
-    console.log("[deploySafe] Relayer response:", res.status, responseText);
-
-    if (!res.ok) {
-      return { success: false, error: `Deploy failed (${res.status}): ${responseText}` };
-    }
-
-    const data = JSON.parse(responseText);
-
-    // 6. Poll for confirmation
-    if (data.transactionID) {
-      console.log("[deploySafe] Polling for tx:", data.transactionID);
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const txRes = await fetch(`${RELAYER_URL}/transaction?id=${data.transactionID}`);
-        const txns = await txRes.json();
-        if (Array.isArray(txns) && txns.length > 0) {
-          const txn = txns[0];
-          if (txn.state === "STATE_MINED" || txn.state === "STATE_CONFIRMED") {
-            return { success: true, proxyAddress: expectedSafe, transactionHash: txn.transactionHash };
-          }
-          if (txn.state === "STATE_FAILED") {
-            return { success: false, error: "Transaction failed on-chain" };
-          }
-        }
+    // 6. Wait for confirmation using SDK's built-in polling
+    if (response.transactionID) {
+      console.log("[deploySafe] Waiting for tx confirmation:", response.transactionID);
+      const confirmed = await client.pollUntilState(
+        response.transactionID,
+        ["STATE_MINED", "STATE_CONFIRMED"],
+        "STATE_FAILED",
+        30,
+        2000,
+      );
+      if (confirmed) {
+        return { success: true, proxyAddress: expectedSafe, transactionHash: confirmed.transactionHash };
       }
-      return { success: false, error: "Polling timed out" };
+      return { success: false, error: "Transaction failed or timed out" };
     }
 
     return { success: true, proxyAddress: expectedSafe };
   } catch (err: any) {
-    console.error("[deploySafe] Error:", err);
+    console.error("[deploySafe] Full error:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
     const msg = err?.message ?? String(err);
     return { success: false, error: msg };
   }
