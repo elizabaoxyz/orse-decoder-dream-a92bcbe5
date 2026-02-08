@@ -7,7 +7,7 @@ const navItems = [
   { to: "/app/markets", label: "Markets", icon: BarChart3 },
   { to: "/app/trade", label: "Trade", icon: ShoppingCart },
   { to: "/app/wallet", label: "Wallet", icon: Wallet },
-  { to: "/app/stats", label: "Builder Stats", icon: Trophy },
+  { to: "/app/builder", label: "Builder Stats", icon: Trophy },
 ];
 
 export default function TradingLayout() {

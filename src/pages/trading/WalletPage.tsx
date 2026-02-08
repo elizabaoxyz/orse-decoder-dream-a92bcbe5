@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTrading } from "@/contexts/ElizaConfigProvider";
+import { useTrading, useAppConfig } from "@/contexts/ElizaConfigProvider";
 import {
   createOrDeriveClobCredentials,
   deploySafeWallet,
@@ -36,6 +36,7 @@ export default function WalletPage() {
   const [deploying, setDeploying] = useState(false);
   const [initializingCreds, setInitializingCreds] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const { config, error: configError } = useAppConfig();
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -109,9 +110,19 @@ export default function WalletPage() {
     );
   }
 
+
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">Wallet</h1>
+
+      {/* Status Banner */}
+      <div className="border border-border rounded-lg p-3 bg-muted/30 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <StatusChip label="Config" ok={!!config && !configError} />
+        <StatusChip label="Privy" ok={isAuthenticated} />
+        <StatusChip label="Safe" ok={!!safeAddress} />
+        <StatusChip label="CLOB Creds" ok={!!clobCredentials} />
+      </div>
 
       {/* Auth Status */}
       <Section
@@ -317,6 +328,20 @@ function ReadinessItem({ label, ready }: { label: string; ready: boolean }) {
       <span className={ready ? "text-foreground" : "text-muted-foreground"}>
         {label}
       </span>
+    </div>
+  );
+}
+
+function StatusChip({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {ok ? (
+        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+      ) : (
+        <XCircle className="w-3.5 h-3.5 text-muted-foreground/40" />
+      )}
+      <span className="text-muted-foreground">{label}</span>
+      <span>{ok ? "✅" : "❌"}</span>
     </div>
   );
 }
