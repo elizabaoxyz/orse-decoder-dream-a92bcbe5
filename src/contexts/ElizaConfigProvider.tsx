@@ -32,6 +32,8 @@ export const useAppConfig = () => useContext(ConfigContext);
 interface TradingContextValue {
   // Auth
   isAuthenticated: boolean;
+  privyReady: boolean;
+  walletsReady: boolean;
   userAddress: `0x${string}` | null;
   accessToken: string | null;
   login: () => void;
@@ -53,6 +55,8 @@ interface TradingContextValue {
 
 const TradingContext = createContext<TradingContextValue>({
   isAuthenticated: false,
+  privyReady: false,
+  walletsReady: false,
   userAddress: null,
   accessToken: null,
   login: () => {},
@@ -73,8 +77,8 @@ export const useTrading = () => useContext(TradingContext);
 // =============================================================================
 
 function TradingProvider({ children }: { children: React.ReactNode }) {
-  const { login, logout, authenticated, getAccessToken } = usePrivy();
-  const { wallets } = useWallets();
+  const { login, logout, authenticated, ready: privyReady, getAccessToken } = usePrivy();
+  const { wallets, ready: walletsReady } = useWallets();
 
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
@@ -182,6 +186,8 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
     <TradingContext.Provider
       value={{
         isAuthenticated: authenticated,
+        privyReady: privyReady,
+        walletsReady: walletsReady,
         userAddress,
         accessToken,
         login,
