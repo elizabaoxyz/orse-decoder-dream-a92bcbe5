@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { PrivyProvider, usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { createWalletClient, custom } from "viem";
 import { polygon } from "viem/chains";
@@ -43,6 +43,8 @@ interface TradingContextValue {
   // Wallet
   walletClient: WalletClient | null;
   walletReady: boolean;
+  walletCreateError: string;
+  retryCreateWallet: () => void;
 
   // Safe wallet
   safeAddress: string | null;
@@ -51,6 +53,10 @@ interface TradingContextValue {
   // CLOB credentials
   clobCredentials: ClobCredentials | null;
   setClobCredentials: (creds: ClobCredentials | null) => void;
+
+  // Debug
+  walletsCount: number;
+  privyUserId: string | null;
 }
 
 const TradingContext = createContext<TradingContextValue>({
@@ -64,10 +70,14 @@ const TradingContext = createContext<TradingContextValue>({
   refreshToken: async () => null,
   walletClient: null,
   walletReady: false,
+  walletCreateError: "",
+  retryCreateWallet: () => {},
   safeAddress: null,
   setSafeAddress: () => {},
   clobCredentials: null,
   setClobCredentials: () => {},
+  walletsCount: 0,
+  privyUserId: null,
 });
 
 export const useTrading = () => useContext(TradingContext);
@@ -77,7 +87,7 @@ export const useTrading = () => useContext(TradingContext);
 // =============================================================================
 
 function TradingProvider({ children }: { children: React.ReactNode }) {
-  const { login, logout, authenticated, ready: privyReady, getAccessToken } = usePrivy();
+  const { login, logout, authenticated, ready: privyReady, getAccessToken, user } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
   const { createWallet: privyCreateWallet } = useCreateWallet();
 
@@ -85,7 +95,8 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
   const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
   const [walletReady, setWalletReady] = useState(false);
   const [userAddress, setUserAddress] = useState<`0x${string}` | null>(null);
-  const [creatingWallet, setCreatingWallet] = useState(false);
+  const [walletCreateError, setWalletCreateError] = useState("");
+  const walletCreateStartedRef = useRef(false);
 
   // Safe address from localStorage
   const [safeAddress, setSafeAddressState] = useState<string | null>(() => {
@@ -144,42 +155,34 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authenticated, refreshToken]);
 
-  // Debug: log wallet state
-  useEffect(() => {
-    console.log("[TradingProvider] State:", {
-      privyReady,
-      authenticated,
-      walletsReady,
-      walletsCount: wallets.length,
-      walletTypes: wallets.map(w => `${w.walletClientType}:${w.address}`),
-      creatingWallet,
-    });
-  }, [privyReady, authenticated, walletsReady, wallets, creatingWallet]);
-
   // Auto-create embedded wallet if user is authenticated but has no wallet
-  useEffect(() => {
-    if (privyReady && authenticated && walletsReady && wallets.length === 0 && !creatingWallet) {
-      console.log("[TradingProvider] No wallet found, creating one...");
-      setCreatingWallet(true);
-      
-      const timeout = setTimeout(() => {
-        console.error("[TradingProvider] Wallet creation timed out after 15s. Check Privy dashboard wallet mode.");
-      }, 15000);
-      
-      privyCreateWallet()
-        .then((wallet) => {
-          clearTimeout(timeout);
-          console.log("[TradingProvider] Embedded wallet created:", wallet.address);
-        })
-        .catch((err) => {
-          clearTimeout(timeout);
-          console.error("[TradingProvider] Failed to create wallet:", err);
-        })
-        .finally(() => {
-          setCreatingWallet(false);
-        });
+  const doCreateWallet = useCallback(async () => {
+    if (walletCreateStartedRef.current) return;
+    walletCreateStartedRef.current = true;
+    setWalletCreateError("");
+    console.log("[TradingProvider] No wallet found, creating one...");
+    try {
+      const wallet = await privyCreateWallet();
+      console.log("[TradingProvider] Embedded wallet created:", wallet.address);
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      setWalletCreateError(msg);
+      console.error("[TradingProvider] createWallet failed:", e);
+      walletCreateStartedRef.current = false; // allow retry
     }
-  }, [privyReady, authenticated, walletsReady, wallets, privyCreateWallet, creatingWallet]);
+  }, [privyCreateWallet]);
+
+  useEffect(() => {
+    if (!privyReady || !authenticated || !walletsReady) return;
+    if (wallets.length > 0) return;
+    if (walletCreateStartedRef.current) return;
+    doCreateWallet();
+  }, [privyReady, authenticated, walletsReady, wallets.length, doCreateWallet]);
+
+  const retryCreateWallet = useCallback(() => {
+    walletCreateStartedRef.current = false;
+    doCreateWallet();
+  }, [doCreateWallet]);
 
   // Set up wallet client from Privy embedded wallet
   useEffect(() => {
@@ -225,8 +228,8 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
     <TradingContext.Provider
       value={{
         isAuthenticated: authenticated,
-        privyReady: privyReady,
-        walletsReady: walletsReady,
+        privyReady,
+        walletsReady,
         userAddress,
         accessToken,
         login,
@@ -234,10 +237,14 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
         refreshToken,
         walletClient,
         walletReady: privyReady && authenticated && walletsReady && wallets.length > 0,
+        walletCreateError,
+        retryCreateWallet,
         safeAddress,
         setSafeAddress,
         clobCredentials,
         setClobCredentials,
+        walletsCount: wallets.length,
+        privyUserId: user?.id ?? null,
       }}
     >
       {children}
