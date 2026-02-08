@@ -6,6 +6,7 @@ const SIGNER_URL = "https://sign.elizabao.xyz/sign";
 
 export interface AppConfig {
   privyAppId: string;
+  privyClientId?: string;
   signerUrl: string;
   gammaApiUrl: string;
   clobApiUrl: string;
