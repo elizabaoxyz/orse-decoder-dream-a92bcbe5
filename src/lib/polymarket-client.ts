@@ -138,7 +138,7 @@ async function getClobServerTime(clobApiUrl: string): Promise<number> {
 export async function createOrDeriveClobCredentials(
   walletClient: WalletClient,
   address: `0x${string}`,
-  clobApiUrl: string = "https://api.elizabao.xyz/clob"
+  clobApiUrl: string = "https://api.elizabao.xyz"
 ): Promise<ClobCredentials> {
   console.log("[createOrDeriveClobCredentials] Using CLOB base URL:", clobApiUrl);
   const timestamp = await getClobServerTime(clobApiUrl);
@@ -340,7 +340,7 @@ export async function placeOrder(
   funderAddress: `0x${string}`,
   params: OrderParams,
   privyAccessToken: string,
-  clobApiUrl: string = "https://api.elizabao.xyz/clob"
+  clobApiUrl: string = "https://api.elizabao.xyz"
 ): Promise<OrderResult> {
   // 1. Create and sign the order
   const { order, orderType } = await createAndSignOrder(
@@ -534,7 +534,7 @@ export async function deploySafeWallet(
 export async function getClobBalance(
   creds: ClobCredentials,
   address: string,
-  clobApiUrl: string = "https://api.elizabao.xyz/clob"
+  clobApiUrl: string = "https://api.elizabao.xyz"
 ): Promise<string> {
   try {
     const path = "/balance-allowance?asset_type=0";
@@ -552,7 +552,7 @@ export async function getClobBalance(
 export async function getOpenOrders(
   creds: ClobCredentials,
   address: string,
-  clobApiUrl: string = "https://api.elizabao.xyz/clob"
+  clobApiUrl: string = "https://api.elizabao.xyz"
 ): Promise<unknown[]> {
   try {
     const path = "/orders";
