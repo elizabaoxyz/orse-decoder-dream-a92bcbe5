@@ -33,6 +33,10 @@ export default function WalletPage() {
     setSafeAddress,
     clobCredentials,
     setClobCredentials,
+    walletCreateError,
+    retryCreateWallet,
+    walletsCount,
+    privyUserId,
   } = useTrading();
 
   const [deploying, setDeploying] = useState(false);
@@ -129,6 +133,26 @@ export default function WalletPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">Wallet</h1>
+
+      {/* Debug Panel */}
+      <div className="border border-yellow-500/50 rounded-lg p-3 bg-yellow-500/10 text-xs font-mono space-y-1">
+        <p className="font-bold text-yellow-400 mb-2">🔍 Debug Panel</p>
+        <p>privyReady: <span className={privyReady ? "text-green-400" : "text-red-400"}>{String(privyReady)}</span></p>
+        <p>authenticated: <span className={isAuthenticated ? "text-green-400" : "text-red-400"}>{String(isAuthenticated)}</span></p>
+        <p>walletsReady: <span className={walletsReady ? "text-green-400" : "text-red-400"}>{String(walletsReady)}</span></p>
+        <p>wallets.length: <span className="text-blue-400">{walletsCount}</span></p>
+        <p>userAddress: <span className="text-blue-400">{userAddress ?? "null"}</span></p>
+        <p>user.id: <span className="text-blue-400">{privyUserId ?? "null"}</span></p>
+        {walletCreateError && (
+          <div className="mt-2">
+            <p className="text-red-400 font-bold">❌ walletCreateError:</p>
+            <p className="text-red-300 break-all">{walletCreateError}</p>
+            <Button size="sm" variant="outline" className="mt-2" onClick={retryCreateWallet}>
+              Retry Create Wallet
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Status Banner */}
       <div className="border border-border rounded-lg p-3 bg-muted/30 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
