@@ -144,16 +144,35 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authenticated, refreshToken]);
 
+  // Debug: log wallet state
+  useEffect(() => {
+    console.log("[TradingProvider] State:", {
+      privyReady,
+      authenticated,
+      walletsReady,
+      walletsCount: wallets.length,
+      walletTypes: wallets.map(w => `${w.walletClientType}:${w.address}`),
+      creatingWallet,
+    });
+  }, [privyReady, authenticated, walletsReady, wallets, creatingWallet]);
+
   // Auto-create embedded wallet if user is authenticated but has no wallet
   useEffect(() => {
     if (privyReady && authenticated && walletsReady && wallets.length === 0 && !creatingWallet) {
       console.log("[TradingProvider] No wallet found, creating one...");
       setCreatingWallet(true);
+      
+      const timeout = setTimeout(() => {
+        console.error("[TradingProvider] Wallet creation timed out after 15s. Check Privy dashboard wallet mode.");
+      }, 15000);
+      
       privyCreateWallet()
         .then((wallet) => {
+          clearTimeout(timeout);
           console.log("[TradingProvider] Embedded wallet created:", wallet.address);
         })
         .catch((err) => {
+          clearTimeout(timeout);
           console.error("[TradingProvider] Failed to create wallet:", err);
         })
         .finally(() => {
