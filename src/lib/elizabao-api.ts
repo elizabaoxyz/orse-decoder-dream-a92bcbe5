@@ -69,7 +69,9 @@ export interface LeaderboardEntry {
 export async function fetchConfig(): Promise<AppConfig> {
   const res = await fetch(`${API_BASE}/config`);
   if (!res.ok) throw new Error(`Config fetch failed: ${res.status}`);
-  return res.json();
+  const raw = await res.json();
+  const cfg = raw?.config ?? raw;
+  return cfg;
 }
 
 // Health check
