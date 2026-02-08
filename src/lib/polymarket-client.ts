@@ -3,9 +3,8 @@
 // NO builder secrets in frontend — uses remote signing server
 
 import type { WalletClient } from "viem";
+import { getCreate2Address, keccak256, encodeAbiParameters, zeroAddress } from "viem";
 import { getBuilderHeaders } from "./elizabao-api";
-import { RelayClient, RelayerTxType } from "@polymarket/builder-relayer-client";
-import { BuilderConfig } from "@polymarket/builder-signing-sdk";
 
 const CLOB_API = "https://clob.polymarket.com";
 const RELAYER_URL = "https://relayer-v2.polymarket.com";
@@ -427,6 +426,17 @@ async function getRelayerHeaders(
   };
 }
 
+// Constants from SDK
+const SAFE_FACTORY = "0xaacFeEa03eb1561C4e67d661e40682Bd20E3541b" as const;
+const SAFE_INIT_CODE_HASH = "0x2bce2127ff07fb632d16c8347c4ebf501f4841168bed00d9e6ef715ddb6fcecf" as const;
+
+function deriveSafeAddress(ownerAddress: string): string {
+  const salt = keccak256(
+    encodeAbiParameters([{ name: "address", type: "address" }], [ownerAddress as `0x${string}`])
+  );
+  return getCreate2Address({ bytecodeHash: SAFE_INIT_CODE_HASH, from: SAFE_FACTORY, salt });
+}
+
 export async function deploySafeWallet(
   privyAccessToken: string,
   ownerAddress: string,
@@ -434,50 +444,101 @@ export async function deploySafeWallet(
   signerUrl: string = "https://sign.elizabao.xyz/sign"
 ): Promise<{ success: boolean; proxyAddress?: string; transactionHash?: string; error?: string }> {
   try {
-    console.log("[deploySafe] Using SDK with RelayClient + BuilderConfig");
-    console.log("[deploySafe] signerUrl:", signerUrl);
-    console.log("[deploySafe] ownerAddress:", ownerAddress);
+    const expectedSafe = deriveSafeAddress(ownerAddress);
+    console.log("[deploySafe] Expected Safe:", expectedSafe);
 
-    // Create BuilderConfig pointing to remote signing server
-    const builderConfig = new BuilderConfig({
-      remoteBuilderConfig: {
-        url: signerUrl,
-        token: privyAccessToken,
+    // 1. Check if already deployed
+    const deployedRes = await fetch(`${RELAYER_URL}/deployed?address=${expectedSafe}`);
+    const deployedData = await deployedRes.json();
+    if (deployedData.deployed) {
+      return { success: true, proxyAddress: expectedSafe, error: undefined };
+    }
+
+    // 2. Sign EIP-712 typed data for Safe creation (using number chainId, not BigInt)
+    console.log("[deploySafe] Signing EIP-712 for Safe creation...");
+    const account = walletClient.account ?? (await walletClient.requestAddresses())[0];
+    const signature = await walletClient.signTypedData({
+      account,
+      domain: {
+        name: "Polymarket Contract Proxy Factory",
+        chainId: CHAIN_ID,  // number, not BigInt
+        verifyingContract: SAFE_FACTORY,
+      },
+      types: {
+        CreateProxy: [
+          { name: "paymentToken", type: "address" },
+          { name: "payment", type: "uint256" },
+          { name: "paymentReceiver", type: "address" },
+        ],
+      },
+      primaryType: "CreateProxy",
+      message: {
+        paymentToken: zeroAddress,
+        payment: 0n,
+        paymentReceiver: zeroAddress,
       },
     });
+    console.log("[deploySafe] Signature obtained");
 
-    // Create RelayClient with viem WalletClient
-    const relayClient = new RelayClient(
-      `${RELAYER_URL}/`,
-      CHAIN_ID,
-      walletClient,
-      builderConfig,
-      RelayerTxType.SAFE
-    );
+    // 3. Build request payload (same shape as SDK)
+    const request = {
+      from: ownerAddress,
+      to: SAFE_FACTORY,
+      proxyWallet: expectedSafe,
+      data: "0x",
+      signature,
+      signatureParams: {
+        paymentToken: zeroAddress,
+        payment: "0",
+        paymentReceiver: zeroAddress,
+      },
+      type: "SAFE_CREATE",
+    };
 
-    // Deploy the Safe wallet
-    const response = await relayClient.deploy();
-    console.log("[deploySafe] Deploy submitted, waiting for confirmation...");
+    // 4. Get builder HMAC headers from remote signer
+    const body = JSON.stringify(request);
+    const builderHeaders = await getBuilderHeaders(privyAccessToken, "POST", "/submit", body);
 
-    const result = await response.wait();
+    // 5. Submit to relayer
+    console.log("[deploySafe] Submitting to relayer...");
+    const res = await fetch(`${RELAYER_URL}/submit`, {
+      method: "POST",
+      headers: { ...builderHeaders, "Content-Type": "application/json" },
+      body,
+    });
+    const responseText = await res.text();
+    console.log("[deploySafe] Relayer response:", res.status, responseText);
 
-    if (result) {
-      console.log("[deploySafe] Safe deployed!", result);
-      return {
-        success: true,
-        proxyAddress: result.proxyAddress || result.to,
-        transactionHash: result.transactionHash,
-      };
-    } else {
-      return { success: false, error: "Safe deployment failed or timed out" };
+    if (!res.ok) {
+      return { success: false, error: `Deploy failed (${res.status}): ${responseText}` };
     }
+
+    const data = JSON.parse(responseText);
+
+    // 6. Poll for confirmation
+    if (data.transactionID) {
+      console.log("[deploySafe] Polling for tx:", data.transactionID);
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const txRes = await fetch(`${RELAYER_URL}/transaction?id=${data.transactionID}`);
+        const txns = await txRes.json();
+        if (Array.isArray(txns) && txns.length > 0) {
+          const txn = txns[0];
+          if (txn.state === "STATE_MINED" || txn.state === "STATE_CONFIRMED") {
+            return { success: true, proxyAddress: expectedSafe, transactionHash: txn.transactionHash };
+          }
+          if (txn.state === "STATE_FAILED") {
+            return { success: false, error: "Transaction failed on-chain" };
+          }
+        }
+      }
+      return { success: false, error: "Polling timed out" };
+    }
+
+    return { success: true, proxyAddress: expectedSafe };
   } catch (err: any) {
     console.error("[deploySafe] Error:", err);
     const msg = err?.message ?? String(err);
-    // If already deployed, extract the safe address
-    if (msg.includes("already deployed") || msg.includes("SAFE_DEPLOYED")) {
-      return { success: false, error: "Safe wallet is already deployed" };
-    }
     return { success: false, error: msg };
   }
 }
