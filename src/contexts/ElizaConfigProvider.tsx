@@ -219,8 +219,10 @@ export function ElizaConfigProvider({
         console.log("[ElizaConfigProvider] Raw config:", JSON.stringify(cfg));
         // Normalize: the API may return the field under different names
         const appId = cfg.privyAppId || (cfg as any).privy_app_id || (cfg as any).appId || "cmldzu68301iwl70cpcnj0xbf";
+        const clientId = cfg.privyClientId || (cfg as any).privy_client_id || (cfg as any).clientId || undefined;
         const normalized: AppConfig = {
           privyAppId: appId,
+          privyClientId: clientId,
           signerUrl: cfg.signerUrl || (cfg as any).signer_url || "https://sign.elizabao.xyz/sign",
           gammaApiUrl: cfg.gammaApiUrl || (cfg as any).gamma_api_url || "https://gamma-api.polymarket.com",
           clobApiUrl: cfg.clobApiUrl || (cfg as any).clob_api_url || "https://clob.polymarket.com",
@@ -267,6 +269,7 @@ export function ElizaConfigProvider({
     <ConfigContext.Provider value={{ config, loading, error }}>
       <PrivyProvider
         appId={config.privyAppId}
+        clientId={config.privyClientId as string}
         config={{
           loginMethods: ["email"],
           appearance: {
