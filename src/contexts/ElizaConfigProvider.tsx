@@ -298,7 +298,8 @@ export function ElizaConfigProvider({
           privyClientId: clientId,
           signerUrl: cfg.signerUrl || (cfg as any).signer_url || "https://sign.elizabao.xyz/sign",
           gammaApiUrl: cfg.gammaApiUrl || (cfg as any).gamma_api_url || "https://gamma-api.polymarket.com",
-          clobApiUrl: cfg.clobApiUrl || (cfg as any).clob_api_url || "https://api.elizabao.xyz/clob",
+          // FORCE proxy — config API currently returns clob.polymarket.com which gets CORS-blocked in browser
+          clobApiUrl: "https://api.elizabao.xyz/clob",
           dataApiUrl: cfg.dataApiUrl || (cfg as any).data_api_url || "https://data-api.polymarket.com",
         };
         console.log("[ElizaConfigProvider] Using privyAppId:", normalized.privyAppId);
