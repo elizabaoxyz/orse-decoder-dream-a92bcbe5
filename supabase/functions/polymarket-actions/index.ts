@@ -4,7 +4,7 @@ import { ethers } from "https://esm.sh/ethers@6.13.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 // Bright Data Web Unlocker API configuration
@@ -24,7 +24,6 @@ async function fetchWithProxy(
     try {
       console.log("[fetchWithProxy] Using Bright Data Web Unlocker for:", url);
       
-      // Build headers array for target request (Bright Data format)
       const targetHeaders: Array<{name: string; value: string}> = [];
       if (options.headers) {
         const headers = options.headers as Record<string, string>;
@@ -35,37 +34,24 @@ async function fetchWithProxy(
         });
       }
       
-      console.log("[fetchWithProxy] Target headers count:", targetHeaders.length);
-      
-      // Bright Data Web Unlocker API request
-      // See: https://docs.brightdata.com/scraping-automation/web-unlocker/web-unlocker-api
       const payload: Record<string, unknown> = {
         zone: BRIGHT_DATA_ZONE,
         url: url,
-        format: "raw", // Get raw response from target
-        country: "us", // Use US residential IP for Polymarket
+        format: "raw",
+        country: "us",
       };
       
-      // Add method
       payload.method = (options.method || "GET").toUpperCase();
       
-      // Add body if present (for POST requests)
       if (options.body) {
         payload.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
-        console.log("[fetchWithProxy] Request body length:", String(payload.body).length);
       }
       
-      // Add headers if present - Bright Data requires object format
       if (targetHeaders.length > 0) {
         const headersObj: Record<string, string> = {};
-        targetHeaders.forEach(h => {
-          headersObj[h.name] = h.value;
-        });
+        targetHeaders.forEach(h => { headersObj[h.name] = h.value; });
         payload.headers = headersObj;
-        console.log("[fetchWithProxy] Headers being sent:", Object.keys(headersObj).join(", "));
       }
-      
-      console.log("[fetchWithProxy] Bright Data payload method:", payload.method, "url:", url);
       
       const proxyResponse = await fetch(BRIGHT_DATA_API_URL, {
         method: "POST",
@@ -76,13 +62,8 @@ async function fetchWithProxy(
         body: JSON.stringify(payload),
       });
       
-      console.log("[fetchWithProxy] Bright Data response status:", proxyResponse.status);
-      
       if (proxyResponse.ok) {
         const responseText = await proxyResponse.text();
-        console.log("[fetchWithProxy] Bright Data success, response length:", responseText.length);
-        
-        // Try to parse as JSON
         try {
           const jsonData = JSON.parse(responseText);
           return new Response(JSON.stringify(jsonData), {
@@ -90,7 +71,6 @@ async function fetchWithProxy(
             headers: { "Content-Type": "application/json" },
           });
         } catch {
-          // Return raw text if not JSON
           return new Response(responseText, {
             status: 200,
             headers: { "Content-Type": "text/plain" },
@@ -99,31 +79,25 @@ async function fetchWithProxy(
       } else {
         const errorText = await proxyResponse.text();
         console.error("[fetchWithProxy] Bright Data error:", proxyResponse.status, errorText);
-        // Fall through to direct request
       }
     } catch (brightDataErr) {
       console.error("[fetchWithProxy] Bright Data error:", brightDataErr);
-      // Fall through to direct request
     }
-  } else {
-    console.log("[fetchWithProxy] No Bright Data API key, using direct request");
   }
   
-  // Direct request as final fallback
   console.log("[fetchWithProxy] Using direct request to:", url);
   return fetch(url, options);
 }
 
-// Prefer direct calls for auth endpoints; only use proxy if we hit Cloudflare blocks.
+// Prefer direct calls; only use proxy if blocked
 async function fetchClobPreferDirect(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
   try {
     const direct = await fetch(url, options);
-    // Cloudflare-style blocks we want to bypass.
     if (direct.status === 403 || direct.status === 429 || direct.status === 503) {
-      console.log(`[fetchClobPreferDirect] Direct blocked (${direct.status}); using proxy for: ${url}`);
+      console.log(`[fetchClobPreferDirect] Direct blocked (${direct.status}); using proxy`);
       return await fetchWithProxy(url, options);
     }
     return direct;
@@ -135,27 +109,28 @@ async function fetchClobPreferDirect(
 
 const CLOB_API_URL = "https://clob.polymarket.com";
 const GAMMA_API_URL = "https://gamma-api.polymarket.com";
+const RELAYER_URL = "https://relayer-v2.polymarket.com";
 const CHAIN_ID = 137; // Polygon Mainnet
+
+// =============================================================================
+// CTF Exchange Addresses (Polygon Mainnet)
+// =============================================================================
+const CTF_EXCHANGE_ADDRESS = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E";
+const NEG_RISK_CTF_EXCHANGE_ADDRESS = "0xC5d563A36AE78145C45a50134d48A1215220f80a";
+const CONDITIONAL_TOKENS_ADDRESS = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045";
+const USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC (PoS)
 
 async function getClobServerTimeSeconds(): Promise<number | null> {
   try {
     const res = await fetchClobPreferDirect(`${CLOB_API_URL}/time`, { method: "GET" });
     const text = (await res.text()).trim();
-
-    // Endpoint commonly returns a JSON number, but be defensive.
     const asNumber = Number(text);
     if (Number.isFinite(asNumber) && asNumber > 0) return Math.floor(asNumber);
-
     try {
       const json = JSON.parse(text);
       if (typeof json === "number") return Math.floor(json);
       if (typeof json?.timestamp === "number") return Math.floor(json.timestamp);
-      if (typeof json?.serverTime === "number") return Math.floor(json.serverTime);
-    } catch {
-      // ignore
-    }
-
-    console.warn("[getClobServerTimeSeconds] Unexpected /time response:", text.slice(0, 200));
+    } catch { /* ignore */ }
     return null;
   } catch (err) {
     console.error("[getClobServerTimeSeconds] Error:", err);
@@ -166,17 +141,15 @@ async function getClobServerTimeSeconds(): Promise<number | null> {
 async function getClobTimestampString(): Promise<string> {
   const serverTs = await getClobServerTimeSeconds();
   const ts = serverTs ?? Math.floor(Date.now() / 1000);
-  if (serverTs) console.log("[getClobTimestampString] Using server time:", ts);
   return String(ts);
 }
 
-// Multiple RPC endpoints for fallback (public, no auth)
+// Multiple RPC endpoints for fallback
 const POLYGON_RPCS = [
   "https://polygon-bor-rpc.publicnode.com",
   "https://1rpc.io/matic",
   "https://endpoints.omniatech.io/v1/matic/mainnet/public",
 ];
-const USDC_POLYGON_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC (PoS)
 
 // Builder credentials from environment
 const BUILDER_ADDRESS = Deno.env.get("POLYMARKET_BUILDER_ADDRESS") || "";
@@ -187,14 +160,14 @@ const BUILDER_PASSPHRASE = Deno.env.get("POLYMARKET_BUILDER_PASSPHRASE") || "";
 // CLOB Trading credentials
 const getWalletPrivateKey = () => Deno.env.get("WALLET_PRIVATE_KEY") || "";
 
-// Derived CLOB API credentials (cached per-wallet; reset if wallet changes)
+// Derived CLOB API credentials (cached per-wallet)
 let CLOB_API_KEY = "";
 let CLOB_API_SECRET = "";
 let CLOB_PASSPHRASE = "";
 let WALLET_ADDRESS = "";
 
 // =============================================================================
-// Types (matching plugin-polymarket structure)
+// Types
 // =============================================================================
 
 interface MarketInfo {
@@ -210,6 +183,7 @@ interface MarketInfo {
   game_start_time?: string;
   seconds_delay?: number;
   minimum_tick_size?: string;
+  minimumTickSize?: string;
   tokens?: TokenInfo[];
   active?: boolean;
   closed?: boolean;
@@ -221,12 +195,13 @@ interface MarketInfo {
   liquidity?: string | number;
   volume?: string | number;
   volume24hr?: number;
-  // Gamma API specific fields
   bestBid?: number;
   bestAsk?: number;
-  outcomePrices?: string; // JSON string like "[0.52, 0.48]"
-  outcomes?: string; // JSON string like '["Yes", "No"]'
-  clobTokenIds?: string; // JSON string like '["tokenId1", "tokenId2"]'
+  outcomePrices?: string;
+  outcomes?: string;
+  clobTokenIds?: string;
+  neg_risk?: boolean;
+  negRisk?: boolean;
 }
 
 interface TokenInfo {
@@ -254,7 +229,7 @@ interface SearchResult {
 }
 
 // =============================================================================
-// Helper Functions
+// Crypto Helpers
 // =============================================================================
 
 function decodePolySecret(secret: string): Uint8Array {
@@ -262,7 +237,6 @@ function decodePolySecret(secret: string): Uint8Array {
   const trimmed = (secret || "").trim();
   if (!trimmed) return encoder.encode("");
 
-  // Polymarket may return URL-safe base64 ("-" and "_")
   const normalized = trimmed.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
 
@@ -270,7 +244,6 @@ function decodePolySecret(secret: string): Uint8Array {
     const decoded = base64Decode(padded);
     return new Uint8Array(decoded);
   } catch {
-    // As a last resort, treat it as a raw string key
     return encoder.encode(trimmed);
   }
 }
@@ -284,7 +257,6 @@ async function generateL2Signature(
 ): Promise<string> {
   const message = timestamp + method.toUpperCase() + requestPath + body;
   const encoder = new TextEncoder();
-
   const keyData = decodePolySecret(secret);
   const keyBuffer = new ArrayBuffer(keyData.length);
   new Uint8Array(keyBuffer).set(keyData);
@@ -300,6 +272,56 @@ async function generateL2Signature(
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
   return base64Encode(signature);
 }
+
+// =============================================================================
+// Builder Attribution Headers (HMAC signing for order attribution)
+// These headers are ADDED to order requests so Polymarket credits trades
+// to our builder account. Separate from the user's L2 auth headers.
+// =============================================================================
+
+async function generateBuilderAttributionHeaders(
+  method: string,
+  requestPath: string,
+  body: string = ""
+): Promise<Record<string, string>> {
+  if (!BUILDER_API_KEY || !BUILDER_SECRET || !BUILDER_PASSPHRASE) {
+    console.log("[builderAttribution] Builder credentials not configured, skipping attribution");
+    return {};
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const message = timestamp + method.toUpperCase() + requestPath + body;
+  const encoder = new TextEncoder();
+
+  const keyData = decodePolySecret(BUILDER_SECRET);
+  const keyBuffer = new ArrayBuffer(keyData.length);
+  new Uint8Array(keyBuffer).set(keyData);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyBuffer as ArrayBuffer,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
+  const signatureB64 = base64Encode(signature);
+
+  console.log("[builderAttribution] Generated builder HMAC headers for:", method, requestPath);
+
+  return {
+    "POLY-BUILDER-ADDRESS": BUILDER_ADDRESS,
+    "POLY-BUILDER-SIGNATURE": signatureB64,
+    "POLY-BUILDER-TIMESTAMP": timestamp,
+    "POLY-BUILDER-API-KEY": BUILDER_API_KEY,
+    "POLY-BUILDER-PASSPHRASE": BUILDER_PASSPHRASE,
+  };
+}
+
+// =============================================================================
+// Builder Auth Headers (for builder-specific endpoints like /builder/trades)
+// =============================================================================
 
 async function createBuilderAuthHeaders(
   method: string,
@@ -321,13 +343,12 @@ async function createBuilderAuthHeaders(
 }
 
 // =============================================================================
-// Action: Search Markets (GET_MARKETS / /market command)
+// Market Search & Resolution
 // =============================================================================
 
 async function searchMarkets(query: string, limit = 10): Promise<SearchResult> {
   console.log(`[searchMarkets] Searching for: "${query}"`);
   
-  // Use Gamma API for search capability
   const url = new URL(`${GAMMA_API_URL}/markets`);
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("active", "true");
@@ -343,7 +364,6 @@ async function searchMarkets(query: string, limit = 10): Promise<SearchResult> {
 
   const allMarkets: MarketInfo[] = await response.json();
   
-  // Filter by query (case-insensitive search in question and description)
   const queryLower = query.toLowerCase();
   const filtered = allMarkets.filter(m => 
     m.question?.toLowerCase().includes(queryLower) ||
@@ -351,8 +371,6 @@ async function searchMarkets(query: string, limit = 10): Promise<SearchResult> {
     m.market_slug?.toLowerCase().includes(queryLower)
   ).slice(0, limit);
 
-  console.log(`[searchMarkets] Found ${filtered.length} markets matching "${query}"`);
-  
   return {
     markets: filtered,
     total: filtered.length,
@@ -360,68 +378,48 @@ async function searchMarkets(query: string, limit = 10): Promise<SearchResult> {
   };
 }
 
-// =============================================================================
-// Helper: Resolve marketSlug to tokenId
-// =============================================================================
-
-async function resolveTokenId(marketSlugOrTokenId: string, outcome: "YES" | "NO" = "YES"): Promise<{ tokenId: string; marketTitle: string } | null> {
+async function resolveTokenId(marketSlugOrTokenId: string, outcome: "YES" | "NO" = "YES"): Promise<{ tokenId: string; marketTitle: string; tickSize: string; negRisk: boolean } | null> {
   console.log(`[resolveTokenId] Resolving: "${marketSlugOrTokenId}", outcome: ${outcome}`);
   
-  // If it looks like a token ID (long numeric string), return as-is
   if (/^\d{50,}$/.test(marketSlugOrTokenId)) {
-    console.log(`[resolveTokenId] Already a tokenId`);
-    return { tokenId: marketSlugOrTokenId, marketTitle: "Unknown" };
+    return { tokenId: marketSlugOrTokenId, marketTitle: "Unknown", tickSize: "0.01", negRisk: false };
   }
   
-  // Search for the market using the slug/query
   try {
     const searchResult = await searchMarkets(marketSlugOrTokenId, 5);
-    if (searchResult.markets.length === 0) {
-      console.log(`[resolveTokenId] No markets found for: ${marketSlugOrTokenId}`);
-      return null;
-    }
+    if (searchResult.markets.length === 0) return null;
     
     const market = searchResult.markets[0];
     console.log(`[resolveTokenId] Found market: ${market.question}`);
     
-    // Try to parse clobTokenIds (it's a JSON string from Gamma API)
+    // Extract tickSize and negRisk from market data
+    const tickSize = market.minimum_tick_size || market.minimumTickSize || "0.01";
+    const negRisk = market.neg_risk ?? market.negRisk ?? false;
+    
     if (market.clobTokenIds) {
       try {
         const tokenIds: string[] = JSON.parse(market.clobTokenIds);
         if (tokenIds.length > 0) {
-          // clobTokenIds[0] = YES, clobTokenIds[1] = NO (typically)
           const tokenIndex = outcome === "YES" ? 0 : 1;
           const tokenId = tokenIds[tokenIndex] || tokenIds[0];
-          console.log(`[resolveTokenId] Resolved from clobTokenIds: ${tokenId}`);
-          return { tokenId, marketTitle: market.question || market.market_slug || "Unknown" };
+          return { tokenId, marketTitle: market.question || "Unknown", tickSize, negRisk };
         }
-      } catch (parseErr) {
-        console.error(`[resolveTokenId] Failed to parse clobTokenIds:`, parseErr);
-      }
+      } catch { /* ignore */ }
     }
     
-    // Get the token ID from tokens array
     if (market.tokens && market.tokens.length > 0) {
-      // Find the token matching the outcome
       const outcomeToken = market.tokens.find(t => 
-        t.outcome?.toUpperCase() === outcome || 
-        t.outcome?.toUpperCase() === "YES" && outcome === "YES" ||
-        t.outcome?.toUpperCase() === "NO" && outcome === "NO"
+        t.outcome?.toUpperCase() === outcome
       );
-      
       const tokenId = outcomeToken?.token_id || market.tokens[0].token_id;
-      console.log(`[resolveTokenId] Resolved from tokens: ${tokenId}`);
-      return { tokenId, marketTitle: market.question || market.market_slug || "Unknown" };
+      return { tokenId, marketTitle: market.question || "Unknown", tickSize, negRisk };
     }
     
-    // Fallback to condition_id if no tokens
     if (market.condition_id || market.conditionId) {
       const conditionId = market.condition_id || market.conditionId || "";
-      console.log(`[resolveTokenId] Using condition_id as fallback: ${conditionId}`);
-      return { tokenId: conditionId, marketTitle: market.question || "Unknown" };
+      return { tokenId: conditionId, marketTitle: market.question || "Unknown", tickSize, negRisk };
     }
     
-    console.log(`[resolveTokenId] No tokenId found for market`);
     return null;
   } catch (error) {
     console.error(`[resolveTokenId] Error:`, error);
@@ -430,47 +428,25 @@ async function resolveTokenId(marketSlugOrTokenId: string, outcome: "YES" | "NO"
 }
 
 // =============================================================================
-// Action: Get Market Details (GET_MARKET_DETAILS / /explain command)
+// Market Details & Order Book
 // =============================================================================
 
 async function getMarketDetails(marketId: string): Promise<MarketInfo | null> {
-  console.log(`[getMarketDetails] Fetching market: ${marketId}`);
-  
-  // Try Gamma API first (more detailed info)
   try {
     const gammaResponse = await fetch(`${GAMMA_API_URL}/markets/${marketId}`, {
       headers: { "Accept": "application/json" },
     });
-    
-    if (gammaResponse.ok) {
-      const market = await gammaResponse.json();
-      console.log(`[getMarketDetails] Found market on Gamma API`);
-      return market;
-    }
-  } catch (e) {
-    console.log(`[getMarketDetails] Gamma API failed, trying CLOB`);
-  }
+    if (gammaResponse.ok) return await gammaResponse.json();
+  } catch { /* fallback */ }
   
-  // Fallback to CLOB API
   const clobResponse = await fetch(`${CLOB_API_URL}/markets/${marketId}`, {
     headers: { "Accept": "application/json" },
   });
-  
-  if (!clobResponse.ok) {
-    console.error(`[getMarketDetails] Market not found: ${marketId}`);
-    return null;
-  }
-  
+  if (!clobResponse.ok) return null;
   return await clobResponse.json();
 }
 
-// =============================================================================
-// Action: Get Order Book Summary (GET_ORDER_BOOK_SUMMARY / /orderbook command)
-// =============================================================================
-
 async function getOrderBookSummary(tokenId: string): Promise<OrderBookSummary> {
-  console.log(`[getOrderBookSummary] Fetching order book for token: ${tokenId}`);
-  
   const url = new URL(`${CLOB_API_URL}/book`);
   url.searchParams.set("token_id", tokenId);
 
@@ -478,13 +454,9 @@ async function getOrderBookSummary(tokenId: string): Promise<OrderBookSummary> {
     headers: { "Accept": "application/json" },
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch order book: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`Failed to fetch order book: ${response.status}`);
 
   const book = await response.json();
-  
-  // Extract best prices
   const bids = book.bids || [];
   const asks = book.asks || [];
   
@@ -504,42 +476,18 @@ async function getOrderBookSummary(tokenId: string): Promise<OrderBookSummary> {
     spreadPercent = ((askNum - bidNum) / midpointNum * 100).toFixed(2);
   }
 
-  return {
-    tokenId,
-    bestBid,
-    bestAsk,
-    spread,
-    spreadPercent,
-    bidDepth: bids.length,
-    askDepth: asks.length,
-    midpoint,
-  };
+  return { tokenId, bestBid, bestAsk, spread, spreadPercent, bidDepth: bids.length, askDepth: asks.length, midpoint };
 }
-
-// =============================================================================
-// Action: Get Best Price
-// =============================================================================
 
 async function getBestPrice(tokenId: string, side: "buy" | "sell"): Promise<string | null> {
   const summary = await getOrderBookSummary(tokenId);
   return side === "buy" ? summary.bestAsk : summary.bestBid;
 }
 
-// =============================================================================
-// Action: Get Spread
-// =============================================================================
-
 async function getSpread(tokenId: string): Promise<{ spread: string | null; spreadPercent: string | null }> {
   const summary = await getOrderBookSummary(tokenId);
-  return { 
-    spread: summary.spread, 
-    spreadPercent: summary.spreadPercent 
-  };
+  return { spread: summary.spread, spreadPercent: summary.spreadPercent };
 }
-
-// =============================================================================
-// Action: Get All Markets (paginated)
-// =============================================================================
 
 async function getAllMarkets(limit = 100, offset = 0): Promise<MarketInfo[]> {
   const url = new URL(`${GAMMA_API_URL}/markets`);
@@ -554,16 +502,9 @@ async function getAllMarkets(limit = 100, offset = 0): Promise<MarketInfo[]> {
     headers: { "Accept": "application/json" },
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch markets: ${response.status}`);
-  }
-
+  if (!response.ok) throw new Error(`Failed to fetch markets: ${response.status}`);
   return await response.json();
 }
-
-// =============================================================================
-// Action: Get Price History
-// =============================================================================
 
 async function getPriceHistory(tokenId: string, interval = "1d"): Promise<unknown> {
   const url = new URL(`${CLOB_API_URL}/prices-history`);
@@ -574,61 +515,39 @@ async function getPriceHistory(tokenId: string, interval = "1d"): Promise<unknow
     headers: { "Accept": "application/json" },
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch price history: ${response.status}`);
-  }
-
+  if (!response.ok) throw new Error(`Failed to fetch price history: ${response.status}`);
   return await response.json();
 }
 
 // =============================================================================
-// Action: Check Trading Capability
+// Trading Capability & CLOB Credential Derivation
 // =============================================================================
 
 function checkTradingCapability(): { canTrade: boolean; reason?: string } {
   if (!getWalletPrivateKey()) {
-    return {
-      canTrade: false,
-      reason: "WALLET_PRIVATE_KEY not configured. Trading is disabled."
-    };
+    return { canTrade: false, reason: "WALLET_PRIVATE_KEY not configured. Trading is disabled." };
   }
-
   return { canTrade: true };
 }
 
-// =============================================================================
-// CLOB API Credential Derivation (from plugin-polymarket)
-// =============================================================================
-
 async function initializeClobCredentials(): Promise<boolean> {
   const pk = getWalletPrivateKey();
-  if (!pk) {
-    console.error("[initializeClobCredentials] No wallet private key configured");
-    return false;
-  }
+  if (!pk) return false;
 
   try {
     const wallet = new ethers.Wallet(pk);
     const derivedAddress = wallet.address;
 
-    // If user updated the secret, the derived wallet address will change.
-    // Reset cached API creds so we re-auth against CLOB with the new wallet.
     if (WALLET_ADDRESS && WALLET_ADDRESS.toLowerCase() !== derivedAddress.toLowerCase()) {
-      console.log("[initializeClobCredentials] Wallet changed; clearing cached CLOB credentials");
       CLOB_API_KEY = "";
       CLOB_API_SECRET = "";
       CLOB_PASSPHRASE = "";
     }
 
     WALLET_ADDRESS = derivedAddress;
-    console.log(`[initializeClobCredentials] Wallet address: ${WALLET_ADDRESS}`);
 
-    if (CLOB_API_KEY && CLOB_API_SECRET && CLOB_PASSPHRASE) {
-      console.log("[initializeClobCredentials] Already initialized");
-      return true;
-    }
+    if (CLOB_API_KEY && CLOB_API_SECRET && CLOB_PASSPHRASE) return true;
 
-    // Try L1 authentication (works for all wallets)
     return await createNewApiKey(wallet);
   } catch (error) {
     console.error("[initializeClobCredentials] Error:", error);
@@ -641,13 +560,7 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
     const timestamp = (await getClobServerTimeSeconds()) ?? Math.floor(Date.now() / 1000);
     const nonce = 0;
 
-    // L1 Authentication using EIP-712 typed data signature
-    const domain = {
-      name: "ClobAuthDomain",
-      version: "1",
-      chainId: CHAIN_ID,
-    };
-
+    const domain = { name: "ClobAuthDomain", version: "1", chainId: CHAIN_ID };
     const types = {
       ClobAuth: [
         { name: "address", type: "address" },
@@ -656,7 +569,6 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
         { name: "message", type: "string" },
       ],
     };
-
     const value = {
       address: wallet.address,
       timestamp: timestamp.toString(),
@@ -665,10 +577,7 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
     };
 
     const signature = await wallet.signTypedData(domain, types, value);
-    console.log("[createNewApiKey] Creating API key with EIP-712 signature...");
 
-    // L1 Auth requires BOTH headers AND body with the same params
-    // CRITICAL: Use UNDERSCORE style headers (POLY_ADDRESS per official docs)
     const l1Headers = {
       "Content-Type": "application/json",
       "POLY_ADDRESS": wallet.address.toLowerCase(),
@@ -677,63 +586,38 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
       "POLY_NONCE": nonce.toString(),
     };
 
-    // Try POST to create new API key (use proxy to bypass Cloudflare)
-    // CRITICAL: timestamp must be STRING in body to match headers (API requirement)
     const response = await fetchClobPreferDirect(`${CLOB_API_URL}/auth/api-key`, {
       method: "POST",
       headers: l1Headers,
       body: JSON.stringify({
         address: wallet.address.toLowerCase(),
-        timestamp: timestamp.toString(), // Must be string to match header
-        nonce: nonce.toString(), // Must be string to match header
+        timestamp: timestamp.toString(),
+        nonce: nonce.toString(),
         signature,
       }),
     });
 
     const responseText = await response.text();
-    console.log("[createNewApiKey] Response:", response.status, responseText);
-    console.log("[createNewApiKey] Headers sent:", Object.keys(l1Headers).join(", "));
+    console.log("[createNewApiKey] Response:", response.status);
 
     if (!response.ok) {
-      // If create fails (409 = already exists), try derive endpoint
-      if (response.status === 409 || response.status === 400) {
-        console.log("[createNewApiKey] Create failed, trying derive...");
-        return await deriveApiKey(wallet, timestamp, nonce, signature);
-      }
-      // For 401, might need different signature format
-      if (response.status === 401) {
-        console.log("[createNewApiKey] Auth failed, trying derive with fresh signature...");
+      if (response.status === 409 || response.status === 400 || response.status === 401) {
         return await deriveApiKey(wallet, timestamp, nonce, signature);
       }
       return false;
     }
 
-    // Check if response contains error field (API returns 200 with error JSON)
     let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      console.error("[createNewApiKey] Failed to parse response JSON");
-      return false;
-    }
+    try { data = JSON.parse(responseText); } catch { return false; }
 
-    // CRITICAL: Check for error in response body even if status is 200
-    if (data.error) {
-      console.error("[createNewApiKey] API returned error in body:", data.error);
-      console.log("[createNewApiKey] Falling back to derive endpoint...");
-      return await deriveApiKey(wallet, timestamp, nonce, signature);
-    }
-
-    if (!data.apiKey || !data.secret || !data.passphrase) {
-      console.error("[createNewApiKey] Response missing required fields:", Object.keys(data).join(", "));
+    if (data.error || !data.apiKey || !data.secret || !data.passphrase) {
       return await deriveApiKey(wallet, timestamp, nonce, signature);
     }
 
     CLOB_API_KEY = data.apiKey;
     CLOB_API_SECRET = data.secret;
     CLOB_PASSPHRASE = data.passphrase;
-    
-    console.log("[createNewApiKey] Successfully created new CLOB API credentials");
+    console.log("[createNewApiKey] Successfully created CLOB API credentials");
     return true;
   } catch (error) {
     console.error("[createNewApiKey] Error:", error);
@@ -743,16 +627,10 @@ async function createNewApiKey(wallet: ethers.Wallet): Promise<boolean> {
 
 async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: number, existingSignature?: string): Promise<boolean> {
   try {
-    // Use existing signature or create new one
     let signature = existingSignature;
     
     if (!signature) {
-      const domain = {
-        name: "ClobAuthDomain",
-        version: "1",
-        chainId: CHAIN_ID,
-      };
-
+      const domain = { name: "ClobAuthDomain", version: "1", chainId: CHAIN_ID };
       const types = {
         ClobAuth: [
           { name: "address", type: "address" },
@@ -761,19 +639,14 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
           { name: "message", type: "string" },
         ],
       };
-
-      const message = {
+      signature = await wallet.signTypedData(domain, types, {
         address: wallet.address,
         timestamp: timestamp.toString(),
         nonce,
         message: "This message attests that I control the given wallet",
-      };
-
-      signature = await wallet.signTypedData(domain, types, message);
+      });
     }
 
-    // L1 Headers for derive endpoint (GET request)
-    // CRITICAL: Use UNDERSCORE style headers (POLY_ADDRESS per official docs)
     const l1Headers = {
       "Content-Type": "application/json",
       "POLY_ADDRESS": wallet.address.toLowerCase(),
@@ -782,45 +655,23 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
       "POLY_NONCE": nonce.toString(),
     };
 
-    // Try GET first (standard derive) - use proxy to bypass Cloudflare
     const response = await fetchClobPreferDirect(`${CLOB_API_URL}/auth/derive-api-key`, {
       method: "GET",
       headers: l1Headers,
     });
 
     const responseText = await response.text();
-    console.log("[deriveApiKey] Response:", response.status, responseText);
-    console.log("[deriveApiKey] Headers sent:", Object.keys(l1Headers).join(", "));
+    console.log("[deriveApiKey] Response:", response.status);
 
-    if (!response.ok) {
-      console.error("[deriveApiKey] Failed - wallet may need to sign up on Polymarket.com first");
-      return false;
-    }
+    if (!response.ok) return false;
 
-    // Check if response contains error field (API returns 200 with error JSON)
     let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      console.error("[deriveApiKey] Failed to parse response JSON");
-      return false;
-    }
-
-    // CRITICAL: Check for error in response body even if status is 200
-    if (data.error) {
-      console.error("[deriveApiKey] API returned error in body:", data.error);
-      return false;
-    }
-
-    if (!data.apiKey || !data.secret || !data.passphrase) {
-      console.error("[deriveApiKey] Response missing required fields:", Object.keys(data).join(", "));
-      return false;
-    }
+    try { data = JSON.parse(responseText); } catch { return false; }
+    if (data.error || !data.apiKey || !data.secret || !data.passphrase) return false;
 
     CLOB_API_KEY = data.apiKey;
     CLOB_API_SECRET = data.secret;
     CLOB_PASSPHRASE = data.passphrase;
-    
     console.log("[deriveApiKey] Successfully derived CLOB API credentials");
     return true;
   } catch (error) {
@@ -829,18 +680,10 @@ async function deriveApiKey(wallet: ethers.Wallet, timestamp: number, nonce: num
   }
 }
 
-// Browser-like headers to bypass Cloudflare protection
+// Browser-like headers to bypass Cloudflare
 const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   "Accept-Language": "en-US,en;q=0.9",
-  "Cache-Control": "no-cache",
-  "Pragma": "no-cache",
-  "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-  "Sec-Ch-Ua-Mobile": "?0",
-  "Sec-Ch-Ua-Platform": '"macOS"',
-  "Sec-Fetch-Dest": "empty",
-  "Sec-Fetch-Mode": "cors",
-  "Sec-Fetch-Site": "cross-site",
   "Origin": "https://polymarket.com",
   "Referer": "https://polymarket.com/",
 };
@@ -848,7 +691,8 @@ const BROWSER_HEADERS = {
 async function createClobAuthHeaders(
   method: string,
   requestPath: string,
-  body: string = ""
+  body: string = "",
+  includeBuilderAttribution = false
 ): Promise<Record<string, string>> {
   const initialized = await initializeClobCredentials();
   if (!initialized || !CLOB_API_KEY || !CLOB_API_SECRET || !CLOB_PASSPHRASE || !WALLET_ADDRESS) {
@@ -858,11 +702,6 @@ async function createClobAuthHeaders(
   const timestamp = await getClobTimestampString();
   const signature = await generateL2Signature(CLOB_API_SECRET, timestamp, method, requestPath, body);
 
-  // Use BUILDER_ADDRESS as proxy wallet (1/1 Safe multisig that holds funds)
-  // The signer (WALLET_ADDRESS) signs for the proxy wallet
-  const proxyAddress = BUILDER_ADDRESS || "";
-
-  // L2 uses hyphen-style headers (CLOB standard)
   const headers: Record<string, string> = {
     ...BROWSER_HEADERS,
     "POLY-ADDRESS": WALLET_ADDRESS,
@@ -874,39 +713,189 @@ async function createClobAuthHeaders(
     "Accept": "application/json",
   };
 
-  // Debug: print header names only (no values)
-  console.log(`[createClobAuthHeaders] Header names: ${Object.keys(headers).join(", ")}`);
-
-  // Add proxy address header ONLY for trading endpoints.
-  // For account endpoints (e.g. /balance-allowance), sending a proxy header can cause auth mismatches.
-  const shouldIncludeProxyHeader =
+  // Add proxy address for trading endpoints
+  const isTradingEndpoint =
     requestPath.startsWith("/order") ||
     requestPath.startsWith("/orders") ||
     requestPath.startsWith("/cancel") ||
     requestPath.startsWith("/redeem") ||
     requestPath.startsWith("/trades");
 
-  if (
-    shouldIncludeProxyHeader &&
-    proxyAddress &&
-    proxyAddress.toLowerCase() !== WALLET_ADDRESS.toLowerCase()
-  ) {
+  const proxyAddress = BUILDER_ADDRESS || "";
+  if (isTradingEndpoint && proxyAddress && proxyAddress.toLowerCase() !== WALLET_ADDRESS.toLowerCase()) {
     headers["POLY-PROXY-ADDRESS"] = proxyAddress;
     console.log(`[createClobAuthHeaders] Using proxy wallet: ${proxyAddress}`);
+  }
+
+  // *** BUILDER ORDER ATTRIBUTION ***
+  // Add builder HMAC headers for order placement so trades are credited to our builder account
+  if (includeBuilderAttribution || isTradingEndpoint) {
+    const builderHeaders = await generateBuilderAttributionHeaders(method, requestPath, body);
+    Object.assign(headers, builderHeaders);
+    console.log("[createClobAuthHeaders] Added builder attribution headers");
   }
 
   return headers;
 }
 
 // =============================================================================
-// Trading Actions (BUY / SELL / REDEEM)
+// EIP-712 Order Signing for CTF Exchange
+// =============================================================================
+
+// Order side enum matching the contract
+const ORDER_SIDE = { BUY: 0, SELL: 1 } as const;
+
+// EIP-712 domain for CTF Exchange
+function getExchangeDomain(negRisk: boolean) {
+  return {
+    name: "ClobExchange",
+    version: "1",
+    chainId: CHAIN_ID,
+    verifyingContract: negRisk ? NEG_RISK_CTF_EXCHANGE_ADDRESS : CTF_EXCHANGE_ADDRESS,
+  };
+}
+
+// EIP-712 types for order
+const ORDER_TYPES = {
+  Order: [
+    { name: "salt", type: "uint256" },
+    { name: "maker", type: "address" },
+    { name: "signer", type: "address" },
+    { name: "taker", type: "address" },
+    { name: "tokenId", type: "uint256" },
+    { name: "makerAmount", type: "uint256" },
+    { name: "takerAmount", type: "uint256" },
+    { name: "expiration", type: "uint256" },
+    { name: "nonce", type: "uint256" },
+    { name: "feeRateBps", type: "uint256" },
+    { name: "side", type: "uint8" },
+    { name: "signatureType", type: "uint8" },
+  ],
+};
+
+// Calculate maker and taker amounts from price and size
+// For BUY: makerAmount = size * price (USDC), takerAmount = size (shares)
+// For SELL: makerAmount = size (shares), takerAmount = size * price (USDC)
+function calculateOrderAmounts(
+  side: "BUY" | "SELL",
+  size: number,
+  price: number,
+  tickSize: string
+): { makerAmount: string; takerAmount: string } {
+  // USDC has 6 decimals on Polygon
+  const USDC_DECIMALS = 6;
+  const SHARE_DECIMALS = 6; // CTF tokens also use 6 decimals
+
+  // Round price to tick size
+  const tick = parseFloat(tickSize);
+  const roundedPrice = Math.round(price / tick) * tick;
+
+  if (side === "BUY") {
+    // Buying shares: pay USDC, receive shares
+    const usdcAmount = size * roundedPrice;
+    const makerAmount = BigInt(Math.round(usdcAmount * (10 ** USDC_DECIMALS)));
+    const takerAmount = BigInt(Math.round(size * (10 ** SHARE_DECIMALS)));
+    return { makerAmount: makerAmount.toString(), takerAmount: takerAmount.toString() };
+  } else {
+    // Selling shares: pay shares, receive USDC
+    const usdcAmount = size * roundedPrice;
+    const makerAmount = BigInt(Math.round(size * (10 ** SHARE_DECIMALS)));
+    const takerAmount = BigInt(Math.round(usdcAmount * (10 ** USDC_DECIMALS)));
+    return { makerAmount: makerAmount.toString(), takerAmount: takerAmount.toString() };
+  }
+}
+
+function generateRandomSalt(): string {
+  const randomBytes = new Uint8Array(32);
+  crypto.getRandomValues(randomBytes);
+  return BigInt("0x" + Array.from(randomBytes).map(b => b.toString(16).padStart(2, "0")).join("")).toString();
+}
+
+interface SignedOrder {
+  salt: string;
+  maker: string;
+  signer: string;
+  taker: string;
+  tokenId: string;
+  makerAmount: string;
+  takerAmount: string;
+  expiration: string;
+  nonce: string;
+  feeRateBps: string;
+  side: number;
+  signatureType: number;
+  signature: string;
+}
+
+async function createSignedOrder(
+  wallet: ethers.Wallet,
+  tokenId: string,
+  price: number,
+  size: number,
+  side: "BUY" | "SELL",
+  tickSize: string,
+  negRisk: boolean,
+  funderAddress?: string
+): Promise<SignedOrder> {
+  const salt = generateRandomSalt();
+  const { makerAmount, takerAmount } = calculateOrderAmounts(side, size, price, tickSize);
+  
+  // Maker is the funder (proxy wallet if set, otherwise signer)
+  const maker = funderAddress || wallet.address;
+  const signer = wallet.address;
+  const taker = "0x0000000000000000000000000000000000000000"; // open order
+  const expiration = "0"; // no expiration (GTC)
+  const nonce = "0";
+  const feeRateBps = "0"; // Polymarket sets fees server-side
+  const signatureType = funderAddress && funderAddress.toLowerCase() !== wallet.address.toLowerCase() 
+    ? 2  // POLY_GNOSIS_SAFE (proxy wallet)
+    : 0; // EOA
+
+  const orderData = {
+    salt,
+    maker,
+    signer,
+    taker,
+    tokenId,
+    makerAmount,
+    takerAmount,
+    expiration,
+    nonce,
+    feeRateBps,
+    side: side === "BUY" ? ORDER_SIDE.BUY : ORDER_SIDE.SELL,
+    signatureType,
+  };
+
+  const domain = getExchangeDomain(negRisk);
+  const signature = await wallet.signTypedData(domain, ORDER_TYPES, orderData);
+
+  console.log(`[createSignedOrder] Created ${side} order: price=${price}, size=${size}, tokenId=${tokenId.slice(0, 20)}...`);
+  console.log(`[createSignedOrder] maker=${maker}, signer=${signer}, signatureType=${signatureType}, negRisk=${negRisk}`);
+
+  return {
+    ...orderData,
+    salt: orderData.salt.toString(),
+    tokenId: orderData.tokenId.toString(),
+    makerAmount: orderData.makerAmount.toString(),
+    takerAmount: orderData.takerAmount.toString(),
+    expiration: orderData.expiration.toString(),
+    nonce: orderData.nonce.toString(),
+    feeRateBps: orderData.feeRateBps.toString(),
+    signature,
+  };
+}
+
+// =============================================================================
+// Trading Actions
 // =============================================================================
 
 interface TradeParams {
   tokenId: string;
-  amount: number; // Amount of shares
-  price?: number; // Limit price (0-1), if not provided uses market price
+  amount: number;
+  price?: number;
   side: "BUY" | "SELL";
+  tickSize?: string;
+  negRisk?: boolean;
 }
 
 interface OrderResult {
@@ -919,13 +908,9 @@ interface OrderResult {
 async function placeOrder(params: TradeParams): Promise<OrderResult> {
   console.log(`[placeOrder] Placing ${params.side} order:`, params);
   
-  // Initialize credentials
   const initialized = await initializeClobCredentials();
   if (!initialized) {
-    return {
-      status: "error",
-      message: "Failed to initialize trading credentials. Please check your wallet private key.",
-    };
+    return { status: "error", message: "Failed to initialize trading credentials." };
   }
 
   try {
@@ -938,37 +923,44 @@ async function placeOrder(params: TradeParams): Promise<OrderResult> {
         : parseFloat(summary.bestBid || "0.5");
     }
 
-    // Build order payload following Polymarket CLOB API spec
-    const orderPayload = {
-      tokenId: params.tokenId,
-      price: price.toString(),
-      size: params.amount.toString(),
-      side: params.side,
-      type: "GTC", // Good Till Cancelled
-      feeRateBps: "100", // 1% fee
-    };
+    const tickSize = params.tickSize || "0.01";
+    const negRisk = params.negRisk ?? false;
 
-    // Sign the order
+    // Create properly signed EIP-712 order
     const pk = getWalletPrivateKey();
-    if (!pk) {
-      return { status: "error", message: "Wallet private key not configured" };
-    }
+    if (!pk) return { status: "error", message: "Wallet private key not configured" };
 
     const wallet = new ethers.Wallet(pk);
-    const orderHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(orderPayload)));
-    const orderSignature = await wallet.signMessage(ethers.getBytes(orderHash));
+    
+    // Use BUILDER_ADDRESS as funder (proxy wallet) if different from signer
+    const funderAddress = BUILDER_ADDRESS && BUILDER_ADDRESS.toLowerCase() !== wallet.address.toLowerCase()
+      ? BUILDER_ADDRESS
+      : undefined;
 
-    const signedOrder = {
-      ...orderPayload,
-      maker: WALLET_ADDRESS,
-      signature: orderSignature,
+    const signedOrder = await createSignedOrder(
+      wallet,
+      params.tokenId,
+      price,
+      params.amount,
+      params.side,
+      tickSize,
+      negRisk,
+      funderAddress
+    );
+
+    // Build request with order type
+    const orderPayload = {
+      order: signedOrder,
+      orderType: "GTC", // Good Till Cancelled
+      owner: funderAddress || wallet.address,
     };
 
     const requestPath = "/order";
-    const bodyString = JSON.stringify(signedOrder);
-    const headers = await createClobAuthHeaders("POST", requestPath, bodyString);
+    const bodyString = JSON.stringify(orderPayload);
+    
+    // Create headers with builder attribution
+    const headers = await createClobAuthHeaders("POST", requestPath, bodyString, true);
 
-    // Use proxy for trading requests to bypass Cloudflare
     const response = await fetchWithProxy(`${CLOB_API_URL}${requestPath}`, {
       method: "POST",
       headers,
@@ -979,27 +971,163 @@ async function placeOrder(params: TradeParams): Promise<OrderResult> {
     console.log(`[placeOrder] Response: ${response.status}`, responseText);
 
     if (!response.ok) {
-      return {
-        status: "error",
-        message: `Order failed: ${response.status} - ${responseText}`,
-      };
+      return { status: "error", message: `Order failed: ${response.status} - ${responseText}` };
     }
 
     const orderData = JSON.parse(responseText);
     return {
       orderId: orderData.orderID || orderData.id,
-      status: "success",
+      status: orderData.status || "success",
       message: `${params.side} order placed successfully`,
       details: orderData,
     };
   } catch (error) {
     console.error("[placeOrder] Error:", error);
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : "Unknown error placing order",
-    };
+    return { status: "error", message: error instanceof Error ? error.message : "Unknown error" };
   }
 }
+
+// =============================================================================
+// Relayer Client - Gasless Transactions
+// =============================================================================
+
+interface RelayerTransaction {
+  to: string;
+  data: string;
+  value?: string;
+}
+
+interface RelayerResponse {
+  success: boolean;
+  transactionHash?: string;
+  status?: string;
+  error?: string;
+}
+
+async function executeRelayerTransaction(
+  transactions: RelayerTransaction[],
+  description: string
+): Promise<RelayerResponse> {
+  console.log(`[relayer] Executing ${transactions.length} transaction(s): ${description}`);
+
+  if (!BUILDER_API_KEY || !BUILDER_SECRET || !BUILDER_PASSPHRASE) {
+    return { success: false, error: "Builder credentials not configured for relayer" };
+  }
+
+  try {
+    const requestPath = "/execute";
+    const body = JSON.stringify({
+      transactions,
+      description,
+    });
+
+    // Relayer uses builder auth headers
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = await generateL2Signature(BUILDER_SECRET, timestamp, "POST", requestPath, body);
+
+    const headers: Record<string, string> = {
+      "POLY-ADDRESS": BUILDER_ADDRESS,
+      "POLY-SIGNATURE": signature,
+      "POLY-TIMESTAMP": timestamp,
+      "POLY-API-KEY": BUILDER_API_KEY,
+      "POLY-PASSPHRASE": BUILDER_PASSPHRASE,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    };
+
+    const response = await fetch(`${RELAYER_URL}${requestPath}`, {
+      method: "POST",
+      headers,
+      body,
+    });
+
+    const responseText = await response.text();
+    console.log(`[relayer] Response: ${response.status}`, responseText);
+
+    if (!response.ok) {
+      return { success: false, error: `Relayer failed: ${response.status} - ${responseText}` };
+    }
+
+    const data = JSON.parse(responseText);
+    return {
+      success: true,
+      transactionHash: data.transactionHash || data.hash,
+      status: data.status,
+    };
+  } catch (error) {
+    console.error("[relayer] Error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+// Deploy a proxy wallet for a user (gasless)
+async function deployProxyWallet(userAddress: string): Promise<RelayerResponse> {
+  console.log(`[relayer] Deploying proxy wallet for: ${userAddress}`);
+  
+  // The relayer handles proxy wallet deployment automatically
+  // We just need to call the deploy endpoint with builder auth
+  const requestPath = "/deploy";
+  const body = JSON.stringify({ owner: userAddress });
+  
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const signature = await generateL2Signature(BUILDER_SECRET, timestamp, "POST", requestPath, body);
+
+  const headers: Record<string, string> = {
+    "POLY-ADDRESS": BUILDER_ADDRESS,
+    "POLY-SIGNATURE": signature,
+    "POLY-TIMESTAMP": timestamp,
+    "POLY-API-KEY": BUILDER_API_KEY,
+    "POLY-PASSPHRASE": BUILDER_PASSPHRASE,
+    "Content-Type": "application/json",
+  };
+
+  try {
+    const response = await fetch(`${RELAYER_URL}${requestPath}`, {
+      method: "POST",
+      headers,
+      body,
+    });
+
+    const responseText = await response.text();
+    console.log(`[relayer-deploy] Response: ${response.status}`, responseText);
+
+    if (!response.ok) {
+      return { success: false, error: `Deploy failed: ${response.status} - ${responseText}` };
+    }
+
+    const data = JSON.parse(responseText);
+    return {
+      success: true,
+      transactionHash: data.transactionHash || data.hash,
+      status: data.proxyAddress || data.address || "deployed",
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+// Approve USDC spending for the exchange (gasless via relayer)
+async function approveExchangeSpending(negRisk = false): Promise<RelayerResponse> {
+  const exchangeAddress = negRisk ? NEG_RISK_CTF_EXCHANGE_ADDRESS : CTF_EXCHANGE_ADDRESS;
+  const maxApproval = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+  
+  // ERC20 approve(address spender, uint256 amount) function selector
+  const approveData = ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "uint256"],
+    [exchangeAddress, maxApproval]
+  );
+  const functionSelector = "0x095ea7b3"; // approve(address,uint256)
+  const calldata = functionSelector + approveData.slice(2);
+
+  return await executeRelayerTransaction(
+    [{ to: USDC_ADDRESS, data: calldata, value: "0" }],
+    `Approve USDC spending for ${negRisk ? "NegRisk " : ""}CTF Exchange`
+  );
+}
+
+// =============================================================================
+// Wallet & Balance
+// =============================================================================
 
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
@@ -1010,10 +1138,10 @@ async function tryRpcProvider(): Promise<ethers.JsonRpcProvider> {
   for (const url of POLYGON_RPCS) {
     try {
       const provider = new ethers.JsonRpcProvider(url);
-      await provider.getBlockNumber(); // quick connectivity test
+      await provider.getBlockNumber();
       return provider;
     } catch {
-      console.warn(`[tryRpcProvider] ${url} failed, trying next...`);
+      console.warn(`[tryRpcProvider] ${url} failed`);
     }
   }
   throw new Error("All Polygon RPCs failed");
@@ -1026,12 +1154,10 @@ async function fetchOnchainBalances(
   try {
     const maticWei = await provider.getBalance(address);
     const matic = ethers.formatEther(maticWei);
-
-    const usdc = new ethers.Contract(USDC_POLYGON_ADDRESS, ERC20_ABI, provider);
+    const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
     const usdcBal = await usdc.balanceOf(address);
     const decimals = await usdc.decimals();
     const usdcFormatted = ethers.formatUnits(usdcBal, decimals);
-
     return { usdc: usdcFormatted, matic };
   } catch (e) {
     console.error("[fetchOnchainBalances] Error:", address, e);
@@ -1039,143 +1165,21 @@ async function fetchOnchainBalances(
   }
 }
 
-// ==================== DIAGNOSTICS ====================
-interface DiagResult {
-  l1_derive_ok: boolean;
-  l1_derive_status?: number;
-  l1_derive_error?: string;
-  balance_direct_status?: number;
-  balance_direct_ok: boolean;
-  balance_direct_hasError: boolean;
-  balance_proxy_status?: number;
-  balance_proxy_ok: boolean;
-  balance_proxy_hasError: boolean;
-  headers_sent: string[];
-  wallet_address_masked: string;
-  builder_address_masked: string;
-}
-
-async function runDiagnostics(): Promise<DiagResult> {
-  const result: DiagResult = {
-    l1_derive_ok: false,
-    balance_direct_ok: false,
-    balance_direct_hasError: false,
-    balance_proxy_ok: false,
-    balance_proxy_hasError: false,
-    headers_sent: [],
-    wallet_address_masked: WALLET_ADDRESS ? `${WALLET_ADDRESS.slice(0, 6)}...${WALLET_ADDRESS.slice(-4)}` : "not set",
-    builder_address_masked: BUILDER_ADDRESS ? `${BUILDER_ADDRESS.slice(0, 6)}...${BUILDER_ADDRESS.slice(-4)}` : "not set",
-  };
-
-  // Step 1: Test L1 deriveApiKey
-  try {
-    // Clear cached creds to force fresh derivation
-    CLOB_API_KEY = "";
-    CLOB_API_SECRET = "";
-    CLOB_PASSPHRASE = "";
-    const initialized = await initializeClobCredentials();
-    result.l1_derive_ok = initialized && !!CLOB_API_KEY;
-    result.l1_derive_status = initialized ? 200 : 0;
-  } catch (e) {
-    result.l1_derive_ok = false;
-    result.l1_derive_error = e instanceof Error ? e.message.slice(0, 100) : "unknown";
-  }
-
-  // Step 2: Test balance-allowance direct
-  try {
-    const requestPath = "/balance-allowance?asset_type=0";
-    const headers = await createClobAuthHeaders("GET", requestPath);
-    result.headers_sent = Object.keys(headers);
-    const url = `${CLOB_API_URL}${requestPath}`;
-    const res = await fetch(url, { method: "GET", headers });
-    const text = await res.text();
-    result.balance_direct_status = res.status;
-    result.balance_direct_ok = res.ok;
-    if (res.ok) {
-      try {
-        const data = JSON.parse(text);
-        result.balance_direct_hasError = !!data?.error;
-      } catch {
-        result.balance_direct_hasError = true;
-      }
-    }
-  } catch (e) {
-    result.balance_direct_ok = false;
-    result.balance_direct_hasError = true;
-  }
-
-  // Step 3: Test balance-allowance via proxy
-  try {
-    const requestPath = "/balance-allowance?asset_type=0";
-    const headers = await createClobAuthHeaders("GET", requestPath);
-    const url = `${CLOB_API_URL}${requestPath}`;
-    const res = await fetchWithProxy(url, { method: "GET", headers });
-    const text = await res.text();
-    result.balance_proxy_status = res.status;
-    result.balance_proxy_ok = res.ok;
-    if (res.ok) {
-      try {
-        const data = JSON.parse(text);
-        result.balance_proxy_hasError = !!data?.error;
-      } catch {
-        result.balance_proxy_hasError = true;
-      }
-    }
-  } catch (e) {
-    result.balance_proxy_ok = false;
-    result.balance_proxy_hasError = true;
-  }
-
-  return result;
-}
-
-function formatDiagForChat(diag: DiagResult): string {
-  const lines: string[] = [
-    `🔧 **Polymarket Diagnostics**`,
-    ``,
-    `**Wallet:** ${diag.wallet_address_masked}`,
-    `**Builder:** ${diag.builder_address_masked}`,
-    ``,
-    `**L1 (deriveApiKey):** ${diag.l1_derive_ok ? "✅ OK" : "❌ FAIL"}${diag.l1_derive_error ? ` (${diag.l1_derive_error})` : ""}`,
-    ``,
-    `**L2 balance-allowance (direct):**`,
-    `  Status: ${diag.balance_direct_status ?? "N/A"}`,
-    `  OK: ${diag.balance_direct_ok ? "✅" : "❌"}`,
-    `  Has error field: ${diag.balance_direct_hasError ? "⚠️ YES" : "✅ NO"}`,
-    ``,
-    `**L2 balance-allowance (proxy):**`,
-    `  Status: ${diag.balance_proxy_status ?? "N/A"}`,
-    `  OK: ${diag.balance_proxy_ok ? "✅" : "❌"}`,
-    `  Has error field: ${diag.balance_proxy_hasError ? "⚠️ YES" : "✅ NO"}`,
-    ``,
-    `**Headers sent:** ${diag.headers_sent.filter(h => h.startsWith("POLY")).join(", ")}`,
-  ];
-  return lines.join("\n");
-}
-
 async function getWalletBalance(): Promise<{
   address: string;
-  balance: string; // CLOB balance (collateral)
+  balance: string;
   positions: unknown[];
   onchain?: { usdc: string; matic: string };
   builder?: { address: string; onchain?: { usdc: string; matic: string } };
   clob?: unknown;
 }> {
-  console.log("[getWalletBalance] Fetching wallet info");
-
   const initialized = await initializeClobCredentials();
-  if (!initialized) {
-    return { address: "", balance: "0", positions: [] };
-  }
+  if (!initialized) return { address: "", balance: "0", positions: [] };
 
-  // 1) CLOB collateral balance (what Polymarket uses for trading)
   let clobBalance = "0";
   let clobRaw: unknown = null;
   try {
-    // CLOB API requires asset_type for balance-allowance.
-    // 0 = collateral (USDC), 1 = conditional token (requires token_id)
     const requestPath = "/balance-allowance?asset_type=0";
-
     const doRequest = async (viaProxy: boolean) => {
       const headers = await createClobAuthHeaders("GET", requestPath);
       const url = `${CLOB_API_URL}${requestPath}`;
@@ -1186,12 +1190,9 @@ async function getWalletBalance(): Promise<{
       return { res, text };
     };
 
-    // 1) Try direct
     let { res, text } = await doRequest(false);
 
-    // 2) If 401, re-init creds once and retry direct
     if (!res.ok && res.status === 401) {
-      console.warn("[getWalletBalance] balance-allowance 401; clearing creds + re-initializing...");
       CLOB_API_KEY = "";
       CLOB_API_SECRET = "";
       CLOB_PASSPHRASE = "";
@@ -1199,43 +1200,23 @@ async function getWalletBalance(): Promise<{
       ({ res, text } = await doRequest(false));
     }
 
-    // 3) If still failing with auth-like or block-like status, try proxy as last resort
-    if (!res.ok && (res.status === 401 || res.status === 403 || res.status === 429 || res.status === 503)) {
-      console.warn(`[getWalletBalance] balance-allowance direct failed (${res.status}); trying proxy...`);
+    if (!res.ok && [401, 403, 429, 503].includes(res.status)) {
       ({ res, text } = await doRequest(true));
-      // Log proxy result for debugging
-      console.log(`[getWalletBalance] balance-allowance proxy result: status=${res.status}, body=${text.slice(0, 200)}`);
     }
 
-    if (!res.ok) {
-      console.error("[getWalletBalance] CLOB balance-allowance failed:", res.status, text.slice(0, 200));
-    } else {
+    if (res.ok) {
       const data = JSON.parse(text);
-      // Check if response is 200 but contains an error field or lacks balance fields
       const hasError = data?.error !== undefined;
-      const hasBalance = data?.balance !== undefined || data?.availableBalance !== undefined || data?.available !== undefined || data?.collateral !== undefined;
-      
-      if (hasError || !hasBalance) {
-        console.error(`[getWalletBalance] balance-allowance 200 but invalid: hasError=${hasError}, hasBalance=${hasBalance}, body=${text.slice(0, 200)}`);
-        // Treat as failure - don't populate clobBalance
-      } else {
+      const hasBalance = data?.balance !== undefined || data?.availableBalance !== undefined;
+      if (!hasError && hasBalance) {
         clobRaw = data;
-        // Determine which field was used for balance
-        const balanceField = data?.balance !== undefined ? "balance"
-          : data?.availableBalance !== undefined ? "availableBalance"
-          : data?.available !== undefined ? "available"
-          : "collateral";
-        clobBalance = String(
-          data?.balance ?? data?.availableBalance ?? data?.available ?? data?.collateral ?? "0"
-        );
-        console.log(`[getWalletBalance] balance-allowance success: field=${balanceField}, value=${clobBalance}`);
+        clobBalance = String(data?.balance ?? data?.availableBalance ?? data?.available ?? data?.collateral ?? "0");
       }
     }
   } catch (error) {
-    console.error("[getWalletBalance] CLOB balance-allowance error:", error);
+    console.error("[getWalletBalance] CLOB balance error:", error);
   }
 
-  // 2) Positions (public data-api; useful even if CLOB endpoint changes)
   let positions: unknown[] = [];
   try {
     const resp = await fetch(`https://data-api.polymarket.com/positions?user=${WALLET_ADDRESS}`, {
@@ -1245,118 +1226,67 @@ async function getWalletBalance(): Promise<{
       const data = await resp.json();
       positions = Array.isArray(data) ? data : (data?.positions ?? []);
     }
-  } catch (e) {
-    console.error("[getWalletBalance] Positions fetch error:", e);
-  }
+  } catch { /* ignore */ }
 
-  // 3) On-chain balances: show BOTH signing wallet and (if different) builder address
   let onchain: { usdc: string; matic: string } | undefined;
   let builderOnchain: { usdc: string; matic: string } | undefined;
 
   try {
     const provider = await tryRpcProvider();
-
-    const normalizedBuilder = (BUILDER_ADDRESS || "").trim();
-    const shouldCheckBuilder =
-      normalizedBuilder && normalizedBuilder.toLowerCase() !== WALLET_ADDRESS.toLowerCase();
-
-    // Sequential calls to avoid batching issues on some RPCs
+    const shouldCheckBuilder = BUILDER_ADDRESS && BUILDER_ADDRESS.toLowerCase() !== WALLET_ADDRESS.toLowerCase();
     onchain = await fetchOnchainBalances(provider, WALLET_ADDRESS);
-    builderOnchain = shouldCheckBuilder ? await fetchOnchainBalances(provider, normalizedBuilder) : undefined;
-  } catch (e) {
-    console.error("[getWalletBalance] On-chain balance fetch error:", e);
-  }
+    builderOnchain = shouldCheckBuilder ? await fetchOnchainBalances(provider, BUILDER_ADDRESS) : undefined;
+  } catch { /* ignore */ }
 
   return {
     address: WALLET_ADDRESS,
     balance: clobBalance,
     positions,
     onchain,
-    builder:
-      (BUILDER_ADDRESS || "").trim() && (BUILDER_ADDRESS || "").trim().toLowerCase() !== WALLET_ADDRESS.toLowerCase()
-        ? { address: (BUILDER_ADDRESS || "").trim(), onchain: builderOnchain }
-        : undefined,
+    builder: BUILDER_ADDRESS && BUILDER_ADDRESS.toLowerCase() !== WALLET_ADDRESS.toLowerCase()
+      ? { address: BUILDER_ADDRESS, onchain: builderOnchain }
+      : undefined,
     clob: clobRaw ?? undefined,
   };
 }
 
 async function getOpenOrders(): Promise<unknown[]> {
-  console.log("[getOpenOrders] Fetching open orders");
-  
   const initialized = await initializeClobCredentials();
-  if (!initialized) {
-    return [];
-  }
+  if (!initialized) return [];
 
   try {
     const requestPath = "/orders";
     const headers = await createClobAuthHeaders("GET", requestPath);
-
-    const response = await fetch(`${CLOB_API_URL}${requestPath}`, {
-      method: "GET",
-      headers,
-    });
-
-    if (!response.ok) {
-      console.error("[getOpenOrders] Failed:", response.status);
-      return [];
-    }
-
+    const response = await fetch(`${CLOB_API_URL}${requestPath}`, { method: "GET", headers });
+    if (!response.ok) return [];
     return await response.json();
-  } catch (error) {
-    console.error("[getOpenOrders] Error:", error);
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function cancelOrder(orderId: string): Promise<{ success: boolean; message: string }> {
-  console.log(`[cancelOrder] Cancelling order: ${orderId}`);
-  
   const initialized = await initializeClobCredentials();
-  if (!initialized) {
-    return { success: false, message: "Failed to initialize credentials" };
-  }
+  if (!initialized) return { success: false, message: "Failed to initialize credentials" };
 
   try {
     const requestPath = `/order/${orderId}`;
     const headers = await createClobAuthHeaders("DELETE", requestPath);
-
-    const response = await fetch(`${CLOB_API_URL}${requestPath}`, {
-      method: "DELETE",
-      headers,
-    });
-
-    if (!response.ok) {
-      return { success: false, message: `Failed to cancel: ${response.status}` };
-    }
-
+    const response = await fetch(`${CLOB_API_URL}${requestPath}`, { method: "DELETE", headers });
+    if (!response.ok) return { success: false, message: `Failed to cancel: ${response.status}` };
     return { success: true, message: "Order cancelled successfully" };
   } catch (error) {
-    console.error("[cancelOrder] Error:", error);
     return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
 async function redeemWinnings(conditionId: string): Promise<{ success: boolean; message: string; txHash?: string }> {
-  console.log(`[redeemWinnings] Redeeming for condition: ${conditionId}`);
-  
   const initialized = await initializeClobCredentials();
-  if (!initialized) {
-    return { success: false, message: "Failed to initialize credentials" };
-  }
+  if (!initialized) return { success: false, message: "Failed to initialize credentials" };
 
   try {
-    // Get market info to check if resolved
     const market = await getMarketDetails(conditionId);
-    if (!market) {
-      return { success: false, message: "Market not found" };
-    }
+    if (!market) return { success: false, message: "Market not found" };
+    if (!market.closed) return { success: false, message: "Market not yet resolved." };
 
-    if (!market.closed) {
-      return { success: false, message: "Market is not yet resolved. Cannot redeem." };
-    }
-
-    // Call redeem endpoint
     const requestPath = "/redeem";
     const bodyPayload = { conditionId };
     const bodyString = JSON.stringify(bodyPayload);
@@ -1369,35 +1299,108 @@ async function redeemWinnings(conditionId: string): Promise<{ success: boolean; 
     });
 
     const responseText = await response.text();
-    console.log(`[redeemWinnings] Response: ${response.status}`, responseText);
-
-    if (!response.ok) {
-      return { success: false, message: `Redeem failed: ${responseText}` };
-    }
+    if (!response.ok) return { success: false, message: `Redeem failed: ${responseText}` };
 
     const data = JSON.parse(responseText);
-    return {
-      success: true,
-      message: "Winnings redeemed successfully!",
-      txHash: data.transactionHash,
-    };
+    return { success: true, message: "Winnings redeemed!", txHash: data.transactionHash };
   } catch (error) {
-    console.error("[redeemWinnings] Error:", error);
     return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
+// =============================================================================
+// Diagnostics
+// =============================================================================
+
+interface DiagResult {
+  l1_derive_ok: boolean;
+  l1_derive_status?: number;
+  l1_derive_error?: string;
+  balance_direct_status?: number;
+  balance_direct_ok: boolean;
+  balance_proxy_status?: number;
+  balance_proxy_ok: boolean;
+  builder_attribution_configured: boolean;
+  relayer_available: boolean;
+  headers_sent: string[];
+  wallet_address_masked: string;
+  builder_address_masked: string;
+}
+
+async function runDiagnostics(): Promise<DiagResult> {
+  const result: DiagResult = {
+    l1_derive_ok: false,
+    balance_direct_ok: false,
+    balance_proxy_ok: false,
+    builder_attribution_configured: !!(BUILDER_API_KEY && BUILDER_SECRET && BUILDER_PASSPHRASE),
+    relayer_available: !!(BUILDER_API_KEY && BUILDER_SECRET),
+    headers_sent: [],
+    wallet_address_masked: WALLET_ADDRESS ? `${WALLET_ADDRESS.slice(0, 6)}...${WALLET_ADDRESS.slice(-4)}` : "not set",
+    builder_address_masked: BUILDER_ADDRESS ? `${BUILDER_ADDRESS.slice(0, 6)}...${BUILDER_ADDRESS.slice(-4)}` : "not set",
+  };
+
+  try {
+    CLOB_API_KEY = "";
+    CLOB_API_SECRET = "";
+    CLOB_PASSPHRASE = "";
+    const initialized = await initializeClobCredentials();
+    result.l1_derive_ok = initialized && !!CLOB_API_KEY;
+    result.l1_derive_status = initialized ? 200 : 0;
+  } catch (e) {
+    result.l1_derive_error = e instanceof Error ? e.message.slice(0, 100) : "unknown";
+  }
+
+  try {
+    const requestPath = "/balance-allowance?asset_type=0";
+    const headers = await createClobAuthHeaders("GET", requestPath);
+    result.headers_sent = Object.keys(headers);
+    const res = await fetch(`${CLOB_API_URL}${requestPath}`, { method: "GET", headers });
+    result.balance_direct_status = res.status;
+    result.balance_direct_ok = res.ok;
+  } catch { /* ignore */ }
+
+  try {
+    const requestPath = "/balance-allowance?asset_type=0";
+    const headers = await createClobAuthHeaders("GET", requestPath);
+    const res = await fetchWithProxy(`${CLOB_API_URL}${requestPath}`, { method: "GET", headers });
+    result.balance_proxy_status = res.status;
+    result.balance_proxy_ok = res.ok;
+  } catch { /* ignore */ }
+
+  return result;
+}
+
+function formatDiagForChat(diag: DiagResult): string {
+  return [
+    `🔧 **Polymarket Diagnostics**`,
+    ``,
+    `**Wallet:** ${diag.wallet_address_masked}`,
+    `**Builder:** ${diag.builder_address_masked}`,
+    ``,
+    `**L1 Auth:** ${diag.l1_derive_ok ? "✅ OK" : "❌ FAIL"}${diag.l1_derive_error ? ` (${diag.l1_derive_error})` : ""}`,
+    `**Balance (direct):** ${diag.balance_direct_ok ? "✅" : "❌"} (${diag.balance_direct_status ?? "N/A"})`,
+    `**Balance (proxy):** ${diag.balance_proxy_ok ? "✅" : "❌"} (${diag.balance_proxy_status ?? "N/A"})`,
+    `**Builder Attribution:** ${diag.builder_attribution_configured ? "✅ Configured" : "❌ Not configured"}`,
+    `**Relayer (Gasless):** ${diag.relayer_available ? "✅ Available" : "❌ Not available"}`,
+    ``,
+    `**Headers:** ${diag.headers_sent.filter(h => h.startsWith("POLY")).join(", ")}`,
+  ].join("\n");
+}
+
+// =============================================================================
+// Chat Formatting Helpers
+// =============================================================================
+
 function formatTradeResultForChat(result: OrderResult, side: string, tokenId: string, amount: number): string {
-  if (result.status === "success") {
+  if (result.status === "success" || result.orderId) {
     return `✅ **${side} Order Placed**
 Order ID: \`${result.orderId || "pending"}\`
 Token: \`${tokenId.slice(0, 20)}...\`
 Amount: ${amount} shares
-Status: ${result.message}`;
-  } else {
-    return `❌ **Order Failed**
-Error: ${result.message}`;
+Status: ${result.message}
+🏷️ *Builder attributed*`;
   }
+  return `❌ **Order Failed**\nError: ${result.message}`;
 }
 
 function formatWalletForChat(wallet: {
@@ -1415,58 +1418,46 @@ function formatWalletForChat(wallet: {
   const clobBal = Number.parseFloat(wallet.balance || "0");
   const clobUsd = Number.isFinite(clobBal) ? `$${clobBal.toFixed(2)}` : "$0.00";
 
-  // If builder (proxy wallet) exists, show it as the primary wallet
   if (wallet.builder) {
     return `💰 **Wallet**
 Address: \`${wallet.builder.address}\`
 CLOB Balance: ${clobUsd}
-On-chain USDC (Polygon): ${toUsd(wallet.builder.onchain?.usdc)}
+On-chain USDC: ${toUsd(wallet.builder.onchain?.usdc)}
 Open Positions: ${wallet.positions.length}`;
   }
 
-  // Fallback: show signer wallet directly
   return `💰 **Wallet**
 Address: \`${wallet.address}\`
 CLOB Balance: ${clobUsd}
-On-chain USDC (Polygon): ${toUsd(wallet.onchain?.usdc)}
+On-chain USDC: ${toUsd(wallet.onchain?.usdc)}
 Open Positions: ${wallet.positions.length}`;
 }
 
-// =============================================================================
-// Action: Format Market for Chat Response
-// =============================================================================
-
 function formatMarketForChat(market: MarketInfo): string {
-  // Try to extract prices from various sources
   let priceInfo = "N/A";
   
-  // Method 1: From outcomePrices (Gamma API format - JSON string)
   if (market.outcomePrices && market.outcomes) {
     try {
       const prices = JSON.parse(market.outcomePrices) as number[];
       const outcomes = JSON.parse(market.outcomes) as string[];
       priceInfo = outcomes.map((o, i) => `${o}: ${(prices[i] * 100).toFixed(1)}%`).join(", ");
-    } catch (e) {
-      console.log("Failed to parse outcomePrices:", e);
-    }
+    } catch { /* ignore */ }
   }
   
-  // Method 2: From bestBid/bestAsk (Gamma API)
   if (priceInfo === "N/A" && (market.bestBid || market.bestAsk)) {
     const yesPrice = market.bestAsk ? (market.bestAsk * 100).toFixed(1) : "?";
     const noPrice = market.bestBid ? ((1 - market.bestBid) * 100).toFixed(1) : "?";
     priceInfo = `Yes: ${yesPrice}%, No: ${noPrice}%`;
   }
   
-  // Method 3: From tokens array (CLOB API format)
   if (priceInfo === "N/A" && market.tokens && market.tokens.length > 0) {
     priceInfo = market.tokens.map(t => `${t.outcome}: ${((t.price || 0) * 100).toFixed(1)}%`).join(", ");
   }
-  
+
   const volume = typeof market.volume24hr === 'number' 
     ? market.volume24hr.toLocaleString() 
     : parseFloat(String(market.volume24hr || "0")).toLocaleString();
-  
+
   const marketId = market.conditionId || market.condition_id || market.id;
   const slug = market.slug || market.market_slug || "";
   
@@ -1505,7 +1496,7 @@ serve(async (req) => {
     let formattedResponse: string | undefined;
 
     switch (action) {
-      // Search/Discovery Actions
+      // ==================== SEARCH / DISCOVERY ====================
       case "searchMarkets":
       case "GET_MARKETS": {
         const result = await searchMarkets(params?.query || "", params?.limit || 10);
@@ -1521,13 +1512,11 @@ serve(async (req) => {
       case "GET_MARKET_DETAILS": {
         const market = await getMarketDetails(params?.marketId);
         data = market;
-        formattedResponse = market 
-          ? formatMarketForChat(market)
-          : "Market not found";
+        formattedResponse = market ? formatMarketForChat(market) : "Market not found";
         break;
       }
 
-      // Order Book Actions
+      // ==================== ORDER BOOK / PRICING ====================
       case "getOrderBookSummary":
       case "GET_ORDER_BOOK_SUMMARY": {
         const summary = await getOrderBookSummary(params?.tokenId);
@@ -1552,7 +1541,6 @@ serve(async (req) => {
         break;
       }
 
-      // General Market Data
       case "getAllMarkets": {
         data = await getAllMarkets(params?.limit, params?.offset);
         break;
@@ -1563,15 +1551,13 @@ serve(async (req) => {
         break;
       }
 
-      // Trading Capability Check
+      // ==================== TRADING CAPABILITY ====================
       case "checkTradingCapability": {
         data = checkTradingCapability();
         break;
       }
 
-      // ==================== TRADING ACTIONS ====================
-      
-      // Buy shares
+      // ==================== TRADING ACTIONS (with Builder Attribution) ====================
       case "buy":
       case "PLACE_ORDER_BUY": {
         const capability = checkTradingCapability();
@@ -1579,24 +1565,27 @@ serve(async (req) => {
           data = { status: "error", message: capability.reason };
           formattedResponse = `❌ Trading disabled: ${capability.reason}`;
         } else {
-          // Resolve marketSlug to tokenId if needed
           let tokenId = params?.tokenId;
           let marketTitle = "Unknown Market";
+          let tickSize = params?.tickSize || "0.01";
+          let negRisk = params?.negRisk ?? false;
           
           if (!tokenId && params?.marketSlug) {
             const resolved = await resolveTokenId(params.marketSlug, params?.outcome || "YES");
             if (!resolved) {
               data = { status: "error", message: `Market not found: ${params.marketSlug}` };
-              formattedResponse = `❌ **Market Not Found**\nCould not find market: "${params.marketSlug}"`;
+              formattedResponse = `❌ **Market Not Found**\nCould not find: "${params.marketSlug}"`;
               break;
             }
             tokenId = resolved.tokenId;
             marketTitle = resolved.marketTitle;
+            tickSize = resolved.tickSize;
+            negRisk = resolved.negRisk;
           }
           
           if (!tokenId) {
             data = { status: "error", message: "Missing tokenId or marketSlug" };
-            formattedResponse = `❌ **Missing Parameter**\nPlease provide a market (e.g., /buy trump 0.1)`;
+            formattedResponse = `❌ **Missing Parameter**\nProvide a market (e.g., /buy trump 0.1)`;
             break;
           }
           
@@ -1605,6 +1594,8 @@ serve(async (req) => {
             amount: params?.amount || 1,
             price: params?.price,
             side: "BUY",
+            tickSize,
+            negRisk,
           });
           data = result;
           formattedResponse = formatTradeResultForChat(result, "BUY", marketTitle, params?.amount || 1);
@@ -1612,7 +1603,6 @@ serve(async (req) => {
         break;
       }
 
-      // Sell shares
       case "sell":
       case "PLACE_ORDER_SELL": {
         const capability = checkTradingCapability();
@@ -1620,24 +1610,27 @@ serve(async (req) => {
           data = { status: "error", message: capability.reason };
           formattedResponse = `❌ Trading disabled: ${capability.reason}`;
         } else {
-          // Resolve marketSlug to tokenId if needed
           let tokenId = params?.tokenId;
           let marketTitle = "Unknown Market";
+          let tickSize = params?.tickSize || "0.01";
+          let negRisk = params?.negRisk ?? false;
           
           if (!tokenId && params?.marketSlug) {
             const resolved = await resolveTokenId(params.marketSlug, params?.outcome || "YES");
             if (!resolved) {
               data = { status: "error", message: `Market not found: ${params.marketSlug}` };
-              formattedResponse = `❌ **Market Not Found**\nCould not find market: "${params.marketSlug}"`;
+              formattedResponse = `❌ **Market Not Found**\nCould not find: "${params.marketSlug}"`;
               break;
             }
             tokenId = resolved.tokenId;
             marketTitle = resolved.marketTitle;
+            tickSize = resolved.tickSize;
+            negRisk = resolved.negRisk;
           }
           
           if (!tokenId) {
             data = { status: "error", message: "Missing tokenId or marketSlug" };
-            formattedResponse = `❌ **Missing Parameter**\nPlease provide a market (e.g., /sell trump 1)`;
+            formattedResponse = `❌ **Missing Parameter**\nProvide a market (e.g., /sell trump 1)`;
             break;
           }
           
@@ -1646,6 +1639,8 @@ serve(async (req) => {
             amount: params?.amount || 1,
             price: params?.price,
             side: "SELL",
+            tickSize,
+            negRisk,
           });
           data = result;
           formattedResponse = formatTradeResultForChat(result, "SELL", marketTitle, params?.amount || 1);
@@ -1653,7 +1648,6 @@ serve(async (req) => {
         break;
       }
 
-      // Redeem winnings
       case "redeem":
       case "REDEEM_WINNINGS": {
         const capability = checkTradingCapability();
@@ -1670,7 +1664,7 @@ serve(async (req) => {
         break;
       }
 
-      // Get wallet balance
+      // ==================== WALLET & ORDERS ====================
       case "wallet":
       case "GET_WALLET_BALANCE": {
         const capability = checkTradingCapability();
@@ -1685,7 +1679,6 @@ serve(async (req) => {
         break;
       }
 
-      // Get open orders
       case "orders":
       case "GET_OPEN_ORDERS": {
         const capability = checkTradingCapability();
@@ -1702,7 +1695,6 @@ serve(async (req) => {
         break;
       }
 
-      // Cancel order
       case "cancel":
       case "CANCEL_ORDER": {
         const capability = checkTradingCapability();
@@ -1712,14 +1704,45 @@ serve(async (req) => {
         } else {
           const result = await cancelOrder(params?.orderId);
           data = result;
-          formattedResponse = result.success 
-            ? `✅ ${result.message}` 
-            : `❌ ${result.message}`;
+          formattedResponse = result.success ? `✅ ${result.message}` : `❌ ${result.message}`;
         }
         break;
       }
 
-      // Diagnostics command (no sensitive info)
+      // ==================== RELAYER (GASLESS) ====================
+      case "deployProxyWallet": {
+        const result = await deployProxyWallet(params?.userAddress || WALLET_ADDRESS);
+        data = result;
+        formattedResponse = result.success
+          ? `✅ Proxy wallet deployed!\nAddress: ${result.status}\nTx: \`${result.transactionHash}\``
+          : `❌ Deploy failed: ${result.error}`;
+        break;
+      }
+
+      case "approveSpending": {
+        const result = await approveExchangeSpending(params?.negRisk ?? false);
+        data = result;
+        formattedResponse = result.success
+          ? `✅ USDC spending approved for exchange\nTx: \`${result.transactionHash}\``
+          : `❌ Approval failed: ${result.error}`;
+        break;
+      }
+
+      case "relayTransaction": {
+        if (!params?.transactions) {
+          data = { success: false, error: "Missing transactions" };
+          formattedResponse = "❌ Missing transactions parameter";
+        } else {
+          const result = await executeRelayerTransaction(params.transactions, params?.description || "Custom transaction");
+          data = result;
+          formattedResponse = result.success
+            ? `✅ Transaction relayed!\nTx: \`${result.transactionHash}\``
+            : `❌ Relay failed: ${result.error}`;
+        }
+        break;
+      }
+
+      // ==================== DIAGNOSTICS ====================
       case "diag":
       case "DIAG": {
         const diagResult = await runDiagnostics();
@@ -1733,11 +1756,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        data,
-        formattedResponse 
-      }),
+      JSON.stringify({ success: true, data, formattedResponse }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
