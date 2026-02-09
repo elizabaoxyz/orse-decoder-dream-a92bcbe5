@@ -266,19 +266,24 @@ function calculateAmounts(
   }
 }
 
-// Fallback: query Gamma API for negRisk if not provided
-async function fetchNegRiskFromGamma(tokenId: string): Promise<boolean> {
-  try {
-    const res = await fetch(`https://gamma-api.polymarket.com/markets?clob_token_ids=${tokenId}`);
-    if (!res.ok) return false;
-    const markets = await res.json();
-    if (Array.isArray(markets) && markets.length > 0) {
-      return markets[0].neg_risk === true;
-    }
-    return false;
-  } catch {
-    return false;
+// Fallback: query Gamma API (via proxy to avoid CORS) for negRisk
+async function fetchNegRiskFromGamma(tokenId: string, clobApiUrl: string): Promise<boolean> {
+  // Try proxy first, then direct Gamma (may CORS-fail in browser)
+  const urls = [
+    `${clobApiUrl}/neg-risk?token_id=${tokenId}`,
+    `https://gamma-api.polymarket.com/markets?clob_token_ids=${tokenId}`,
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (typeof data.neg_risk === "boolean") return data.neg_risk;
+      if (typeof data.negRisk === "boolean") return data.negRisk;
+      if (Array.isArray(data) && data.length > 0 && data[0].neg_risk === true) return true;
+    } catch { continue; }
   }
+  return false;
 }
 
 export async function createAndSignOrder(
@@ -300,7 +305,7 @@ export async function createAndSignOrder(
   const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? 2 : 0;
 
   // Use params.negRisk; if false, double-check with Gamma API
-  const negRisk = params.negRisk || await fetchNegRiskFromGamma(params.tokenId);
+  const negRisk = params.negRisk || await fetchNegRiskFromGamma(params.tokenId, clobApiUrl);
 
   // Typed-data message for EIP-712 signing: side & signatureType as uint8 (numeric)
   const sideUint8 = params.side === "BUY" ? 0 : 1;
