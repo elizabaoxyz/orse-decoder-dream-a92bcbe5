@@ -59,13 +59,13 @@ export default function WalletPage() {
 
   const fetchBalanceAllowance = useCallback(async () => {
     if (!clobCredentials || !userAddress) return;
-    const polyAddress = safeAddress || userAddress;
+    // POLY-ADDRESS must match the address credentials were derived for (EOA, not Safe)
     setBalanceLoading(true);
     setBalanceError(null);
     try {
       const path = "/balance-allowance?asset_type=0";
-      const headers = await generateL2Headers(clobCredentials, polyAddress, "GET", path);
-      console.log("[Balance] POLY-ADDRESS:", polyAddress, "path:", path, "apiKey:", clobCredentials.apiKey.slice(0, 8));
+      const headers = await generateL2Headers(clobCredentials, userAddress, "GET", path);
+      console.log("[Balance] POLY-ADDRESS:", userAddress, "path:", path, "apiKey:", clobCredentials.apiKey.slice(0, 8));
       const res = await fetch(`${clobApiUrl}${path}`, { method: "GET", headers });
       const text = await res.text();
       console.log("[Balance] Response:", res.status, text);
@@ -84,7 +84,7 @@ export default function WalletPage() {
     } finally {
       setBalanceLoading(false);
     }
-  }, [clobCredentials, userAddress, safeAddress, clobApiUrl]);
+  }, [clobCredentials, userAddress, clobApiUrl]);
 
   // Auto-fetch when credentials are ready
   useEffect(() => {
