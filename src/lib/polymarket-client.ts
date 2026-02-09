@@ -550,42 +550,23 @@ export async function placeOrder(
   const orderPayload = { deferExec: false, order, owner: creds.apiKey, orderType };
 
   // 2. Serialize once — this exact string is used for HMAC AND fetch body
-  const method = "POST";
-  const requestPath = "/order";
   const bodyStr = JSON.stringify(orderPayload);
 
-  // 3. Use the official SDK's createL2Headers to guarantee HMAC consistency
-  const { createL2Headers: sdkCreateL2Headers } = await import("@polymarket/clob-client/dist/headers/index.js");
-
-  // Minimal signer adapter — createL2Headers only calls signer.getAddress()
-  const signerAdapter = { getAddress: async () => signerAddress } as any;
-  const sdkCreds = { key: creds.apiKey, secret: creds.secret, passphrase: creds.passphrase };
-  const l2HeaderArgs = { method, requestPath, body: bodyStr };
-
-  const sdkHeaders = await sdkCreateL2Headers(
-    signerAdapter,
-    sdkCreds,
-    l2HeaderArgs
-  );
-
-  // Convert SDK headers to plain Record<string, string>
-  const polyHeaders: Record<string, string> = {};
-  for (const [k, v] of Object.entries(sdkHeaders)) {
-    polyHeaders[k] = String(v);
-  }
-
-  // 4. Debug logging (no secrets)
+  // 3. Debug logging (no secrets)
   const akTail = creds.apiKey.slice(-6);
-  const ts = polyHeaders["POLY_TIMESTAMP"];
-  console.log(`[placeOrder] path=${requestPath} method=${method} ts=${ts} bodyLen=${bodyStr.length} apiKey=…${akTail}`);
-  console.log("[placeOrder] POLY_ADDRESS:", polyHeaders["POLY_ADDRESS"], "headers:", Object.keys(polyHeaders).join(","));
+  console.log(`[placeOrder] bodyLen=${bodyStr.length} apiKey=…${akTail} signer=${signerAddress}`);
 
-  // 5. Submit via edge function — send pre-serialized body to preserve HMAC consistency
+  // 4. Submit via edge function — HMAC is computed server-side for reliability
   const { supabase } = await import("@/integrations/supabase/client");
   const { data: edgeData, error: edgeError } = await supabase.functions.invoke("clob-order", {
     body: {
       bodyStr,
-      polyHeaders,
+      creds: {
+        apiKey: creds.apiKey,
+        secret: creds.secret,
+        passphrase: creds.passphrase,
+      },
+      signerAddress,
     },
   });
 
