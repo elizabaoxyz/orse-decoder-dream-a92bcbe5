@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.paraswap-swap]
 verify_jwt = false
+
+[functions.clob-order]
+verify_jwt = false

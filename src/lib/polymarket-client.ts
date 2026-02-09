@@ -359,16 +359,18 @@ function calculateAmounts(
   }
 }
 
-// Fetch negRisk from VPS /neg-risk endpoint
-async function fetchNegRisk(tokenId: string, clobApiUrl: string = "https://api.elizabao.xyz"): Promise<boolean> {
+// Fetch negRisk via edge function (VPS proxy is unreliable — 502s)
+async function fetchNegRisk(tokenId: string, _clobApiUrl: string = ""): Promise<boolean> {
   try {
-    const res = await fetch(`${clobApiUrl}/neg-risk?token_id=${encodeURIComponent(tokenId)}`);
-    if (!res.ok) {
-      console.warn("[fetchNegRisk] HTTP", res.status);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.functions.invoke("polymarket-clob", {
+      body: { action: "getNegRisk", params: { tokenId } },
+    });
+    if (error) {
+      console.warn("[fetchNegRisk] Edge function error:", error);
       return false;
     }
-    const json = await res.json();
-    const negRisk = json.neg_risk === true;
+    const negRisk = data?.data?.neg_risk === true;
     console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", negRisk);
     return negRisk;
   } catch (e) {
