@@ -472,10 +472,8 @@ export async function createAndSignOrder(
     signatureType: sigType,
   }));
 
-  // Sign with standard EIP-712 signTypedData — same as official @polymarket/order-utils SDK.
-  // The SDK does NOT adjust v for any signatureType — the CLOB server uses the signatureType
-  // field in the order struct to determine verification logic.
-  const signature = await walletClient.signTypedData({
+  // Sign with standard EIP-712 signTypedData
+  const rawSignature = await walletClient.signTypedData({
     account: signerAddress,
     domain,
     types: ORDER_TYPES,
@@ -483,16 +481,26 @@ export async function createAndSignOrder(
     message,
   });
 
-  console.log("[createAndSignOrder] signTypedData (no v adjust), v=0x" + signature.slice(130));
+  // For Safe wallets (signatureType 2), the CLOB expects v += 4
+  // This tells the verifier it's a Safe owner signature
+  let signature = rawSignature;
+  if (sigType === SIG_TYPE_POLY_GNOSIS_SAFE) {
+    const vByte = parseInt(rawSignature.slice(130), 16);
+    const adjustedV = (vByte + 4).toString(16).padStart(2, "0");
+    signature = (rawSignature.slice(0, 130) + adjustedV) as `0x${string}`;
+    console.log("[createAndSignOrder] Safe v adjustment:", vByte, "→", vByte + 4);
+  }
 
-  // Local signature verification
+  console.log("[createAndSignOrder] Final signature v=0x" + signature.slice(130));
+
+  // Local signature verification (use raw signature for ecrecover)
   try {
     const recoveredAddress = await recoverTypedDataAddress({
       domain,
       types: ORDER_TYPES,
       primaryType: "Order",
       message,
-      signature,
+      signature: rawSignature,
     });
     const match = recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
     console.log("[createAndSignOrder] Local verify: recovered=", recoveredAddress, "signer=", signerAddress, "match=", match);
