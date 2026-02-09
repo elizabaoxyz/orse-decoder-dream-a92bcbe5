@@ -67,6 +67,9 @@ serve(async (req) => {
       case "getNegRisk":
         data = await getNegRisk(params as { tokenId: string });
         break;
+      case "getMarketInfo":
+        data = await getMarketInfo(params as { tokenId: string });
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -186,5 +189,37 @@ async function getNegRisk(params: { tokenId: string }): Promise<{ neg_risk: bool
   const negRisk = Array.isArray(data) && data.length > 0 && data[0].neg_risk === true;
   console.log("[getNegRisk] tokenId:", params.tokenId, "neg_risk:", negRisk);
   return { neg_risk: negRisk };
+}
+
+async function getMarketInfo(params: { tokenId: string }): Promise<{ neg_risk: boolean; fee_rate_bps: number }> {
+  if (!params.tokenId) throw new Error("tokenId is required");
+
+  // Fetch from Gamma API (includes neg_risk and maker_base_fee)
+  const gammaUrl = `${GAMMA_API_URL}/markets?clob_token_ids=${params.tokenId}`;
+  console.log("[getMarketInfo] Querying Gamma:", gammaUrl);
+  const gammaData = await fetchJson(gammaUrl);
+  const market = Array.isArray(gammaData) && gammaData.length > 0 ? gammaData[0] : null;
+
+  const negRisk = market?.neg_risk === true;
+
+  // Also fetch from CLOB API for fee info
+  let feeRateBps = 0;
+  try {
+    const clobUrl = `${CLOB_API_URL}/markets/${params.tokenId}`;
+    console.log("[getMarketInfo] Querying CLOB:", clobUrl);
+    const clobData = await fetchJson(clobUrl);
+    // The CLOB market response may include maker_base_fee or fee_rate_bps
+    feeRateBps = clobData?.maker_base_fee ?? clobData?.fee_rate_bps ?? 0;
+    console.log("[getMarketInfo] CLOB fee data:", JSON.stringify({
+      maker_base_fee: clobData?.maker_base_fee,
+      fee_rate_bps: clobData?.fee_rate_bps,
+      taker_base_fee: clobData?.taker_base_fee,
+    }));
+  } catch (e) {
+    console.warn("[getMarketInfo] CLOB fee fetch failed:", e);
+  }
+
+  console.log("[getMarketInfo] Result: neg_risk=", negRisk, "fee_rate_bps=", feeRateBps);
+  return { neg_risk: negRisk, fee_rate_bps: feeRateBps };
 }
 
