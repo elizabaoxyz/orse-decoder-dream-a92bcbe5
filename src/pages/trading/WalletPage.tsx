@@ -59,15 +59,20 @@ export default function WalletPage() {
 
   const fetchBalanceAllowance = useCallback(async () => {
     if (!clobCredentials || !userAddress) return;
+    const polyAddress = safeAddress || userAddress;
     setBalanceLoading(true);
     setBalanceError(null);
     try {
-      const path = "/balance-allowance?asset_type=COLLATERAL";
-      const headers = await generateL2Headers(clobCredentials, userAddress, "GET", path);
+      const path = "/balance-allowance?asset_type=0";
+      const headers = await generateL2Headers(clobCredentials, polyAddress, "GET", path);
+      console.log("[Balance] POLY-ADDRESS:", polyAddress, "path:", path, "apiKey:", clobCredentials.apiKey.slice(0, 8));
       const res = await fetch(`${clobApiUrl}${path}`, { method: "GET", headers });
-      const json = await res.json();
-      if (json.error) {
-        setBalanceError(json.error);
+      const text = await res.text();
+      console.log("[Balance] Response:", res.status, text);
+      let json: any;
+      try { json = JSON.parse(text); } catch { json = { error: text }; }
+      if (!res.ok || json.error) {
+        setBalanceError(json.error || `HTTP ${res.status}: ${text}`);
       } else {
         setBalanceData({
           balance: json.balance ?? "0",
@@ -79,7 +84,7 @@ export default function WalletPage() {
     } finally {
       setBalanceLoading(false);
     }
-  }, [clobCredentials, userAddress, clobApiUrl]);
+  }, [clobCredentials, userAddress, safeAddress, clobApiUrl]);
 
   // Auto-fetch when credentials are ready
   useEffect(() => {
