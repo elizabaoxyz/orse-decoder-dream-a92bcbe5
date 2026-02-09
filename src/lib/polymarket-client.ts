@@ -123,14 +123,20 @@ const CLOB_AUTH_TYPES = {
   ],
 } as const;
 
-async function getClobServerTime(clobApiUrl: string): Promise<number> {
+async function callClobAuth(action: string, params: Record<string, unknown>): Promise<any> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data, error } = await supabase.functions.invoke("clob-auth", {
+    body: { action, ...params },
+  });
+  if (error) throw new Error(`clob-auth invoke error: ${error.message}`);
+  return data;
+}
+
+async function getClobServerTime(_clobApiUrl: string): Promise<number> {
   try {
-    const res = await fetch(`${clobApiUrl}/time`);
-    const text = await res.text();
-    const num = Number(text.trim());
+    const data = await callClobAuth("time", {});
+    const num = Number(typeof data === "string" ? data : JSON.stringify(data));
     if (Number.isFinite(num) && num > 0) return Math.floor(num);
-    const json = JSON.parse(text);
-    if (typeof json === "number") return Math.floor(json);
     return Math.floor(Date.now() / 1000);
   } catch {
     return Math.floor(Date.now() / 1000);
@@ -142,7 +148,7 @@ export async function createOrDeriveClobCredentials(
   address: `0x${string}`,
   clobApiUrl: string = "https://api.elizabao.xyz"
 ): Promise<ClobCredentials> {
-  console.log("[createOrDeriveClobCredentials] Using CLOB base URL:", clobApiUrl);
+  console.log("[createOrDeriveClobCredentials] Using CLOB auth proxy, signer:", address);
   const timestamp = await getClobServerTime(clobApiUrl);
   const nonce = 0;
 
@@ -159,44 +165,47 @@ export async function createOrDeriveClobCredentials(
     },
   });
 
-  const l1Headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    POLY_ADDRESS: address.toLowerCase(),
-    POLY_SIGNATURE: signature,
-    POLY_TIMESTAMP: timestamp.toString(),
-    POLY_NONCE: nonce.toString(),
-  };
-
-  // Try create first
-  let res = await fetch(`${clobApiUrl}/auth/api-key`, {
-    method: "POST",
-    headers: l1Headers,
-    body: JSON.stringify({
-      address: address.toLowerCase(),
-      timestamp: timestamp.toString(),
-      nonce: nonce.toString(),
-      signature,
-    }),
-  });
-
-  // If already exists (409) or bad request (400), try derive
-  if (!res.ok && (res.status === 409 || res.status === 400 || res.status === 401)) {
-    console.log("[CLOB] Create failed, trying derive...");
-    res = await fetch(`${clobApiUrl}/auth/derive-api-key`, {
-      method: "GET",
-      headers: l1Headers,
+  // Route through edge function — no CORS issues
+  let data: any;
+  try {
+    data = await callClobAuth("create", {
+      poly_address: address.toLowerCase(),
+      poly_signature: signature,
+      poly_timestamp: timestamp.toString(),
+      poly_nonce: nonce.toString(),
+      payload: {
+        address: address.toLowerCase(),
+        timestamp: timestamp.toString(),
+        nonce: nonce.toString(),
+        signature,
+      },
+    });
+  } catch (e) {
+    console.log("[CLOB] Create failed, trying derive...", e);
+    data = await callClobAuth("derive", {
+      poly_address: address.toLowerCase(),
+      poly_signature: signature,
+      poly_timestamp: timestamp.toString(),
+      poly_nonce: nonce.toString(),
     });
   }
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`CLOB auth failed (${res.status}): ${errText}`);
+  // Handle error responses from CLOB
+  if (data?.error) {
+    // If create returned error, try derive
+    if (!data.apiKey) {
+      console.log("[CLOB] Create returned error, trying derive...", data.error);
+      data = await callClobAuth("derive", {
+        poly_address: address.toLowerCase(),
+        poly_signature: signature,
+        poly_timestamp: timestamp.toString(),
+        poly_nonce: nonce.toString(),
+      });
+    }
   }
 
-  const data = await res.json();
-  if (data.error) throw new Error(`CLOB auth error: ${data.error}`);
-  if (!data.apiKey || !data.secret || !data.passphrase) {
-    throw new Error("CLOB auth response missing credentials");
+  if (!data?.apiKey || !data?.secret || !data?.passphrase) {
+    throw new Error(`CLOB auth response missing credentials: ${JSON.stringify(data)}`);
   }
 
   console.log(`[createOrDeriveClobCredentials] signer=${address} apiKey=…${data.apiKey.slice(-6)}`);
@@ -220,7 +229,7 @@ export async function resetClobCredentials(
   console.log(`[resetClobCredentials] Resetting creds for signer=${address}`);
   const timestamp = await getClobServerTime(clobApiUrl);
 
-  // Try to delete the existing API key first (best-effort)
+  // Try to delete the existing API key first (best-effort, via edge function)
   try {
     const delNonce = 0;
     const delSig = await walletClient.signTypedData({
@@ -235,18 +244,13 @@ export async function resetClobCredentials(
         message: "This message attests that I control the given wallet",
       },
     });
-    const delHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-      POLY_ADDRESS: address.toLowerCase(),
-      POLY_SIGNATURE: delSig,
-      POLY_TIMESTAMP: timestamp.toString(),
-      POLY_NONCE: delNonce.toString(),
-    };
-    const delRes = await fetch(`${clobApiUrl}/auth/api-key`, {
-      method: "DELETE",
-      headers: delHeaders,
+    const delResult = await callClobAuth("delete", {
+      poly_address: address.toLowerCase(),
+      poly_signature: delSig,
+      poly_timestamp: timestamp.toString(),
+      poly_nonce: delNonce.toString(),
     });
-    console.log(`[resetClobCredentials] DELETE old key: ${delRes.status}`);
+    console.log(`[resetClobCredentials] DELETE old key result:`, delResult);
   } catch (e) {
     console.warn("[resetClobCredentials] DELETE failed (non-fatal):", e);
   }
@@ -268,33 +272,21 @@ export async function resetClobCredentials(
     },
   });
 
-  const l1Headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    POLY_ADDRESS: address.toLowerCase(),
-    POLY_SIGNATURE: signature,
-    POLY_TIMESTAMP: freshTimestamp.toString(),
-    POLY_NONCE: newNonce.toString(),
-  };
-
-  const res = await fetch(`${clobApiUrl}/auth/api-key`, {
-    method: "POST",
-    headers: l1Headers,
-    body: JSON.stringify({
+  const data = await callClobAuth("create", {
+    poly_address: address.toLowerCase(),
+    poly_signature: signature,
+    poly_timestamp: freshTimestamp.toString(),
+    poly_nonce: newNonce.toString(),
+    payload: {
       address: address.toLowerCase(),
       timestamp: freshTimestamp.toString(),
       nonce: newNonce.toString(),
       signature,
-    }),
+    },
   });
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`CLOB reset failed (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  if (!data.apiKey || !data.secret || !data.passphrase) {
-    throw new Error("CLOB reset response missing credentials");
+  if (!data?.apiKey || !data?.secret || !data?.passphrase) {
+    throw new Error(`CLOB reset response missing credentials: ${JSON.stringify(data)}`);
   }
 
   console.log(`[resetClobCredentials] NEW creds: signer=${address} apiKey=…${data.apiKey.slice(-6)}`);
