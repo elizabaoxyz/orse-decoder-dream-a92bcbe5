@@ -8,7 +8,7 @@ import {
   type GammaMarket,
   type OrderBook,
 } from "@/lib/elizabao-api";
-import { placeOrder, generateL2Headers } from "@/lib/polymarket-client";
+import { placeOrder, generateL2Headers, resetClobCredentials } from "@/lib/polymarket-client";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ export default function TradePage() {
     walletClient,
     safeAddress,
     clobCredentials,
+    setClobCredentials,
   } = useTrading();
   const { config } = useAppConfig();
 
@@ -188,15 +189,56 @@ export default function TradePage() {
       const tickSize = selectedMarket.minimum_tick_size || "0.01";
       const negRisk = selectedMarket.neg_risk ?? false;
 
+      let activeCreds = clobCredentials;
+      const clobUrl = config?.clobApiUrl || "https://api.elizabao.xyz";
+
       const result = await placeOrder(
-        clobCredentials,
+        activeCreds,
         userAddress,
         walletClient,
         funder,
         { tokenId, price: priceNum, size: sizeNum, side, tickSize, negRisk },
         token,
-        config?.clobApiUrl || "https://api.elizabao.xyz"
+        clobUrl
       );
+
+      // Auto-retry on 401 — reset creds and try once more
+      if (!result.success && result.errorMsg?.includes("401")) {
+        console.log("[TradePage] Got 401 — resetting CLOB creds and retrying…");
+        toast.info("Credentials expired — resetting and retrying…");
+        try {
+          const newCreds = await resetClobCredentials(walletClient, userAddress, clobUrl);
+          setClobCredentials(newCreds);
+          activeCreds = newCreds;
+          console.log(`[TradePage] New creds: signer=${userAddress} apiKey=…${newCreds.apiKey.slice(-6)}`);
+
+          const retryResult = await placeOrder(
+            activeCreds,
+            userAddress,
+            walletClient,
+            funder,
+            { tokenId, price: priceNum, size: sizeNum, side, tickSize, negRisk },
+            token,
+            clobUrl
+          );
+
+          if (retryResult.success) {
+            setOrderResult({
+              success: true,
+              message: `${side} order placed (after cred reset)!`,
+              orderId: retryResult.orderID,
+            });
+            toast.success("Order placed after credential reset!");
+          } else {
+            setOrderResult({ success: false, message: retryResult.errorMsg || "Retry failed" });
+            toast.error(retryResult.errorMsg || "Retry failed");
+          }
+          return; // skip normal result handling
+        } catch (resetErr) {
+          console.error("[TradePage] Cred reset failed:", resetErr);
+          toast.error("Failed to reset credentials");
+        }
+      }
 
       if (result.success) {
         setOrderResult({

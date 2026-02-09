@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTrading, useAppConfig } from "@/contexts/ElizaConfigProvider";
 import {
   createOrDeriveClobCredentials,
+  resetClobCredentials,
   deploySafeWallet,
   generateL2Headers,
 } from "@/lib/polymarket-client";
@@ -47,6 +48,7 @@ export default function WalletPage() {
 
   const [deploying, setDeploying] = useState(false);
   const [initializingCreds, setInitializingCreds] = useState(false);
+  const [resettingCreds, setResettingCreds] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { config, error: configError } = useAppConfig();
 
@@ -307,7 +309,7 @@ export default function WalletPage() {
           ok={!!clobCredentials}
           detail={
             clobCredentials
-              ? `Key: ${clobCredentials.apiKey.slice(0, 8)}...`
+              ? `Key: …${clobCredentials.apiKey.slice(-6)}`
               : "Not initialized"
           }
         />
@@ -317,23 +319,62 @@ export default function WalletPage() {
           detail={safeAddress ? "GNOSIS_SAFE (2)" : "EOA (0) — deploy Safe first"}
         />
 
-        <Button
-          onClick={handleInitCreds}
-          disabled={initializingCreds || !walletReady}
-          variant={clobCredentials ? "outline" : "default"}
-          className="w-full mt-3"
-        >
-          {initializingCreds && (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        <div className="flex gap-2 mt-3">
+          <Button
+            onClick={handleInitCreds}
+            disabled={initializingCreds || resettingCreds || !walletReady}
+            variant={clobCredentials ? "outline" : "default"}
+            className="flex-1"
+          >
+            {initializingCreds && (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            )}
+            {clobCredentials
+              ? "Re-derive Credentials"
+              : "Initialize Trading Credentials"}
+          </Button>
+
+          {clobCredentials && (
+            <Button
+              onClick={async () => {
+                if (!walletClient || !userAddress) {
+                  toast.error("Wallet not ready");
+                  return;
+                }
+                setResettingCreds(true);
+                try {
+                  const creds = await resetClobCredentials(
+                    walletClient,
+                    userAddress,
+                    config?.clobApiUrl || "https://api.elizabao.xyz"
+                  );
+                  setClobCredentials(creds);
+                  toast.success(`CLOB creds reset! Key: …${creds.apiKey.slice(-6)}`);
+                  // Auto-refresh balance with new creds
+                  setTimeout(() => fetchBalanceAllowance(), 500);
+                } catch (err) {
+                  toast.error(
+                    err instanceof Error ? err.message : "Reset failed"
+                  );
+                } finally {
+                  setResettingCreds(false);
+                }
+              }}
+              disabled={resettingCreds || initializingCreds || !walletReady}
+              variant="destructive"
+              size="default"
+            >
+              {resettingCreds && (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              )}
+              Reset CLOB API Creds
+            </Button>
           )}
-          {clobCredentials
-            ? "Re-derive Credentials"
-            : "Initialize Trading Credentials"}
-        </Button>
+        </div>
 
         {clobCredentials && (
           <p className="text-xs text-muted-foreground mt-2">
-            Credentials stored locally. They persist across sessions.
+            Signer: {userAddress?.slice(0, 10)}… · Key: …{clobCredentials.apiKey.slice(-6)} · Stored locally.
           </p>
         )}
       </Section>
