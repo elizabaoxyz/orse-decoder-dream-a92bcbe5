@@ -175,6 +175,11 @@ function TradingProvider({ children }: { children: React.ReactNode }) {
       console.log("[TradingProvider] Embedded wallet created:", wallet.address);
     } catch (e: any) {
       const msg = e?.message ?? String(e);
+      // "already has an embedded wallet" is not a real error — ignore it
+      if (msg.includes("already has an embedded wallet")) {
+        console.log("[TradingProvider] Wallet already exists, skipping creation");
+        return;
+      }
       setWalletCreateError(msg);
       console.error("[TradingProvider] createWallet failed:", e);
       walletCreateStartedRef.current = false; // allow retry

@@ -143,9 +143,8 @@ export default function TradePage() {
     // Preflight: check balance/allowance
     try {
       const clobApiUrl = config?.clobApiUrl || "https://api.elizabao.xyz";
-      const polyAddress = safeAddress || userAddress;
       const bPath = "/balance-allowance?asset_type=0";
-      const bHeaders = await generateL2Headers(clobCredentials, polyAddress, "GET", bPath);
+      const bHeaders = await generateL2Headers(clobCredentials, userAddress, "GET", bPath);
       const bRes = await fetch(`${clobApiUrl}${bPath}`, { method: "GET", headers: bHeaders });
       const bJson = await bRes.json();
       if (bJson.error) {
