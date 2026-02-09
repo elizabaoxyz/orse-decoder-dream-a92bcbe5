@@ -142,19 +142,16 @@ export default function TradePage() {
     setSubmitting(true);
     setOrderResult(null);
 
-    // Preflight: check balance/allowance via edge function
+    // Preflight: check balance/allowance via edge function (HMAC server-side)
     try {
-      const clobPath = "/balance-allowance?asset_type=0";
-      const l2 = await generateL2Headers(clobCredentials, userAddress, "GET", clobPath);
       const { data: bData, error: bErr } = await supabase.functions.invoke("clob-balance", {
-        headers: {
-          "x-poly-address": l2["POLY-ADDRESS"],
-          "x-poly-api-key": l2["POLY-API-KEY"],
-          "x-poly-signature": l2["POLY-SIGNATURE"],
-          "x-poly-timestamp": l2["POLY-TIMESTAMP"],
-          "x-poly-passphrase": l2["POLY-PASSPHRASE"],
+        body: {
+          apiKey: clobCredentials.apiKey,
+          secret: clobCredentials.secret,
+          passphrase: clobCredentials.passphrase,
+          address: userAddress,
+          asset_type: "0",
         },
-        body: { asset_type: "0" },
       });
       if (bErr || bData?.error) {
         const errMsg = bErr?.message || bData?.error;

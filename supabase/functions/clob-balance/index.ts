@@ -1,12 +1,43 @@
 
-
 const CLOB_URL = "https://clob.polymarket.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-poly-address, x-poly-api-key, x-poly-signature, x-poly-timestamp, x-poly-passphrase",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
+
+// HMAC-SHA256 signing (same logic as client but server-side for reliability)
+async function hmacSign(secret: string, message: string): Promise<string> {
+  const normalized = secret.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+
+  let keyData: Uint8Array;
+  try {
+    const binary = atob(padded);
+    keyData = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  } catch {
+    keyData = new TextEncoder().encode(secret);
+  }
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(message)
+  );
+
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -14,40 +45,53 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Extract POLY headers from custom x-poly-* headers (browser-safe)
-    const polyAddress = (req.headers.get("x-poly-address") || "").toLowerCase();
-    const polyApiKey = req.headers.get("x-poly-api-key") || "";
-    const polySignature = req.headers.get("x-poly-signature") || "";
-    const polyTimestamp = req.headers.get("x-poly-timestamp") || "";
-    const polyPassphrase = req.headers.get("x-poly-passphrase") || "";
+    // Accept credentials in request body (no custom headers needed)
+    const body = await req.json();
+    const {
+      apiKey,
+      secret,
+      passphrase,
+      address,
+      asset_type = "0",
+    } = body;
 
-    // Read asset_type from query params or POST body
-    let assetType = "0";
-    const url = new URL(req.url);
-    if (url.searchParams.has("asset_type")) {
-      assetType = url.searchParams.get("asset_type")!;
-    } else if (req.method === "POST") {
-      try {
-        const body = await req.json();
-        assetType = body.asset_type ?? "0";
-      } catch { /* empty body is fine */ }
+    if (!apiKey || !secret || !passphrase || !address) {
+      return new Response(
+        JSON.stringify({ error: "Missing credentials (apiKey, secret, passphrase, address)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const clobPath = `/balance-allowance?asset_type=${assetType}`;
-    const clobUrl = `${CLOB_URL}${clobPath}`;
+    // HMAC signs over just the path (no query string), per official SDK
+    const signingPath = "/balance-allowance";
+    const clobUrl = `${CLOB_URL}/balance-allowance`;
 
-    console.log("[clob-balance] Fetching:", clobUrl, "POLY-ADDRESS:", polyAddress, "API-KEY:", polyApiKey.slice(0, 8), "SIG:", polySignature.slice(0, 12), "TS:", polyTimestamp, "PP:", polyPassphrase.slice(0, 8));
+    // Use CLOB server time to avoid clock skew
+    let timestamp: string;
+    try {
+      const timeRes = await fetch(`${CLOB_URL}/time`);
+      const timeText = await timeRes.text();
+      timestamp = String(Math.floor(Number(timeText.trim())));
+    } catch {
+      timestamp = Math.floor(Date.now() / 1000).toString();
+    }
+
+    const message = timestamp + "GET" + signingPath;
+    const signature = await hmacSign(secret, message);
+
+    console.log("[clob-balance] Fetching:", clobUrl);
+    console.log("[clob-balance] addr:", address, "key:", apiKey.slice(0, 8));
+    console.log("[clob-balance] HMAC msg:", JSON.stringify(message));
+    console.log("[clob-balance] sig:", signature.slice(0, 16), "ts:", timestamp);
 
     const resp = await fetch(clobUrl, {
       method: "GET",
       headers: {
-        "POLY-ADDRESS": polyAddress,
-        "POLY-API-KEY": polyApiKey,
-        "POLY-SIGNATURE": polySignature,
-        "POLY-TIMESTAMP": polyTimestamp,
-        "POLY-PASSPHRASE": polyPassphrase,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
+        POLY_ADDRESS: address,
+        POLY_API_KEY: apiKey,
+        POLY_SIGNATURE: signature,
+        POLY_TIMESTAMP: timestamp,
+        POLY_PASSPHRASE: passphrase,
       },
     });
 
