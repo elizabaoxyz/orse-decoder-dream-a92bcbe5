@@ -10,9 +10,9 @@ const corsHeaders = {
 };
 
 /**
- * Proxies order submission directly to clob.polymarket.com,
- * preserving all POLY-* headers including POLY-PROXY-ADDRESS.
- * This bypasses the api.elizabao.xyz proxy which may strip headers.
+ * Proxies order submission directly to clob.polymarket.com.
+ * Builder headers are EXCLUDED — the official SDK skips them if invalid,
+ * and sending invalid builder auth causes "invalid signature" rejection.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,11 +21,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const {
-      bodyStr,
-      polyHeaders,
-      builderHeaders,
-    } = body;
+    const { bodyStr, polyHeaders } = body;
 
     if (!bodyStr || !polyHeaders) {
       return new Response(
@@ -34,33 +30,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build headers for upstream CLOB request
+    // Build headers for upstream CLOB request — user auth only, NO builder headers
     const upstreamHeaders: Record<string, string> = {
       "Content-Type": "application/json",
       "Accept": "application/json",
     };
 
-    // Forward all POLY-* headers (user auth)
+    // Forward only POLY_* headers (user auth) — skip Content-Type/Accept duplicates
     for (const [key, value] of Object.entries(polyHeaders)) {
-      if (typeof value === "string") {
+      if (typeof value === "string" && key.startsWith("POLY_")) {
         upstreamHeaders[key] = value;
       }
     }
 
-    // Forward builder attribution headers
-    if (builderHeaders && typeof builderHeaders === "object") {
-      for (const [key, value] of Object.entries(builderHeaders)) {
-        if (typeof value === "string") {
-          upstreamHeaders[key] = value;
-        }
-      }
-    }
-
+    // Diagnostic logging
     const headerNames = Object.keys(upstreamHeaders);
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Headers:", headerNames.join(", "));
-    console.log("[clob-order] Body length:", bodyStr.length);
-    console.log("[clob-order] POLY_ADDRESS:", upstreamHeaders["POLY_ADDRESS"]?.slice(0, 10) + "...");
+    console.log("[clob-order] Body (first 300):", bodyStr.slice(0, 300));
+    console.log("[clob-order] POLY_ADDRESS:", upstreamHeaders["POLY_ADDRESS"]?.slice(0, 12) + "...");
     console.log("[clob-order] POLY_PROXY_ADDRESS:", upstreamHeaders["POLY_PROXY_ADDRESS"] || "(not set)");
 
     const resp = await fetch(`${CLOB_URL}/order`, {

@@ -540,13 +540,11 @@ export async function placeOrder(
 
   // 4. Build user L2 auth headers (all from same creds object)
   const l2Headers: Record<string, string> = {
-    POLY_ADDRESS: signerAddress,
+    POLY_ADDRESS: signerAddress.toLowerCase(),
     POLY_SIGNATURE: sig,
     POLY_TIMESTAMP: String(ts),
     POLY_API_KEY: creds.apiKey,
     POLY_PASSPHRASE: creds.passphrase,
-    "Content-Type": "application/json",
-    Accept: "application/json",
   };
 
   // 5. Get builder attribution headers (non-auth only)
@@ -576,7 +574,7 @@ export async function placeOrder(
   // 7. Debug logging (no secrets)
   const akTail = creds.apiKey.slice(-6);
   console.log(`[placeOrder] path=${requestPath} method=${method} ts=${ts} bodyLen=${bodyStr.length} apiKey=…${akTail}`);
-  console.log("[placeOrder] POLY-ADDRESS:", signerAddress, "POLY-PROXY-ADDRESS:", polyHeaders["POLY-PROXY-ADDRESS"] || "(none)");
+  console.log("[placeOrder] POLY_ADDRESS:", polyHeaders["POLY_ADDRESS"], "POLY_PROXY_ADDRESS:", polyHeaders["POLY_PROXY_ADDRESS"] || "(none)");
 
   // 8. Submit via edge function — send pre-serialized body to preserve HMAC consistency
   const { supabase } = await import("@/integrations/supabase/client");
