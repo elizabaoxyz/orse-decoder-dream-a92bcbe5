@@ -63,13 +63,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // asset_type: if it's already a hex address use it, otherwise default to USDC
-    const assetAddress = (typeof asset_type === "string" && asset_type.startsWith("0x"))
-      ? asset_type
-      : USDC_ADDRESS;
+    // asset_type must be "COLLATERAL" or "CONDITIONAL" per Polymarket SDK
+    const assetType = (asset_type === "CONDITIONAL") ? "CONDITIONAL" : "COLLATERAL";
 
     const signingPath = "/balance-allowance";
-    const queryString = `?asset_type=${assetAddress}`;
+    const queryString = `?asset_type=${assetType}`;
     const clobUrl = `${CLOB_URL}${signingPath}${queryString}`;
 
     // Use CLOB server time to avoid clock skew
@@ -88,7 +86,7 @@ Deno.serve(async (req) => {
     const lowerAddress = address.toLowerCase();
 
     console.log("[clob-balance] Fetching:", clobUrl);
-    console.log("[clob-balance] addr:", lowerAddress, "key:", apiKey.slice(0, 8), "asset:", assetAddress);
+    console.log("[clob-balance] addr:", lowerAddress, "key:", apiKey.slice(0, 8), "asset:", assetType);
     console.log("[clob-balance] HMAC msg:", JSON.stringify(message));
     console.log("[clob-balance] sig:", signature.slice(0, 16), "ts:", timestamp);
 
