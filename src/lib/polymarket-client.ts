@@ -369,7 +369,20 @@ export async function createAndSignOrder(
     message,
   });
 
-  console.log("[createAndSignOrder] Signature:", signature.slice(0, 20) + "...");
+  // For POLY_GNOSIS_SAFE (signatureType=2), adjust v byte: v += 4
+  // Safe contracts expect v >= 31 for EIP-712 owner signatures
+  let finalSignature = signature;
+  if (sigType === SIG_TYPE_POLY_GNOSIS_SAFE) {
+    const sigBytes = signature.slice(2); // remove 0x
+    const r = sigBytes.slice(0, 64);
+    const s = sigBytes.slice(64, 128);
+    const v = parseInt(sigBytes.slice(128, 130), 16);
+    const adjustedV = (v + 4).toString(16).padStart(2, "0");
+    finalSignature = `0x${r}${s}${adjustedV}` as `0x${string}`;
+    console.log("[createAndSignOrder] Safe sig v adjusted:", v, "→", v + 4);
+  }
+
+  console.log("[createAndSignOrder] Signature:", finalSignature.slice(0, 20) + "...");
 
   return {
     order: {
@@ -385,7 +398,7 @@ export async function createAndSignOrder(
       feeRateBps: String(feeRateBps),
       side: params.side,
       signatureType: sigType,
-      signature,
+      signature: finalSignature,
     },
     orderType: "GTC",
   };
