@@ -517,6 +517,12 @@ export async function createAndSignOrder(
       signature,
     },
     orderType: "GTC",
+    // Pass hash + signing details to edge function for server-side verification
+    _debug: {
+      orderHash,
+      domain: JSON.stringify(domain),
+      message: JSON.stringify(message, (_, v) => typeof v === "bigint" ? v.toString() : v),
+    },
   };
 }
 
@@ -534,7 +540,7 @@ export async function placeOrder(
   clobApiUrl: string = "https://api.elizabao.xyz"
 ): Promise<OrderResult> {
   // 1. Create and sign the order
-  const { order, orderType } = await createAndSignOrder(
+  const { order, orderType, _debug } = await createAndSignOrder(
     walletClient,
     signerAddress,
     funderAddress,
@@ -542,8 +548,8 @@ export async function placeOrder(
     clobApiUrl
   );
 
-  // order.salt is already a safe integer, order.side is already "BUY"/"SELL"
-  const orderPayload = { deferExec: false, order, owner: creds.apiKey, orderType };
+  // Include _debug hash in the body so edge function can verify server-side
+  const orderPayload = { deferExec: false, order, owner: creds.apiKey, orderType, _debug };
 
   // 2. Serialize once — this exact string is used for HMAC AND fetch body
   const bodyStr = JSON.stringify(orderPayload);
