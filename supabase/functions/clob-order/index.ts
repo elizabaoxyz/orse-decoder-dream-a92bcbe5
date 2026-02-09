@@ -1,6 +1,6 @@
 
-// Route through VPS proxy to bypass Cloudflare on clob.polymarket.com
-const CLOB_URL = "https://api.elizabao.xyz";
+// Hit CLOB directly — edge functions bypass Cloudflare (like clob-auth and clob-balance)
+const CLOB_URL = "https://clob.polymarket.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
