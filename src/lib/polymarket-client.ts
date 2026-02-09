@@ -379,6 +379,26 @@ async function fetchNegRisk(tokenId: string, _clobApiUrl: string = ""): Promise<
   }
 }
 
+// Fetch fee rate from CLOB API (required for correct EIP-712 signature)
+async function fetchFeeRateBps(tokenId: string): Promise<number> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.functions.invoke("polymarket-clob", {
+      body: { action: "getFeeRate", params: { tokenId } },
+    });
+    if (error) {
+      console.warn("[fetchFeeRateBps] Edge function error:", error);
+      return 0;
+    }
+    const baseFee = data?.data?.base_fee ?? 0;
+    console.log("[fetchFeeRateBps] tokenId:", tokenId, "base_fee:", baseFee);
+    return baseFee;
+  } catch (e) {
+    console.warn("[fetchFeeRateBps] Failed:", e);
+    return 0;
+  }
+}
+
 export async function createAndSignOrder(
   walletClient: WalletClient,
   signerAddress: `0x${string}`,
@@ -402,7 +422,8 @@ export async function createAndSignOrder(
   // Fetch negRisk from VPS /neg-risk endpoint
   const fetchedNegRisk = await fetchNegRisk(params.tokenId, clobApiUrl);
   const negRisk = params.negRisk || fetchedNegRisk;
-  const feeRateBps = 0n;
+  const fetchedFeeRate = await fetchFeeRateBps(params.tokenId);
+  const feeRateBps = BigInt(fetchedFeeRate);
   const contractAddress = getExchangeAddress(negRisk) as `0x${string}`;
 
   console.log("[createAndSignOrder] negRisk:", negRisk, "verifyingContract:", contractAddress, "feeRateBps:", String(feeRateBps));
@@ -540,7 +561,7 @@ export async function placeOrder(
 
   // 4. Build user L2 auth headers (all from same creds object)
   const l2Headers: Record<string, string> = {
-    POLY_ADDRESS: signerAddress.toLowerCase(),
+    POLY_ADDRESS: signerAddress,
     POLY_SIGNATURE: sig,
     POLY_TIMESTAMP: String(ts),
     POLY_API_KEY: creds.apiKey,
