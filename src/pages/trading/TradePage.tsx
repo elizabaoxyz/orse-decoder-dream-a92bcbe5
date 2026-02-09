@@ -196,6 +196,28 @@ export default function TradePage() {
         return;
       }
       console.log("[TradePage] Preflight OK — wallet:", walletBalance, "exchange:", exchangeBalance, "needed:", makerAmount);
+
+      // On-chain allowance diagnostic for the Safe
+      if (safeAddress) {
+        try {
+          const { createPublicClient, http, parseAbi } = await import("viem");
+          const { polygon } = await import("viem/chains");
+          const diagClient = createPublicClient({ chain: polygon, transport: http("https://polygon-rpc.com") });
+          const usdcE = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" as `0x${string}`;
+          const negRiskEx = "0xC5d563A36AE78145C45a50134d48A1215220f80a" as `0x${string}`;
+          const ctfEx = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E" as `0x${string}`;
+          const abi = parseAbi(["function allowance(address,address) view returns (uint256)", "function balanceOf(address) view returns (uint256)"]);
+          const safe = safeAddress as `0x${string}`;
+          const [bal, allowCtf, allowNeg] = await Promise.all([
+            diagClient.readContract({ address: usdcE, abi, functionName: "balanceOf", args: [safe] } as any),
+            diagClient.readContract({ address: usdcE, abi, functionName: "allowance", args: [safe, ctfEx] } as any),
+            diagClient.readContract({ address: usdcE, abi, functionName: "allowance", args: [safe, negRiskEx] } as any),
+          ]);
+          console.log("[TradePage] On-chain diag — Safe USDC.e balance:", String(bal), "allowance→CTF:", String(allowCtf), "allowance→NegRisk:", String(allowNeg));
+        } catch (diagErr) {
+          console.warn("[TradePage] Diagnostic check failed:", diagErr);
+        }
+      }
     } catch (preflightErr) {
       console.warn("[TradePage] Preflight check failed, proceeding anyway:", preflightErr);
     }
