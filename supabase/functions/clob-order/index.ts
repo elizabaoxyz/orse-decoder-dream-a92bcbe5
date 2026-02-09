@@ -36,20 +36,23 @@ Deno.serve(async (req) => {
       "Accept": "application/json",
     };
 
-    // Forward only POLY_* headers (user auth) — skip Content-Type/Accept duplicates
+    // Forward only POLY_* headers (user auth)
     for (const [key, value] of Object.entries(polyHeaders)) {
       if (typeof value === "string" && key.startsWith("POLY_")) {
         upstreamHeaders[key] = value;
       }
     }
 
-    // Diagnostic logging
+    // Full diagnostic logging
     const headerNames = Object.keys(upstreamHeaders);
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Headers:", headerNames.join(", "));
-    console.log("[clob-order] Body (first 300):", bodyStr.slice(0, 300));
-    console.log("[clob-order] POLY_ADDRESS:", upstreamHeaders["POLY_ADDRESS"]?.slice(0, 12) + "...");
+    console.log("[clob-order] POLY_ADDRESS:", upstreamHeaders["POLY_ADDRESS"]);
     console.log("[clob-order] POLY_PROXY_ADDRESS:", upstreamHeaders["POLY_PROXY_ADDRESS"] || "(not set)");
+    console.log("[clob-order] POLY_SIGNATURE:", upstreamHeaders["POLY_SIGNATURE"]?.slice(0, 20) + "...");
+    console.log("[clob-order] POLY_TIMESTAMP:", upstreamHeaders["POLY_TIMESTAMP"]);
+    console.log("[clob-order] POLY_API_KEY:", upstreamHeaders["POLY_API_KEY"]?.slice(0, 8) + "..." + upstreamHeaders["POLY_API_KEY"]?.slice(-6));
+    console.log("[clob-order] Full body:", bodyStr);
 
     const resp = await fetch(`${CLOB_URL}/order`, {
       method: "POST",

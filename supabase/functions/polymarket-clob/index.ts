@@ -70,6 +70,9 @@ Deno.serve(async (req) => {
       case "getMarketInfo":
         data = await getMarketInfo(params as { tokenId: string });
         break;
+      case "getFeeRate":
+        data = await getFeeRate(params as { tokenId: string });
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -221,5 +224,14 @@ async function getMarketInfo(params: { tokenId: string }): Promise<{ neg_risk: b
 
   console.log("[getMarketInfo] Result: neg_risk=", negRisk, "fee_rate_bps=", feeRateBps);
   return { neg_risk: negRisk, fee_rate_bps: feeRateBps };
+}
+
+async function getFeeRate(params: { tokenId: string }): Promise<{ base_fee: number }> {
+  if (!params.tokenId) throw new Error("tokenId is required");
+  const url = `${CLOB_API_URL}/fee-rate?token_id=${params.tokenId}`;
+  console.log("[getFeeRate] Querying CLOB:", url);
+  const data = await fetchJson(url);
+  console.log("[getFeeRate] Result:", JSON.stringify(data));
+  return { base_fee: data?.base_fee ?? 0 };
 }
 
