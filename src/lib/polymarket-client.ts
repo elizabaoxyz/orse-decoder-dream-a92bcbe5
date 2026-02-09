@@ -212,23 +212,52 @@ export async function createOrDeriveClobCredentials(
 // =============================================================================
 
 // Adapter: wraps viem WalletClient as ethers v5 Signer for ExchangeOrderBuilder
-// (same pattern as Polymarket's Turnkey example)
+// ethers v5's _signTypedData auto-converts string→BigNumber for uint types,
+// but viem expects bigint/number. We must convert uint fields before passing to viem.
 function createViemSignerAdapter(walletClient: WalletClient, address: `0x${string}`) {
+  // Map of Order type fields to their EIP-712 types (for value conversion)
+  const UINT_FIELDS = new Set([
+    "salt", "tokenId", "makerAmount", "takerAmount",
+    "expiration", "nonce", "feeRateBps",
+  ]);
+  const UINT8_FIELDS = new Set(["side", "signatureType"]);
+
   return {
     getAddress: async () => address,
     _signTypedData: async (domain: any, types: any, value: any): Promise<string> => {
       // Remove EIP712Domain from types (viem handles it internally)
       const { EIP712Domain, ...typesWithoutDomain } = types;
+
+      // Convert string values to BigInt for uint256 fields, number for uint8
+      const convertedMessage: Record<string, any> = {};
+      for (const [key, val] of Object.entries(value)) {
+        if (UINT_FIELDS.has(key) && typeof val === "string") {
+          convertedMessage[key] = BigInt(val);
+        } else if (UINT8_FIELDS.has(key) && typeof val === "string") {
+          convertedMessage[key] = Number(val);
+        } else {
+          convertedMessage[key] = val;
+        }
+      }
+
+      console.log("[viemAdapter] Converted message for signTypedData:", {
+        salt: String(convertedMessage.salt),
+        side: convertedMessage.side,
+        signatureType: convertedMessage.signatureType,
+        maker: convertedMessage.maker,
+        signer: convertedMessage.signer,
+      });
+
       const signature = await walletClient.signTypedData({
         account: address,
         domain,
         types: typesWithoutDomain,
         primaryType: "Order",
-        message: value,
+        message: convertedMessage,
       });
       return signature;
     },
-  } as any; // ExchangeOrderBuilder only uses getAddress + _signTypedData
+  } as any;
 }
 
 function getExchangeAddress(negRisk: boolean): string {
