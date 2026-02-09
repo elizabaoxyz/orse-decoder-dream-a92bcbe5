@@ -472,60 +472,41 @@ export async function createAndSignOrder(
     signatureType: sigType,
   }));
 
+  // Sign with standard EIP-712 signTypedData regardless of signature type.
+  // For POLY_GNOSIS_SAFE (signatureType 2), the CLOB server adjusts v -= 4 before ecrecover,
+  // so we must adjust v += 4 after signing. The actual signature is still over the EIP-712 hash.
+  const rawSignature = await walletClient.signTypedData({
+    account: signerAddress,
+    domain,
+    types: ORDER_TYPES,
+    primaryType: "Order",
+    message,
+  });
+
   let signature: `0x${string}`;
-
   if (sigType === SIG_TYPE_POLY_GNOSIS_SAFE) {
-    // For POLY_GNOSIS_SAFE (signatureType 2), the on-chain contract verifies via:
-    //   ECDSA.recover(toEthSignedMessageHash(orderHash), signature)
-    // So we must sign the EIP-712 hash as a personal message (eth_sign), NOT signTypedData.
-    // Then adjust v += 4 so the contract recognizes it as a Safe signature (v > 30).
-    const rawSig = await walletClient.signMessage({
-      account: signerAddress,
-      message: { raw: orderHash as `0x${string}` },
-    });
-
-    // Adjust v: 27→31, 28→32 (v += 4) — signals POLY_GNOSIS_SAFE on-chain
-    const vByte = parseInt(rawSig.slice(130), 16);
+    // Adjust v += 4: 27→31, 28→32 — tells CLOB/contract this is a Safe signature
+    const vByte = parseInt(rawSignature.slice(130), 16);
     const adjustedV = (vByte + 4).toString(16).padStart(2, "0");
-    signature = (rawSig.slice(0, 130) + adjustedV) as `0x${string}`;
-
-    console.log("[createAndSignOrder] Safe signing: eth_sign(orderHash), v:", vByte, "→", vByte + 4);
+    signature = (rawSignature.slice(0, 130) + adjustedV) as `0x${string}`;
+    console.log("[createAndSignOrder] Safe signing: signTypedData + v+=4, v:", vByte, "→", vByte + 4);
   } else {
-    // Standard EOA: sign with EIP-712 typed data directly
-    signature = await walletClient.signTypedData({
-      account: signerAddress,
+    signature = rawSignature;
+    console.log("[createAndSignOrder] EOA signing: signTypedData, v=0x" + signature.slice(130));
+  }
+
+  // Local signature verification (using unadjusted signature)
+  try {
+    const verifySig = sigType === SIG_TYPE_POLY_GNOSIS_SAFE ? rawSignature : signature;
+    const recoveredAddress = await recoverTypedDataAddress({
       domain,
       types: ORDER_TYPES,
       primaryType: "Order",
       message,
+      signature: verifySig,
     });
-    console.log("[createAndSignOrder] EOA signing: signTypedData, v=0x" + signature.slice(130));
-  }
-
-  // Local signature verification
-  try {
-    if (sigType === SIG_TYPE_POLY_GNOSIS_SAFE) {
-      // For Safe, verify the personal sign recovery (undo v adjustment first)
-      const origV = (parseInt(signature.slice(130), 16) - 4).toString(16).padStart(2, "0");
-      const origSig = (signature.slice(0, 130) + origV) as `0x${string}`;
-      const { recoverMessageAddress } = await import("viem");
-      const recovered = await recoverMessageAddress({
-        message: { raw: orderHash as `0x${string}` },
-        signature: origSig,
-      });
-      const match = recovered.toLowerCase() === signerAddress.toLowerCase();
-      console.log("[createAndSignOrder] Local verify (eth_sign): recovered=", recovered, "signer=", signerAddress, "match=", match);
-    } else {
-      const recoveredAddress = await recoverTypedDataAddress({
-        domain,
-        types: ORDER_TYPES,
-        primaryType: "Order",
-        message,
-        signature,
-      });
-      const match = recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
-      console.log("[createAndSignOrder] Local verify: recovered=", recoveredAddress, "signer=", signerAddress, "match=", match);
-    }
+    const match = recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
+    console.log("[createAndSignOrder] Local verify: recovered=", recoveredAddress, "signer=", signerAddress, "match=", match);
   } catch (e) {
     console.warn("[createAndSignOrder] Local verify failed:", e);
   }
