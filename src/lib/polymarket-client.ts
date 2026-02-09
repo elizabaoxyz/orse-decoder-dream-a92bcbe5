@@ -347,7 +347,7 @@ export async function createAndSignOrder(
 
   return {
     order: {
-      salt: String(salt),  // string per SDK spec
+      salt,  // safe integer number
       maker: funderAddress,
       signer: signerAddress,
       taker: "0x0000000000000000000000000000000000000000",
