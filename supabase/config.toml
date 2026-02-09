@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.clob-auth]
 verify_jwt = false
+
+[functions.paraswap-swap]
+verify_jwt = false
