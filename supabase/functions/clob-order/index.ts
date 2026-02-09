@@ -22,20 +22,17 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const {
-      orderPayload,
+      bodyStr,
       polyHeaders,
       builderHeaders,
     } = body;
 
-    if (!orderPayload || !polyHeaders) {
+    if (!bodyStr || !polyHeaders) {
       return new Response(
-        JSON.stringify({ error: "Missing orderPayload or polyHeaders" }),
+        JSON.stringify({ error: "Missing bodyStr or polyHeaders" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Reconstruct the exact body string
-    const bodyStr = JSON.stringify(orderPayload);
 
     // Build headers for upstream CLOB request
     const upstreamHeaders: Record<string, string> = {
