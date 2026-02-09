@@ -266,24 +266,24 @@ function calculateAmounts(
   }
 }
 
-// Fallback: query Gamma API (via proxy to avoid CORS) for negRisk
-async function fetchNegRiskFromGamma(tokenId: string, clobApiUrl: string): Promise<boolean> {
-  // Try proxy first, then direct Gamma (may CORS-fail in browser)
-  const urls = [
-    `${clobApiUrl}/neg-risk?token_id=${tokenId}`,
-    `https://gamma-api.polymarket.com/markets?clob_token_ids=${tokenId}`,
-  ];
-  for (const url of urls) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (typeof data.neg_risk === "boolean") return data.neg_risk;
-      if (typeof data.negRisk === "boolean") return data.negRisk;
-      if (Array.isArray(data) && data.length > 0 && data[0].neg_risk === true) return true;
-    } catch { continue; }
+// Query negRisk via edge function (avoids CORS issues with Gamma API)
+async function fetchNegRiskFromGamma(tokenId: string): Promise<boolean> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.functions.invoke("polymarket-clob", {
+      body: { action: "getNegRisk", params: { tokenId } },
+    });
+    if (error) {
+      console.warn("[fetchNegRisk] Edge function error:", error);
+      return false;
+    }
+    const negRisk = data?.data?.neg_risk === true;
+    console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", negRisk);
+    return negRisk;
+  } catch (e) {
+    console.warn("[fetchNegRisk] Failed:", e);
+    return false;
   }
-  return false;
 }
 
 export async function createAndSignOrder(
@@ -305,7 +305,7 @@ export async function createAndSignOrder(
   const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? 2 : 0;
 
   // Use params.negRisk; if false, double-check with Gamma API
-  const negRisk = params.negRisk || await fetchNegRiskFromGamma(params.tokenId, clobApiUrl);
+  const negRisk = params.negRisk || await fetchNegRiskFromGamma(params.tokenId);
 
   // Typed-data message for EIP-712 signing: side & signatureType as uint8 (numeric)
   const sideUint8 = params.side === "BUY" ? 0 : 1;
