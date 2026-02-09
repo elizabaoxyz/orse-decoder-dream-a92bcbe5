@@ -2,3 +2,6 @@ project_id = "vtddgoktkwqsvodbgrgt"
 
 [functions.polymarket-agent-proxy]
 verify_jwt = false
+
+[functions.clob-balance]
+verify_jwt = false
