@@ -343,7 +343,7 @@ export async function createAndSignOrder(
 
   return {
     order: {
-      salt: signedOrder.salt,
+      salt: Number(signedOrder.salt),  // proxy expects numeric salt
       maker: signedOrder.maker,
       signer: signedOrder.signer,
       taker: signedOrder.taker,
