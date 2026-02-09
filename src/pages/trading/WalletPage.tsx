@@ -465,9 +465,22 @@ export default function WalletPage() {
                 </div>
               )}
               {parseFloat(safeBalances.usdcNative) > 0 && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground/70">
-                  <span className="pl-2">└ USDC (native) ⚠️ needs swap</span>
-                  <span className="font-mono">{parseFloat(safeBalances.usdcNative).toFixed(2)}</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                    <span className="pl-2">└ USDC (native) ⚠️ needs swap</span>
+                    <span className="font-mono">{parseFloat(safeBalances.usdcNative).toFixed(2)}</span>
+                  </div>
+                  <a
+                    href={`https://quickswap.exchange/#/swap?inputCurrency=0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359&outputCurrency=0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2"
+                  >
+                    <Button variant="terminal-primary" size="sm" className="h-6 text-[10px] gap-1">
+                      <RefreshCw className="w-3 h-3" />
+                      Swap to USDC.e on QuickSwap
+                    </Button>
+                  </a>
                 </div>
               )}
               <div className="flex items-center justify-between text-sm">
