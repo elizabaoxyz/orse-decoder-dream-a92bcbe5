@@ -260,6 +260,12 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     };
 
+    // For Safe/proxy wallets, include the proxy address header
+    if (makerAddress && makerAddress.toLowerCase() !== signerAddress.toLowerCase()) {
+      upstreamHeaders["POLY_PROXY_ADDRESS"] = makerAddress;
+      console.log("[clob-order] Added POLY_PROXY_ADDRESS:", makerAddress);
+    }
+
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Clean body:", cleanBodyStr.slice(0, 300));
 
