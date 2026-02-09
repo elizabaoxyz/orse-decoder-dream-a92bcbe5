@@ -1,3 +1,4 @@
+
 // Hit CLOB directly — edge functions bypass Cloudflare
 const CLOB_URL = "https://clob.polymarket.com";
 
@@ -60,7 +61,7 @@ async function buildPolyHmacSignature(
 
 /**
  * Proxies order submission directly to clob.polymarket.com.
- * Uses SDK-exact HMAC implementation for signature generation.
+ * Includes diagnostic mode to distinguish HMAC vs order signature errors.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -84,33 +85,57 @@ Deno.serve(async (req) => {
       const timeRes = await fetch(`${CLOB_URL}/time`);
       const timeText = await timeRes.text();
       timestamp = Math.floor(Number(timeText.trim()));
+      console.log("[clob-order] Server time raw:", timeText.trim(), "parsed:", timestamp);
     } catch {
       timestamp = Math.floor(Date.now() / 1000);
+      console.log("[clob-order] Using local time:", timestamp);
     }
 
-    // SDK-exact HMAC: buildPolyHmacSignature(secret, ts, method, requestPath, body)
     const method = "POST";
     const requestPath = "/order";
+
+    // Compute correct HMAC
     const hmacSig = await buildPolyHmacSignature(creds.secret, timestamp, method, requestPath, bodyStr);
 
-    // SDK uses checksummed address from signer.getAddress() — pass through as-is
     const polyAddress = signerAddress;
 
-    // Build headers — match SDK's createL2Headers exactly
+    // ============ DIAGNOSTIC: Test with corrupted HMAC to distinguish error types ============
+    const corruptedSig = hmacSig.slice(0, -4) + "XXXX";
+    const diagHeaders: Record<string, string> = {
+      POLY_ADDRESS: polyAddress,
+      POLY_SIGNATURE: corruptedSig,
+      POLY_TIMESTAMP: `${timestamp}`,
+      POLY_API_KEY: creds.apiKey,
+      POLY_PASSPHRASE: creds.passphrase,
+      "Content-Type": "application/json",
+    };
+    try {
+      const diagResp = await fetch(`${CLOB_URL}/order`, {
+        method: "POST",
+        headers: diagHeaders,
+        body: bodyStr,
+      });
+      const diagText = await diagResp.text();
+      console.log("[clob-order] DIAGNOSTIC (corrupted HMAC):", diagResp.status, diagText.slice(0, 200));
+    } catch (e) {
+      console.log("[clob-order] DIAGNOSTIC fetch failed:", e);
+    }
+
+    // ============ REAL REQUEST ============
     const upstreamHeaders: Record<string, string> = {
       POLY_ADDRESS: polyAddress,
       POLY_SIGNATURE: hmacSig,
       POLY_TIMESTAMP: `${timestamp}`,
       POLY_API_KEY: creds.apiKey,
       POLY_PASSPHRASE: creds.passphrase,
+      "Content-Type": "application/json",
     };
 
-    // Diagnostic logging
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] POLY_ADDRESS:", polyAddress);
     console.log("[clob-order] POLY_TIMESTAMP:", timestamp);
-    console.log("[clob-order] HMAC msg preview:", `${timestamp}POST/order${bodyStr.slice(0, 40)}...`);
-    console.log("[clob-order] Body length:", bodyStr.length);
+    console.log("[clob-order] HMAC sig preview:", hmacSig.slice(0, 16) + "...");
+    console.log("[clob-order] Body (full):", bodyStr);
 
     const resp = await fetch(`${CLOB_URL}/order`, {
       method: "POST",
@@ -119,7 +144,7 @@ Deno.serve(async (req) => {
     });
 
     const text = await resp.text();
-    console.log("[clob-order] Response:", resp.status, text.slice(0, 500));
+    console.log("[clob-order] REAL response:", resp.status, text.slice(0, 500));
 
     return new Response(text, {
       status: resp.status,
