@@ -9,6 +9,7 @@ import {
   type OrderBook,
 } from "@/lib/elizabao-api";
 import { placeOrder, generateL2Headers } from "@/lib/polymarket-client";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -140,21 +141,29 @@ export default function TradePage() {
     setSubmitting(true);
     setOrderResult(null);
 
-    // Preflight: check balance/allowance
+    // Preflight: check balance/allowance via edge function
     try {
-      const clobApiUrl = config?.clobApiUrl || "https://api.elizabao.xyz";
-      const bPath = "/balance-allowance?asset_type=0";
-      const bHeaders = await generateL2Headers(clobCredentials, userAddress, "GET", bPath);
-      const bRes = await fetch(`${clobApiUrl}${bPath}`, { method: "GET", headers: bHeaders });
-      const bJson = await bRes.json();
-      if (bJson.error) {
-        toast.error(`Balance error: ${bJson.error}`);
-        setOrderResult({ success: false, message: `${bJson.error}. Deposit USDC (0x2791…) to your proxy wallet.` });
+      const clobPath = "/balance-allowance?asset_type=0";
+      const l2 = await generateL2Headers(clobCredentials, userAddress, "GET", clobPath);
+      const { data: bData, error: bErr } = await supabase.functions.invoke("clob-balance", {
+        headers: {
+          "x-poly-address": l2["POLY-ADDRESS"],
+          "x-poly-api-key": l2["POLY-API-KEY"],
+          "x-poly-signature": l2["POLY-SIGNATURE"],
+          "x-poly-timestamp": l2["POLY-TIMESTAMP"],
+          "x-poly-passphrase": l2["POLY-PASSPHRASE"],
+        },
+        body: { asset_type: "0" },
+      });
+      if (bErr || bData?.error) {
+        const errMsg = bErr?.message || bData?.error;
+        toast.error(`Balance error: ${errMsg}`);
+        setOrderResult({ success: false, message: `${errMsg}. Deposit USDC (0x2791…) to your proxy wallet.` });
         setSubmitting(false);
         return;
       }
       const makerAmount = priceNum * sizeNum;
-      const available = parseFloat(bJson.balance || "0");
+      const available = parseFloat(bData?.balance || "0");
       if (available < makerAmount) {
         const msg = `Insufficient balance: ${available.toFixed(2)} USDC available, need ${makerAmount.toFixed(2)} USDC. Fund your proxy wallet with USDC (0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174).`;
         toast.error(msg);
