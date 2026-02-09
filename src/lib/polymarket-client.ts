@@ -236,12 +236,9 @@ function getExchangeDomain(negRisk: boolean) {
   };
 }
 
-function generateSalt(): bigint {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return BigInt(
-    "0x" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("")
-  );
+function generateSalt(): number {
+  // Safe integer salt (≤2^53-1) per Polymarket spec
+  return Math.round(Math.random() * Date.now());
 }
 
 function calculateAmounts(
@@ -287,7 +284,7 @@ export async function createAndSignOrder(
   const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? 2 : 0;
 
   const orderMessage = {
-    salt,
+    salt: BigInt(salt),
     maker: funderAddress as `0x${string}`,
     signer: signerAddress as `0x${string}`,
     taker: "0x0000000000000000000000000000000000000000" as `0x${string}`,
@@ -313,7 +310,7 @@ export async function createAndSignOrder(
 
   return {
     order: {
-      salt: salt.toString(),
+      salt,  // safe integer number, not string
       maker: funderAddress,
       signer: signerAddress,
       taker: "0x0000000000000000000000000000000000000000",
@@ -323,7 +320,7 @@ export async function createAndSignOrder(
       expiration: "0",
       nonce: "0",
       feeRateBps: "0",
-      side: params.side === "BUY" ? 0 : 1,
+      side: params.side,  // "BUY" or "SELL" string
       signatureType,
       signature,
     },
@@ -352,12 +349,8 @@ export async function placeOrder(
     params
   );
 
-  // Fix payload: owner must be API key UUID, side must be string "BUY"/"SELL"
-  const fixedOrder = {
-    ...order,
-    side: order.side === 0 ? "BUY" : order.side === 1 ? "SELL" : order.side,
-  };
-  const orderPayload = { order: fixedOrder, orderType, owner: creds.apiKey };
+  // order.salt is already a safe integer, order.side is already "BUY"/"SELL"
+  const orderPayload = { order, orderType, owner: creds.apiKey };
 
   // 2. Serialize once — this exact string is used for HMAC AND fetch body
   const method = "POST";
