@@ -472,10 +472,10 @@ export async function createAndSignOrder(
     signatureType: sigType,
   }));
 
-  // Sign with standard EIP-712 signTypedData regardless of signature type.
-  // For POLY_GNOSIS_SAFE (signatureType 2), the CLOB server adjusts v -= 4 before ecrecover,
-  // so we must adjust v += 4 after signing. The actual signature is still over the EIP-712 hash.
-  const rawSignature = await walletClient.signTypedData({
+  // Sign with standard EIP-712 signTypedData — same as official @polymarket/order-utils SDK.
+  // The SDK does NOT adjust v for any signatureType — the CLOB server uses the signatureType
+  // field in the order struct to determine verification logic.
+  const signature = await walletClient.signTypedData({
     account: signerAddress,
     domain,
     types: ORDER_TYPES,
@@ -483,35 +483,22 @@ export async function createAndSignOrder(
     message,
   });
 
-  let signature: `0x${string}`;
-  if (sigType === SIG_TYPE_POLY_GNOSIS_SAFE) {
-    // Adjust v += 4: 27→31, 28→32 — tells CLOB/contract this is a Safe signature
-    const vByte = parseInt(rawSignature.slice(130), 16);
-    const adjustedV = (vByte + 4).toString(16).padStart(2, "0");
-    signature = (rawSignature.slice(0, 130) + adjustedV) as `0x${string}`;
-    console.log("[createAndSignOrder] Safe signing: signTypedData + v+=4, v:", vByte, "→", vByte + 4);
-  } else {
-    signature = rawSignature;
-    console.log("[createAndSignOrder] EOA signing: signTypedData, v=0x" + signature.slice(130));
-  }
+  console.log("[createAndSignOrder] signTypedData (no v adjust), v=0x" + signature.slice(130));
 
-  // Local signature verification (using unadjusted signature)
+  // Local signature verification
   try {
-    const verifySig = sigType === SIG_TYPE_POLY_GNOSIS_SAFE ? rawSignature : signature;
     const recoveredAddress = await recoverTypedDataAddress({
       domain,
       types: ORDER_TYPES,
       primaryType: "Order",
       message,
-      signature: verifySig,
+      signature,
     });
     const match = recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
     console.log("[createAndSignOrder] Local verify: recovered=", recoveredAddress, "signer=", signerAddress, "match=", match);
   } catch (e) {
     console.warn("[createAndSignOrder] Local verify failed:", e);
   }
-
-  console.log("[createAndSignOrder] Signature:", signature.slice(0, 20) + "...", "v=0x" + signature.slice(130));
 
   return {
     order: {
