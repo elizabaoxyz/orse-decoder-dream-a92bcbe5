@@ -199,6 +199,106 @@ export async function createOrDeriveClobCredentials(
     throw new Error("CLOB auth response missing credentials");
   }
 
+  console.log(`[createOrDeriveClobCredentials] signer=${address} apiKey=…${data.apiKey.slice(-6)}`);
+
+  return {
+    apiKey: data.apiKey,
+    secret: data.secret,
+    passphrase: data.passphrase,
+  };
+}
+
+/**
+ * Force-reset CLOB API credentials by deleting old key and creating a new one
+ * with a fresh random nonce. This ensures we never mix old/new credentials.
+ */
+export async function resetClobCredentials(
+  walletClient: WalletClient,
+  address: `0x${string}`,
+  clobApiUrl: string = "https://api.elizabao.xyz"
+): Promise<ClobCredentials> {
+  console.log(`[resetClobCredentials] Resetting creds for signer=${address}`);
+  const timestamp = await getClobServerTime(clobApiUrl);
+
+  // Try to delete the existing API key first (best-effort)
+  try {
+    const delNonce = 0;
+    const delSig = await walletClient.signTypedData({
+      account: address,
+      domain: CLOB_AUTH_DOMAIN,
+      types: CLOB_AUTH_TYPES,
+      primaryType: "ClobAuth",
+      message: {
+        address: address,
+        timestamp: timestamp.toString(),
+        nonce: BigInt(delNonce),
+        message: "This message attests that I control the given wallet",
+      },
+    });
+    const delHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      POLY_ADDRESS: address.toLowerCase(),
+      POLY_SIGNATURE: delSig,
+      POLY_TIMESTAMP: timestamp.toString(),
+      POLY_NONCE: delNonce.toString(),
+    };
+    const delRes = await fetch(`${clobApiUrl}/auth/api-key`, {
+      method: "DELETE",
+      headers: delHeaders,
+    });
+    console.log(`[resetClobCredentials] DELETE old key: ${delRes.status}`);
+  } catch (e) {
+    console.warn("[resetClobCredentials] DELETE failed (non-fatal):", e);
+  }
+
+  // Create a fresh key with a new random nonce
+  const freshTimestamp = await getClobServerTime(clobApiUrl);
+  const newNonce = Math.floor(Math.random() * 1_000_000);
+
+  const signature = await walletClient.signTypedData({
+    account: address,
+    domain: CLOB_AUTH_DOMAIN,
+    types: CLOB_AUTH_TYPES,
+    primaryType: "ClobAuth",
+    message: {
+      address: address,
+      timestamp: freshTimestamp.toString(),
+      nonce: BigInt(newNonce),
+      message: "This message attests that I control the given wallet",
+    },
+  });
+
+  const l1Headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    POLY_ADDRESS: address.toLowerCase(),
+    POLY_SIGNATURE: signature,
+    POLY_TIMESTAMP: freshTimestamp.toString(),
+    POLY_NONCE: newNonce.toString(),
+  };
+
+  const res = await fetch(`${clobApiUrl}/auth/api-key`, {
+    method: "POST",
+    headers: l1Headers,
+    body: JSON.stringify({
+      address: address.toLowerCase(),
+      timestamp: freshTimestamp.toString(),
+      nonce: newNonce.toString(),
+      signature,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`CLOB reset failed (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  if (!data.apiKey || !data.secret || !data.passphrase) {
+    throw new Error("CLOB reset response missing credentials");
+  }
+
+  console.log(`[resetClobCredentials] NEW creds: signer=${address} apiKey=…${data.apiKey.slice(-6)}`);
+
   return {
     apiKey: data.apiKey,
     secret: data.secret,
