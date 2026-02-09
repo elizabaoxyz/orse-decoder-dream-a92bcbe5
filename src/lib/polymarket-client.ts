@@ -526,7 +526,7 @@ export async function placeOrder(
   );
 
   // order.salt is already a safe integer, order.side is already "BUY"/"SELL"
-  const orderPayload = { order, orderType, owner: creds.apiKey };
+  const orderPayload = { deferExec: false, order, owner: creds.apiKey, orderType };
 
   // 2. Serialize once — this exact string is used for HMAC AND fetch body
   const method = "POST";
@@ -540,11 +540,11 @@ export async function placeOrder(
 
   // 4. Build user L2 auth headers (all from same creds object)
   const l2Headers: Record<string, string> = {
-    "POLY-ADDRESS": signerAddress.toLowerCase(),
-    "POLY-SIGNATURE": sig,
-    "POLY-TIMESTAMP": String(ts),
-    "POLY-API-KEY": creds.apiKey,
-    "POLY-PASSPHRASE": creds.passphrase,
+    POLY_ADDRESS: signerAddress,
+    POLY_SIGNATURE: sig,
+    POLY_TIMESTAMP: String(ts),
+    POLY_API_KEY: creds.apiKey,
+    POLY_PASSPHRASE: creds.passphrase,
     "Content-Type": "application/json",
     Accept: "application/json",
   };
@@ -570,7 +570,7 @@ export async function placeOrder(
   // 6. Add proxy address header
   const polyHeaders: Record<string, string> = { ...l2Headers };
   if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
-    polyHeaders["POLY-PROXY-ADDRESS"] = funderAddress;
+    polyHeaders["POLY_PROXY_ADDRESS"] = funderAddress;
   }
 
   // 7. Debug logging (no secrets)
