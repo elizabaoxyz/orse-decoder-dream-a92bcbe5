@@ -357,7 +357,7 @@ export async function createAndSignOrder(
       expiration: "0",
       nonce: "0",
       feeRateBps: "0",
-      side: sideUint8,  // numeric 0/1 per SDK spec (NOT "BUY"/"SELL")
+      side: params.side,  // "BUY"/"SELL" string for JSON payload (signing uses numeric)
       signatureType,
       signature,
     },
