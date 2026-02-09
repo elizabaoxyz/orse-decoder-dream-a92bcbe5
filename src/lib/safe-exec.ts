@@ -14,13 +14,15 @@ const SAFE_ABI = [
  * Uses the "pre-approved by msg.sender" signature format: r=owner, s=0, v=1
  */
 export async function execSafeTransaction(
-  provider: ethers.providers.Web3Provider,
+  rawProvider: any,
   safeAddress: string,
   to: string,
   value: string,
   data: string,
   ownerAddress: string,
 ): Promise<ethers.providers.TransactionReceipt> {
+  // Wrap raw EIP-1193 provider into ethers Web3Provider
+  const provider = new ethers.providers.Web3Provider(rawProvider);
   const signer = provider.getSigner();
   const safe = new ethers.Contract(safeAddress, SAFE_ABI, signer);
 
