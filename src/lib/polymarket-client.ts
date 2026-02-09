@@ -92,9 +92,11 @@ export async function generateL2Headers(
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const message = timestamp + method.toUpperCase() + requestPath + body;
   const signature = await hmacSign(creds.secret, message);
+  // POLY-ADDRESS must be lowercase to match key derivation
+  const lowerAddress = address.toLowerCase();
 
   return {
-    "POLY-ADDRESS": address,
+    "POLY-ADDRESS": lowerAddress,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
     "POLY-API-KEY": creds.apiKey,
