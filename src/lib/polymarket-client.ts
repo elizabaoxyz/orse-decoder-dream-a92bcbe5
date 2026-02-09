@@ -77,7 +77,9 @@ async function hmacSign(secret: string, message: string): Promise<string> {
     new TextEncoder().encode(message)
   );
 
-  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+  // Standard base64 → URL-safe base64 (keep = padding per Polymarket spec)
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 export async function generateL2Headers(
