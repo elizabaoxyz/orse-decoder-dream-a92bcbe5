@@ -578,11 +578,11 @@ export async function placeOrder(
   console.log(`[placeOrder] path=${requestPath} method=${method} ts=${ts} bodyLen=${bodyStr.length} apiKey=…${akTail}`);
   console.log("[placeOrder] POLY-ADDRESS:", signerAddress, "POLY-PROXY-ADDRESS:", polyHeaders["POLY-PROXY-ADDRESS"] || "(none)");
 
-  // 8. Submit via edge function to bypass proxy header stripping
+  // 8. Submit via edge function — send pre-serialized body to preserve HMAC consistency
   const { supabase } = await import("@/integrations/supabase/client");
   const { data: edgeData, error: edgeError } = await supabase.functions.invoke("clob-order", {
     body: {
-      orderPayload,
+      bodyStr,
       polyHeaders,
       builderHeaders: safeBuilderHeaders,
     },
