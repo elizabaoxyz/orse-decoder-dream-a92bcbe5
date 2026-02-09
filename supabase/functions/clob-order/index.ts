@@ -249,7 +249,11 @@ Deno.serve(async (req) => {
     // Compute HMAC with clean body (no _debug)
     const hmacSig = await buildPolyHmacSignature(creds.secret, timestamp, method, requestPath, cleanBodyStr);
 
-    const polyAddress = signerAddress;
+    // For Safe/proxy wallets, POLY_ADDRESS must be the maker/funder address (not signer)
+    // The API key is associated with the maker address
+    const polyAddress = (makerAddress && makerAddress.toLowerCase() !== signerAddress.toLowerCase())
+      ? makerAddress
+      : signerAddress;
 
     const upstreamHeaders: Record<string, string> = {
       POLY_ADDRESS: polyAddress,
@@ -260,11 +264,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     };
 
-    // For Safe/proxy wallets, include the proxy address header
-    if (makerAddress && makerAddress.toLowerCase() !== signerAddress.toLowerCase()) {
-      upstreamHeaders["POLY_PROXY_ADDRESS"] = makerAddress;
-      console.log("[clob-order] Added POLY_PROXY_ADDRESS:", makerAddress);
-    }
+    console.log("[clob-order] POLY_ADDRESS:", polyAddress, "signer:", signerAddress, "maker:", makerAddress);
 
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Clean body:", cleanBodyStr.slice(0, 300));

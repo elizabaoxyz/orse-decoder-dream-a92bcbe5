@@ -252,7 +252,7 @@ export default function TradePage() {
         console.log("[TradePage] Got 401 — resetting CLOB creds and retrying…");
         toast.info("Credentials expired — resetting and retrying…");
         try {
-          const newCreds = await resetClobCredentials(walletClient, userAddress, clobUrl);
+          const newCreds = await resetClobCredentials(walletClient, userAddress, clobUrl, safeAddress ? safeAddress as `0x${string}` : undefined);
           setClobCredentials(newCreds);
           activeCreds = newCreds;
           console.log(`[TradePage] New creds: signer=${userAddress} apiKey=…${newCreds.apiKey.slice(-6)}`);

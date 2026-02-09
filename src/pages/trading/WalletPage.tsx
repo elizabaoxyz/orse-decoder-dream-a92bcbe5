@@ -147,7 +147,9 @@ export default function WalletPage() {
     if (!walletClient || !userAddress) { toast.error("Wallet not ready"); return; }
     setInitializingCreds(true);
     try {
-      const creds = await createOrDeriveClobCredentials(walletClient, userAddress, clobApiUrl);
+      // For Safe wallets, create credentials associated with the Safe (funder) address
+      const funder = safeAddress ? safeAddress as `0x${string}` : undefined;
+      const creds = await createOrDeriveClobCredentials(walletClient, userAddress, clobApiUrl, funder);
       setClobCredentials(creds);
       toast.success("Trading credentials initialized!");
     } catch (err) {
@@ -477,7 +479,7 @@ export default function WalletPage() {
                     if (!walletClient || !userAddress) { toast.error("Wallet not ready"); return; }
                     setResettingCreds(true);
                     try {
-                      const creds = await resetClobCredentials(walletClient, userAddress, clobApiUrl);
+                      const creds = await resetClobCredentials(walletClient, userAddress, clobApiUrl, safeAddress ? safeAddress as `0x${string}` : undefined);
                       setClobCredentials(creds);
                       toast.success("API keys reset!");
                       setTimeout(() => fetchBalanceAllowance(), 500);

@@ -87,16 +87,17 @@ export async function generateL2Headers(
   address: string,
   method: string,
   requestPath: string,
-  body: string = ""
+  body: string = "",
+  funderAddress?: string
 ): Promise<Record<string, string>> {
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const message = timestamp + method.toUpperCase() + requestPath + body;
   const signature = await hmacSign(creds.secret, message);
-  // POLY-ADDRESS must be lowercase to match key derivation
-  const lowerAddress = address.toLowerCase();
+  // For proxy/Safe wallets, use the funder address for POLY-ADDRESS
+  const polyAddress = (funderAddress || address).toLowerCase();
 
   return {
-    "POLY-ADDRESS": lowerAddress,
+    "POLY-ADDRESS": polyAddress,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
     "POLY-API-KEY": creds.apiKey,
@@ -147,20 +148,24 @@ async function getClobServerTime(_clobApiUrl: string): Promise<number> {
 
 export async function createOrDeriveClobCredentials(
   walletClient: WalletClient,
-  address: `0x${string}`,
-  clobApiUrl: string = "https://api.elizabao.xyz"
+  signerAddress: `0x${string}`,
+  clobApiUrl: string = "https://api.elizabao.xyz",
+  funderAddress?: `0x${string}`
 ): Promise<ClobCredentials> {
-  console.log("[createOrDeriveClobCredentials] Using CLOB auth proxy, signer:", address);
+  // For proxy/Safe wallets, the CLOB associates the API key with the FUNDER address.
+  // The signer (EOA) signs the message, but the address field uses the funder.
+  const credentialAddress = funderAddress || signerAddress;
+  console.log("[createOrDeriveClobCredentials] signer:", signerAddress, "credentialAddress:", credentialAddress);
   const timestamp = await getClobServerTime(clobApiUrl);
   const nonce = 0;
 
   const signature = await walletClient.signTypedData({
-    account: address,
+    account: signerAddress,
     domain: CLOB_AUTH_DOMAIN,
     types: CLOB_AUTH_TYPES,
     primaryType: "ClobAuth",
     message: {
-      address: address,
+      address: credentialAddress,
       timestamp: timestamp.toString(),
       nonce: BigInt(nonce),
       message: "This message attests that I control the given wallet",
@@ -171,12 +176,12 @@ export async function createOrDeriveClobCredentials(
   let data: any;
   try {
     data = await callClobAuth("create", {
-      poly_address: address.toLowerCase(),
+      poly_address: credentialAddress.toLowerCase(),
       poly_signature: signature,
       poly_timestamp: timestamp.toString(),
       poly_nonce: nonce.toString(),
       payload: {
-        address: address.toLowerCase(),
+        address: credentialAddress.toLowerCase(),
         timestamp: timestamp.toString(),
         nonce: nonce.toString(),
         signature,
@@ -185,7 +190,7 @@ export async function createOrDeriveClobCredentials(
   } catch (e) {
     console.log("[CLOB] Create failed, trying derive...", e);
     data = await callClobAuth("derive", {
-      poly_address: address.toLowerCase(),
+      poly_address: credentialAddress.toLowerCase(),
       poly_signature: signature,
       poly_timestamp: timestamp.toString(),
       poly_nonce: nonce.toString(),
@@ -198,7 +203,7 @@ export async function createOrDeriveClobCredentials(
     if (!data.apiKey) {
       console.log("[CLOB] Create returned error, trying derive...", data.error);
       data = await callClobAuth("derive", {
-        poly_address: address.toLowerCase(),
+        poly_address: credentialAddress.toLowerCase(),
         poly_signature: signature,
         poly_timestamp: timestamp.toString(),
         poly_nonce: nonce.toString(),
@@ -210,7 +215,7 @@ export async function createOrDeriveClobCredentials(
     throw new Error(`CLOB auth response missing credentials: ${JSON.stringify(data)}`);
   }
 
-  console.log(`[createOrDeriveClobCredentials] signer=${address} apiKey=…${data.apiKey.slice(-6)}`);
+  console.log(`[createOrDeriveClobCredentials] credentialAddress=${credentialAddress} apiKey=…${data.apiKey.slice(-6)}`);
 
   return {
     apiKey: data.apiKey,
@@ -225,29 +230,31 @@ export async function createOrDeriveClobCredentials(
  */
 export async function resetClobCredentials(
   walletClient: WalletClient,
-  address: `0x${string}`,
-  clobApiUrl: string = "https://api.elizabao.xyz"
+  signerAddress: `0x${string}`,
+  clobApiUrl: string = "https://api.elizabao.xyz",
+  funderAddress?: `0x${string}`
 ): Promise<ClobCredentials> {
-  console.log(`[resetClobCredentials] Resetting creds for signer=${address}`);
+  const credentialAddress = funderAddress || signerAddress;
+  console.log(`[resetClobCredentials] Resetting creds for credentialAddress=${credentialAddress} signer=${signerAddress}`);
   const timestamp = await getClobServerTime(clobApiUrl);
 
   // Try to delete the existing API key first (best-effort, via edge function)
   try {
     const delNonce = 0;
     const delSig = await walletClient.signTypedData({
-      account: address,
+      account: signerAddress,
       domain: CLOB_AUTH_DOMAIN,
       types: CLOB_AUTH_TYPES,
       primaryType: "ClobAuth",
       message: {
-        address: address,
+        address: credentialAddress,
         timestamp: timestamp.toString(),
         nonce: BigInt(delNonce),
         message: "This message attests that I control the given wallet",
       },
     });
     const delResult = await callClobAuth("delete", {
-      poly_address: address.toLowerCase(),
+      poly_address: credentialAddress.toLowerCase(),
       poly_signature: delSig,
       poly_timestamp: timestamp.toString(),
       poly_nonce: delNonce.toString(),
@@ -262,12 +269,12 @@ export async function resetClobCredentials(
   const newNonce = Math.floor(Math.random() * 1_000_000);
 
   const signature = await walletClient.signTypedData({
-    account: address,
+    account: signerAddress,
     domain: CLOB_AUTH_DOMAIN,
     types: CLOB_AUTH_TYPES,
     primaryType: "ClobAuth",
     message: {
-      address: address,
+      address: credentialAddress,
       timestamp: freshTimestamp.toString(),
       nonce: BigInt(newNonce),
       message: "This message attests that I control the given wallet",
@@ -275,12 +282,12 @@ export async function resetClobCredentials(
   });
 
   const data = await callClobAuth("create", {
-    poly_address: address.toLowerCase(),
+    poly_address: credentialAddress.toLowerCase(),
     poly_signature: signature,
     poly_timestamp: freshTimestamp.toString(),
     poly_nonce: newNonce.toString(),
     payload: {
-      address: address.toLowerCase(),
+      address: credentialAddress.toLowerCase(),
       timestamp: freshTimestamp.toString(),
       nonce: newNonce.toString(),
       signature,
@@ -291,7 +298,7 @@ export async function resetClobCredentials(
     throw new Error(`CLOB reset response missing credentials: ${JSON.stringify(data)}`);
   }
 
-  console.log(`[resetClobCredentials] NEW creds: signer=${address} apiKey=…${data.apiKey.slice(-6)}`);
+  console.log(`[resetClobCredentials] NEW creds: credentialAddress=${credentialAddress} apiKey=…${data.apiKey.slice(-6)}`);
 
   return {
     apiKey: data.apiKey,
@@ -473,7 +480,7 @@ export async function createAndSignOrder(
   }));
 
   // Sign with standard EIP-712 signTypedData
-  const rawSignature = await walletClient.signTypedData({
+  const signature = await walletClient.signTypedData({
     account: signerAddress,
     domain,
     types: ORDER_TYPES,
@@ -481,26 +488,16 @@ export async function createAndSignOrder(
     message,
   });
 
-  // For Safe wallets (signatureType 2), the CLOB expects v += 4
-  // This tells the verifier it's a Safe owner signature
-  let signature = rawSignature;
-  if (sigType === SIG_TYPE_POLY_GNOSIS_SAFE) {
-    const vByte = parseInt(rawSignature.slice(130), 16);
-    const adjustedV = (vByte + 4).toString(16).padStart(2, "0");
-    signature = (rawSignature.slice(0, 130) + adjustedV) as `0x${string}`;
-    console.log("[createAndSignOrder] Safe v adjustment:", vByte, "→", vByte + 4);
-  }
+  console.log("[createAndSignOrder] signTypedData v=0x" + signature.slice(130));
 
-  console.log("[createAndSignOrder] Final signature v=0x" + signature.slice(130));
-
-  // Local signature verification (use raw signature for ecrecover)
+  // Local signature verification
   try {
     const recoveredAddress = await recoverTypedDataAddress({
       domain,
       types: ORDER_TYPES,
       primaryType: "Order",
       message,
-      signature: rawSignature,
+      signature,
     });
     const match = recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
     console.log("[createAndSignOrder] Local verify: recovered=", recoveredAddress, "signer=", signerAddress, "match=", match);
