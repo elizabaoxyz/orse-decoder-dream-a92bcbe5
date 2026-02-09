@@ -64,6 +64,9 @@ serve(async (req) => {
       case "getGammaMarkets":
         data = await getGammaMarkets(params as GammaMarketsParams);
         break;
+      case "getNegRisk":
+        data = await getNegRisk(params as { tokenId: string });
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -173,5 +176,15 @@ async function getGammaMarkets(params: GammaMarketsParams = {}) {
   if (params._q) url.searchParams.set("_q", params._q);
 
   return await fetchJson(url.toString());
+}
+
+async function getNegRisk(params: { tokenId: string }): Promise<{ neg_risk: boolean }> {
+  if (!params.tokenId) throw new Error("tokenId is required");
+  const url = `${GAMMA_API_URL}/markets?clob_token_ids=${params.tokenId}`;
+  console.log("[getNegRisk] Querying Gamma:", url);
+  const data = await fetchJson(url);
+  const negRisk = Array.isArray(data) && data.length > 0 && data[0].neg_risk === true;
+  console.log("[getNegRisk] tokenId:", params.tokenId, "neg_risk:", negRisk);
+  return { neg_risk: negRisk };
 }
 
