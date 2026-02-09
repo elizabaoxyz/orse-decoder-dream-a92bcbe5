@@ -82,12 +82,11 @@ serve(async (req) => {
           srcToken: USDC_NATIVE,
           destToken: USDC_E,
           srcAmount: priceRoute.srcAmount,
-          destAmount: priceRoute.destAmount,
           priceRoute: priceRoute,
           userAddress,
           txOrigin: userAddress,
           receiver: userAddress,
-          slippage: slippagePercent * 100, // ParaSwap expects basis points
+          slippage: slippagePercent * 100,
         }),
       });
 
