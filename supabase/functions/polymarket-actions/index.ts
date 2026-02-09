@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode, decode as base64Decode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
-import { ethers } from "https://esm.sh/ethers@6.13.4";
+import { encodeBase64 as base64Encode, decodeBase64 as base64Decode } from "jsr:@std/encoding@1/base64";
+import { ethers } from "npm:ethers@6.13.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1483,7 +1482,7 @@ Ask Depth: ${summary.askDepth} orders`;
 // HTTP Server
 // =============================================================================
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
