@@ -378,12 +378,11 @@ export default function WalletPage() {
               )}
 
               {/* Inline Swap Widget */}
-              {safeBalances && parseFloat(safeBalances.usdcNative) > 0 && ethProvider && userAddress && (
+              {safeBalances && parseFloat(safeBalances.usdcNative) > 0 && userAddress && safeAddress && (
                 <SwapWidget
                   nativeUsdcBalance={safeBalances.usdcNative}
+                  safeAddress={safeAddress}
                   userAddress={userAddress}
-                  ethProvider={ethProvider}
-                  onSwapComplete={() => fetchBalances(userAddress || undefined, safeAddress || undefined)}
                 />
               )}
 
