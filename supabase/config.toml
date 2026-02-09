@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.clob-balance]
 verify_jwt = false
+
+[functions.clob-auth]
+verify_jwt = false
