@@ -10,6 +10,7 @@ import {
 } from "@/lib/elizabao-api";
 import { placeOrder, generateL2Headers, resetClobCredentials } from "@/lib/polymarket-client";
 import { supabase } from "@/integrations/supabase/client";
+import { useOnChainBalances } from "@/hooks/useOnChainBalances";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  Wallet,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +47,14 @@ export default function TradePage() {
     setClobCredentials,
   } = useTrading();
   const { config } = useAppConfig();
+  const { safeBalances, loading: balanceLoading, fetchBalances } = useOnChainBalances();
+
+  // Fetch Safe balance on mount
+  useEffect(() => {
+    if (safeAddress) fetchBalances(undefined, safeAddress);
+  }, [safeAddress, fetchBalances]);
+
+  const availableBalance = safeBalances ? parseFloat(safeBalances.usdcE) : 0;
 
   // Market selection
   const [markets, setMarkets] = useState<GammaMarket[]>([]);
@@ -142,34 +153,37 @@ export default function TradePage() {
     setSubmitting(true);
     setOrderResult(null);
 
-    // Preflight: check balance/allowance via edge function (HMAC server-side)
+    // Preflight: check on-chain USDC.e balance in Trading Wallet (Safe)
     try {
-      const { data: bData, error: bErr } = await supabase.functions.invoke("clob-balance", {
-        body: {
-          apiKey: clobCredentials.apiKey,
-          secret: clobCredentials.secret,
-          passphrase: clobCredentials.passphrase,
-          address: userAddress,
-          asset_type: "0",
-        },
-      });
-      if (bErr || bData?.error) {
-        const errMsg = bErr?.message || bData?.error;
-        toast.error(`Balance error: ${errMsg}`);
-        setOrderResult({ success: false, message: `${errMsg}. Deposit USDC (0x2791…) to your proxy wallet.` });
-        setSubmitting(false);
-        return;
-      }
       const makerAmount = priceNum * sizeNum;
-      const available = parseFloat(bData?.balance || "0");
-      if (available < makerAmount) {
-        const msg = `Insufficient balance: ${available.toFixed(2)} USDC available, need ${makerAmount.toFixed(2)} USDC. Fund your proxy wallet with USDC (0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174).`;
+      // Refresh balance
+      if (safeAddress) await fetchBalances(undefined, safeAddress);
+      const onChainAvailable = availableBalance;
+      
+      // Also check CLOB exchange balance
+      let exchangeAvailable = 0;
+      try {
+        const { data: bData } = await supabase.functions.invoke("clob-balance", {
+          body: {
+            apiKey: clobCredentials.apiKey,
+            secret: clobCredentials.secret,
+            passphrase: clobCredentials.passphrase,
+            address: userAddress,
+            asset_type: "0",
+          },
+        });
+        exchangeAvailable = parseFloat(bData?.balance || "0");
+      } catch {}
+
+      const totalAvailable = onChainAvailable + exchangeAvailable;
+      if (totalAvailable < makerAmount) {
+        const msg = `Insufficient balance: $${totalAvailable.toFixed(2)} available (wallet: $${onChainAvailable.toFixed(2)}, exchange: $${exchangeAvailable.toFixed(2)}), need $${makerAmount.toFixed(2)}. Deposit USDC.e to your Trading Wallet: ${safeAddress || "N/A"}`;
         toast.error(msg);
         setOrderResult({ success: false, message: msg });
         setSubmitting(false);
         return;
       }
-      console.log("[TradePage] Preflight OK — balance:", available, "needed:", makerAmount);
+      console.log("[TradePage] Preflight OK — on-chain:", onChainAvailable, "exchange:", exchangeAvailable, "needed:", makerAmount);
     } catch (preflightErr) {
       console.warn("[TradePage] Preflight check failed, proceeding anyway:", preflightErr);
     }
@@ -387,6 +401,31 @@ export default function TradePage() {
 
       {/* Right: Order Form */}
       <div className="space-y-4">
+        {/* Available Balance */}
+        <div className="border border-primary/30 rounded-lg p-3 bg-primary/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-primary" />
+              <span className="text-xs font-medium uppercase tracking-widest font-mono">Available to Trade</span>
+            </div>
+            <button
+              onClick={() => safeAddress && fetchBalances(undefined, safeAddress)}
+              disabled={balanceLoading}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {balanceLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            </button>
+          </div>
+          <div className="text-xl font-bold font-mono mt-1">
+            ${availableBalance.toFixed(2)} <span className="text-xs text-muted-foreground font-normal">USDC.e</span>
+          </div>
+          {availableBalance === 0 && safeAddress && (
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Deposit USDC.e to your Trading Wallet to start trading
+            </p>
+          )}
+        </div>
+
         <div className="border border-border rounded-lg p-4 space-y-4">
           <h3 className="font-medium text-sm flex items-center gap-2">
             <ArrowUpDown className="w-4 h-4" />

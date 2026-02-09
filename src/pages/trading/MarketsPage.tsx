@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Loader2, TrendingUp, ExternalLink } from "lucide-react";
+import { Search, Loader2, TrendingUp, ExternalLink, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fetchGammaMarkets, parseJsonField, type GammaMarket } from "@/lib/elizabao-api";
+import { useTrading } from "@/contexts/ElizaConfigProvider";
+import { useOnChainBalances } from "@/hooks/useOnChainBalances";
 
 const LIMIT = 20;
 
 export default function MarketsPage() {
   const navigate = useNavigate();
+  const { safeAddress, isAuthenticated } = useTrading();
+  const { safeBalances, fetchBalances } = useOnChainBalances();
   const [markets, setMarkets] = useState<GammaMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -54,6 +58,7 @@ export default function MarketsPage() {
 
   useEffect(() => {
     loadMarkets(true);
+    if (safeAddress) fetchBalances(undefined, safeAddress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
@@ -65,11 +70,22 @@ export default function MarketsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Markets</h1>
-          <p className="text-sm text-muted-foreground">
-            Browse active Polymarket prediction markets
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Markets</h1>
+            <p className="text-sm text-muted-foreground">
+              Browse active Polymarket prediction markets
+            </p>
+          </div>
+          {isAuthenticated && safeBalances && (
+            <div className="flex items-center gap-1.5 bg-primary/5 border border-primary/20 rounded-md px-3 py-1.5">
+              <Wallet className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-mono font-medium">
+                ${parseFloat(safeBalances.usdcE).toFixed(2)}
+              </span>
+              <span className="text-[10px] text-muted-foreground">USDC.e</span>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
