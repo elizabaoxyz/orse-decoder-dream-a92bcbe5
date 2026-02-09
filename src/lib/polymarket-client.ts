@@ -265,26 +265,21 @@ function calculateAmounts(
   }
 }
 
-// Fetch negRisk + feeRateBps from Gamma API via edge function
-async function fetchMarketInfo(tokenId: string): Promise<{ negRisk: boolean; feeRateBps: number }> {
+// Fetch negRisk from VPS /neg-risk endpoint
+async function fetchNegRisk(tokenId: string, clobApiUrl: string = "https://api.elizabao.xyz"): Promise<boolean> {
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data, error } = await supabase.functions.invoke("polymarket-clob", {
-      body: { action: "getMarketInfo", params: { tokenId } },
-    });
-    if (error) {
-      console.warn("[fetchMarketInfo] Edge function error:", error);
-      return { negRisk: false, feeRateBps: 0 };
+    const res = await fetch(`${clobApiUrl}/neg-risk?token_id=${encodeURIComponent(tokenId)}`);
+    if (!res.ok) {
+      console.warn("[fetchNegRisk] HTTP", res.status);
+      return false;
     }
-    const info = data?.data || {};
-    console.log("[fetchMarketInfo] tokenId:", tokenId, "negRisk:", info.neg_risk, "feeRateBps:", info.fee_rate_bps);
-    return {
-      negRisk: info.neg_risk === true,
-      feeRateBps: typeof info.fee_rate_bps === "number" ? info.fee_rate_bps : 0,
-    };
+    const json = await res.json();
+    const negRisk = json.neg_risk === true;
+    console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", negRisk);
+    return negRisk;
   } catch (e) {
-    console.warn("[fetchMarketInfo] Failed:", e);
-    return { negRisk: false, feeRateBps: 0 };
+    console.warn("[fetchNegRisk] Failed:", e);
+    return false;
   }
 }
 
@@ -308,13 +303,13 @@ export async function createAndSignOrder(
 
   const sideNum = params.side === "BUY" ? 0 : 1;
 
-  // Fetch negRisk AND feeRateBps from the market
-  const marketInfo = await fetchMarketInfo(params.tokenId);
-  const negRisk = params.negRisk || marketInfo.negRisk;
-  const feeRateBps = BigInt(marketInfo.feeRateBps);
+  // Fetch negRisk from VPS /neg-risk endpoint
+  const fetchedNegRisk = await fetchNegRisk(params.tokenId, clobApiUrl);
+  const negRisk = params.negRisk || fetchedNegRisk;
+  const feeRateBps = 0n;
   const contractAddress = getExchangeAddress(negRisk) as `0x${string}`;
 
-  console.log("[createAndSignOrder] Using feeRateBps:", String(feeRateBps), "negRisk:", negRisk);
+  console.log("[createAndSignOrder] negRisk:", negRisk, "verifyingContract:", contractAddress, "feeRateBps:", String(feeRateBps));
 
   const salt = generateSalt();
 
