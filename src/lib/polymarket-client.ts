@@ -502,7 +502,7 @@ export async function createAndSignOrder(
 
   return {
     order: {
-      salt: Number(salt),
+      salt: String(salt),
       maker: funderAddress,
       signer: signerAddress,
       taker: "0x0000000000000000000000000000000000000000",
