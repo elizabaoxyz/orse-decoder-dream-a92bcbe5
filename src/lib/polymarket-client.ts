@@ -350,7 +350,12 @@ export async function placeOrder(
     params
   );
 
-  const orderPayload = { order, orderType, owner: funderAddress };
+  // Fix payload: owner must be API key UUID, side must be string "BUY"/"SELL"
+  const fixedOrder = {
+    ...order,
+    side: order.side === 0 ? "BUY" : order.side === 1 ? "SELL" : order.side,
+  };
+  const orderPayload = { order: fixedOrder, orderType, owner: creds.apiKey };
   const requestPath = "/order";
   const bodyString = JSON.stringify(orderPayload);
 
