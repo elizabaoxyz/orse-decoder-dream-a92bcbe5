@@ -1,5 +1,6 @@
 
-const CLOB_URL = "https://clob.polymarket.com";
+// Route through VPS proxy to bypass Cloudflare on clob.polymarket.com
+const CLOB_URL = "https://api.elizabao.xyz";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

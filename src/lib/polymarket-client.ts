@@ -540,7 +540,7 @@ export async function placeOrder(
 
   // 4. Build user L2 auth headers (all from same creds object)
   const l2Headers: Record<string, string> = {
-    "POLY-ADDRESS": signerAddress,
+    "POLY-ADDRESS": signerAddress.toLowerCase(),
     "POLY-SIGNATURE": sig,
     "POLY-TIMESTAMP": String(ts),
     "POLY-API-KEY": creds.apiKey,
