@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTrading, useAppConfig } from "@/contexts/ElizaConfigProvider";
 import {
   createOrDeriveClobCredentials,
   deploySafeWallet,
+  generateL2Headers,
 } from "@/lib/polymarket-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ import {
   Key,
   Copy,
   Check,
+  RefreshCw,
+  DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +48,45 @@ export default function WalletPage() {
   const [initializingCreds, setInitializingCreds] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { config, error: configError } = useAppConfig();
+
+  // Balance / Allowance state
+  const [balanceData, setBalanceData] = useState<{ balance: string; allowance: string } | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+
+  const USDC_CONTRACT = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+  const clobApiUrl = config?.clobApiUrl || "https://api.elizabao.xyz";
+
+  const fetchBalanceAllowance = useCallback(async () => {
+    if (!clobCredentials || !userAddress) return;
+    setBalanceLoading(true);
+    setBalanceError(null);
+    try {
+      const path = "/balance-allowance?asset_type=COLLATERAL";
+      const headers = await generateL2Headers(clobCredentials, userAddress, "GET", path);
+      const res = await fetch(`${clobApiUrl}${path}`, { method: "GET", headers });
+      const json = await res.json();
+      if (json.error) {
+        setBalanceError(json.error);
+      } else {
+        setBalanceData({
+          balance: json.balance ?? "0",
+          allowance: json.allowance ?? "0",
+        });
+      }
+    } catch (e) {
+      setBalanceError(e instanceof Error ? e.message : "Failed to fetch");
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, [clobCredentials, userAddress, clobApiUrl]);
+
+  // Auto-fetch when credentials are ready
+  useEffect(() => {
+    if (clobCredentials && userAddress) {
+      fetchBalanceAllowance();
+    }
+  }, [clobCredentials, userAddress, fetchBalanceAllowance]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -279,6 +321,60 @@ export default function WalletPage() {
         )}
       </Section>
 
+      {/* Balance / Allowance */}
+      {clobCredentials && (
+        <Section
+          title="Balance / Allowance"
+          icon={<DollarSign className="w-4 h-4 text-primary" />}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">CLOB Collateral (USDC)</span>
+            <Button variant="ghost" size="sm" onClick={fetchBalanceAllowance} disabled={balanceLoading} className="h-6 px-2">
+              {balanceLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            </Button>
+          </div>
+
+          {balanceError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-2.5 text-xs text-destructive mb-2">
+              {balanceError}
+              {safeAddress && (
+                <p className="mt-1.5 font-mono text-[10px] opacity-80">
+                  Deposit USDC ({USDC_CONTRACT.slice(0, 6)}…) to {safeAddress}
+                </p>
+              )}
+            </div>
+          )}
+
+          {balanceData && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Balance</span>
+                <span className="font-mono">{parseFloat(balanceData.balance).toFixed(2)} USDC</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Allowance</span>
+                <span className="font-mono">{parseFloat(balanceData.allowance).toFixed(2)} USDC</span>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-2 space-y-1 text-[10px] text-muted-foreground/70">
+            <div className="flex justify-between">
+              <span>Proxy/Maker</span>
+              <span className="font-mono">{(safeAddress || userAddress || "—").slice(0, 10)}…</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Signer</span>
+              <span className="font-mono">{(userAddress || "—").slice(0, 10)}…</span>
+            </div>
+            <div className="flex justify-between">
+              <span>USDC Token</span>
+              <span className="font-mono">{USDC_CONTRACT.slice(0, 10)}…</span>
+            </div>
+          </div>
+        </Section>
+      )}
+
       {/* Trading Readiness Summary */}
       <div className="border border-border rounded-lg p-4 bg-card/50">
         <h3 className="text-sm font-medium mb-3">Trading Readiness</h3>
@@ -288,6 +384,7 @@ export default function WalletPage() {
           <ReadinessItem label="Safe deployed" ready={!!safeAddress} />
           <ReadinessItem label="CLOB credentials" ready={!!clobCredentials} />
           <ReadinessItem label="Access token" ready={!!accessToken} />
+          <ReadinessItem label="CLOB Balance" ready={!!balanceData && parseFloat(balanceData.balance) > 0} />
         </div>
         {isAuthenticated && walletReady && safeAddress && clobCredentials && accessToken && (
           <Badge className="mt-3 bg-green-500/10 text-green-500 border-green-500/20">

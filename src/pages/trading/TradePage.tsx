@@ -8,7 +8,7 @@ import {
   type GammaMarket,
   type OrderBook,
 } from "@/lib/elizabao-api";
-import { placeOrder } from "@/lib/polymarket-client";
+import { placeOrder, generateL2Headers } from "@/lib/polymarket-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +139,33 @@ export default function TradePage() {
 
     setSubmitting(true);
     setOrderResult(null);
+
+    // Preflight: check balance/allowance
+    try {
+      const clobApiUrl = config?.clobApiUrl || "https://api.elizabao.xyz";
+      const bPath = "/balance-allowance?asset_type=COLLATERAL";
+      const bHeaders = await generateL2Headers(clobCredentials, userAddress, "GET", bPath);
+      const bRes = await fetch(`${clobApiUrl}${bPath}`, { method: "GET", headers: bHeaders });
+      const bJson = await bRes.json();
+      if (bJson.error) {
+        toast.error(`Balance error: ${bJson.error}`);
+        setOrderResult({ success: false, message: `${bJson.error}. Deposit USDC (0x2791…) to your proxy wallet.` });
+        setSubmitting(false);
+        return;
+      }
+      const makerAmount = priceNum * sizeNum;
+      const available = parseFloat(bJson.balance || "0");
+      if (available < makerAmount) {
+        const msg = `Insufficient balance: ${available.toFixed(2)} USDC available, need ${makerAmount.toFixed(2)} USDC. Fund your proxy wallet with USDC (0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174).`;
+        toast.error(msg);
+        setOrderResult({ success: false, message: msg });
+        setSubmitting(false);
+        return;
+      }
+      console.log("[TradePage] Preflight OK — balance:", available, "needed:", makerAmount);
+    } catch (preflightErr) {
+      console.warn("[TradePage] Preflight check failed, proceeding anyway:", preflightErr);
+    }
 
     try {
       // Refresh access token
