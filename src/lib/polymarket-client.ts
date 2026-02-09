@@ -266,11 +266,23 @@ function calculateAmounts(
   }
 }
 
+async function checkNegRisk(tokenId: string, clobApiUrl: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${clobApiUrl}/neg-risk?token_id=${tokenId}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.neg_risk === true || data.negRisk === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function createAndSignOrder(
   walletClient: WalletClient,
   signerAddress: `0x${string}`,
   funderAddress: `0x${string}`,
-  params: OrderParams
+  params: OrderParams,
+  clobApiUrl: string = "https://api.elizabao.xyz"
 ) {
   const salt = generateSalt();
   const { makerAmount, takerAmount } = calculateAmounts(
@@ -283,6 +295,11 @@ export async function createAndSignOrder(
   // signatureType: 0=EOA, 1=Magic, 2=GNOSIS_SAFE
   const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? 2 : 0;
 
+  // Determine negRisk from CLOB API if not already known
+  const negRisk = params.negRisk || await checkNegRisk(params.tokenId, clobApiUrl);
+
+  // Typed-data message for EIP-712 signing: side & signatureType as uint8 (numeric)
+  const sideUint8 = params.side === "BUY" ? 0 : 1;
   const orderMessage = {
     salt: BigInt(salt),
     maker: funderAddress as `0x${string}`,
@@ -294,11 +311,22 @@ export async function createAndSignOrder(
     expiration: 0n,
     nonce: 0n,
     feeRateBps: 0n,
-    side: params.side === "BUY" ? 0 : 1,
+    side: sideUint8,
     signatureType,
   };
 
-  const domain = getExchangeDomain(params.negRisk);
+  const domain = getExchangeDomain(negRisk);
+
+  // Debug: log typed-data fields used for signing (no secrets)
+  console.log("[createAndSignOrder] EIP-712 signing:", {
+    sideUint8,
+    signatureType,
+    verifyingContract: domain.verifyingContract,
+    negRisk,
+    salt,
+    makerAmount: makerAmount.toString(),
+    takerAmount: takerAmount.toString(),
+  });
 
   const signature = await walletClient.signTypedData({
     account: signerAddress,
@@ -310,7 +338,7 @@ export async function createAndSignOrder(
 
   return {
     order: {
-      salt,  // safe integer number, not string
+      salt,  // safe integer number
       maker: funderAddress,
       signer: signerAddress,
       taker: "0x0000000000000000000000000000000000000000",
@@ -320,7 +348,7 @@ export async function createAndSignOrder(
       expiration: "0",
       nonce: "0",
       feeRateBps: "0",
-      side: params.side,  // "BUY" or "SELL" string
+      side: params.side,  // "BUY" or "SELL" string for JSON payload
       signatureType,
       signature,
     },
@@ -346,7 +374,8 @@ export async function placeOrder(
     walletClient,
     signerAddress,
     funderAddress,
-    params
+    params,
+    clobApiUrl
   );
 
   // order.salt is already a safe integer, order.side is already "BUY"/"SELL"
