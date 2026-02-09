@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTrading, useAppConfig } from "@/contexts/ElizaConfigProvider";
 import {
@@ -49,12 +49,39 @@ export default function TradePage() {
   const { config } = useAppConfig();
   const { safeBalances, loading: balanceLoading, fetchBalances } = useOnChainBalances();
 
-  // Fetch Safe balance on mount
+  // Exchange balance from CLOB
+  const [exchangeBalance, setExchangeBalance] = useState(0);
+  const [exchangeLoading, setExchangeLoading] = useState(false);
+
+  const fetchExchangeBalance = useCallback(async () => {
+    if (!clobCredentials || !userAddress) return;
+    setExchangeLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("clob-balance", {
+        body: {
+          apiKey: clobCredentials.apiKey,
+          secret: clobCredentials.secret,
+          passphrase: clobCredentials.passphrase,
+          address: userAddress,
+          asset_type: "0",
+        },
+      });
+      setExchangeBalance(parseFloat(data?.balance || "0"));
+    } catch {}
+    setExchangeLoading(false);
+  }, [clobCredentials, userAddress]);
+
+  // Fetch balances on mount
   useEffect(() => {
     if (safeAddress) fetchBalances(undefined, safeAddress);
   }, [safeAddress, fetchBalances]);
 
-  const availableBalance = safeBalances ? parseFloat(safeBalances.usdcE) : 0;
+  useEffect(() => {
+    fetchExchangeBalance();
+  }, [fetchExchangeBalance]);
+
+  const walletBalance = safeBalances ? parseFloat(safeBalances.usdcE) : 0;
+  const totalAvailableDisplay = walletBalance + exchangeBalance;
 
   // Market selection
   const [markets, setMarkets] = useState<GammaMarket[]>([]);
@@ -153,37 +180,22 @@ export default function TradePage() {
     setSubmitting(true);
     setOrderResult(null);
 
-    // Preflight: check on-chain USDC.e balance in Trading Wallet (Safe)
+    // Preflight: check combined balance (wallet + exchange)
     try {
       const makerAmount = priceNum * sizeNum;
-      // Refresh balance
+      // Refresh balances
       if (safeAddress) await fetchBalances(undefined, safeAddress);
-      const onChainAvailable = availableBalance;
+      await fetchExchangeBalance();
       
-      // Also check CLOB exchange balance
-      let exchangeAvailable = 0;
-      try {
-        const { data: bData } = await supabase.functions.invoke("clob-balance", {
-          body: {
-            apiKey: clobCredentials.apiKey,
-            secret: clobCredentials.secret,
-            passphrase: clobCredentials.passphrase,
-            address: userAddress,
-            asset_type: "0",
-          },
-        });
-        exchangeAvailable = parseFloat(bData?.balance || "0");
-      } catch {}
-
-      const totalAvailable = onChainAvailable + exchangeAvailable;
+      const totalAvailable = walletBalance + exchangeBalance;
       if (totalAvailable < makerAmount) {
-        const msg = `Insufficient balance: $${totalAvailable.toFixed(2)} available (wallet: $${onChainAvailable.toFixed(2)}, exchange: $${exchangeAvailable.toFixed(2)}), need $${makerAmount.toFixed(2)}. Deposit USDC.e to your Trading Wallet: ${safeAddress || "N/A"}`;
+        const msg = `Insufficient balance: $${totalAvailable.toFixed(2)} available (wallet: $${walletBalance.toFixed(2)}, exchange: $${exchangeBalance.toFixed(2)}), need $${makerAmount.toFixed(2)}.`;
         toast.error(msg);
         setOrderResult({ success: false, message: msg });
         setSubmitting(false);
         return;
       }
-      console.log("[TradePage] Preflight OK — on-chain:", onChainAvailable, "exchange:", exchangeAvailable, "needed:", makerAmount);
+      console.log("[TradePage] Preflight OK — wallet:", walletBalance, "exchange:", exchangeBalance, "needed:", makerAmount);
     } catch (preflightErr) {
       console.warn("[TradePage] Preflight check failed, proceeding anyway:", preflightErr);
     }
@@ -409,20 +421,31 @@ export default function TradePage() {
               <span className="text-xs font-medium uppercase tracking-widest font-mono">Available to Trade</span>
             </div>
             <button
-              onClick={() => safeAddress && fetchBalances(undefined, safeAddress)}
-              disabled={balanceLoading}
+              onClick={() => {
+                if (safeAddress) fetchBalances(undefined, safeAddress);
+                fetchExchangeBalance();
+              }}
+              disabled={balanceLoading || exchangeLoading}
               className="text-muted-foreground hover:text-foreground"
             >
-              {balanceLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              {(balanceLoading || exchangeLoading) ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
             </button>
           </div>
           <div className="text-xl font-bold font-mono mt-1">
-            ${availableBalance.toFixed(2)} <span className="text-xs text-muted-foreground font-normal">USDC.e</span>
+            ${totalAvailableDisplay.toFixed(2)} <span className="text-xs text-muted-foreground font-normal">USDC.e</span>
           </div>
-          {availableBalance === 0 && safeAddress && (
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Deposit USDC.e to your Trading Wallet to start trading
-            </p>
+          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground font-mono">
+            <span>Wallet: ${walletBalance.toFixed(2)}</span>
+            <span>Exchange: ${exchangeBalance.toFixed(2)}</span>
+          </div>
+          {walletBalance > 0 && exchangeBalance === 0 && (
+            <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-[10px] text-amber-400 flex items-start gap-1.5">
+              <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+              <span>
+                Your ${walletBalance.toFixed(2)} USDC.e is in your Trading Wallet but not deposited on the exchange yet. 
+                The exchange may pull funds directly from your wallet if approvals are set.
+              </span>
+            </div>
           )}
         </div>
 
