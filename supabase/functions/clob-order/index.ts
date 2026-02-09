@@ -256,15 +256,20 @@ Deno.serve(async (req) => {
       : signerAddress;
 
     const upstreamHeaders: Record<string, string> = {
-      POLY_ADDRESS: polyAddress,
-      POLY_SIGNATURE: hmacSig,
-      POLY_TIMESTAMP: `${timestamp}`,
-      POLY_API_KEY: creds.apiKey,
-      POLY_PASSPHRASE: creds.passphrase,
+      "POLY-ADDRESS": polyAddress,
+      "POLY-SIGNATURE": hmacSig,
+      "POLY-TIMESTAMP": `${timestamp}`,
+      "POLY-API-KEY": creds.apiKey,
+      "POLY-PASSPHRASE": creds.passphrase,
       "Content-Type": "application/json",
     };
 
-    console.log("[clob-order] POLY_ADDRESS:", polyAddress, "signer:", signerAddress, "maker:", makerAddress);
+    // Add proxy address header when maker differs from signer (Safe wallet)
+    if (makerAddress && makerAddress.toLowerCase() !== signerAddress.toLowerCase()) {
+      upstreamHeaders["POLY-PROXY-ADDRESS"] = makerAddress;
+    }
+
+    console.log("[clob-order] POLY-ADDRESS:", polyAddress, "signer:", signerAddress, "maker:", makerAddress);
 
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Clean body:", cleanBodyStr.slice(0, 300));
