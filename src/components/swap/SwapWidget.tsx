@@ -77,6 +77,14 @@ export default function SwapWidget({
       const provider = new ethers.providers.Web3Provider(ethProvider);
       const signer = provider.getSigner();
 
+      // Check POL balance for gas
+      const polBalance = await provider.getBalance(userAddress);
+      if (polBalance.lt(ethers.utils.parseEther("0.01"))) {
+        throw new Error(
+          `Not enough POL for gas fees. You have ${parseFloat(ethers.utils.formatEther(polBalance)).toFixed(4)} POL. Send at least 0.05 POL to your EOA wallet (${userAddress.slice(0, 8)}…) to cover gas.`
+        );
+      }
+
       const usdcContract = new ethers.Contract(USDC_NATIVE, erc20Abi, signer);
 
       // Check current allowance
