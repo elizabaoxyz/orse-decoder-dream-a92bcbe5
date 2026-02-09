@@ -60,8 +60,8 @@ Deno.serve(async (req) => {
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Headers:", headerNames.join(", "));
     console.log("[clob-order] Body length:", bodyStr.length);
-    console.log("[clob-order] POLY-ADDRESS:", upstreamHeaders["POLY-ADDRESS"]?.slice(0, 10) + "...");
-    console.log("[clob-order] POLY-PROXY-ADDRESS:", upstreamHeaders["POLY-PROXY-ADDRESS"] || "(not set)");
+    console.log("[clob-order] POLY_ADDRESS:", upstreamHeaders["POLY_ADDRESS"]?.slice(0, 10) + "...");
+    console.log("[clob-order] POLY_PROXY_ADDRESS:", upstreamHeaders["POLY_PROXY_ADDRESS"] || "(not set)");
 
     const resp = await fetch(`${CLOB_URL}/order`, {
       method: "POST",
