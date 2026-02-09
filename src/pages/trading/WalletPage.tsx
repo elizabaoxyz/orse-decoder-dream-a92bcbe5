@@ -5,6 +5,7 @@ import {
   deploySafeWallet,
   generateL2Headers,
 } from "@/lib/polymarket-client";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,24 +60,35 @@ export default function WalletPage() {
 
   const fetchBalanceAllowance = useCallback(async () => {
     if (!clobCredentials || !userAddress) return;
-    // POLY-ADDRESS must match the address credentials were derived for (EOA, not Safe)
     setBalanceLoading(true);
     setBalanceError(null);
     try {
-      const path = "/balance-allowance?asset_type=0";
-      const headers = await generateL2Headers(clobCredentials, userAddress, "GET", path);
-      console.log("[Balance] POLY-ADDRESS:", userAddress, "path:", path, "apiKey:", clobCredentials.apiKey.slice(0, 8));
-      const res = await fetch(`${clobApiUrl}${path}`, { method: "GET", headers });
-      const text = await res.text();
-      console.log("[Balance] Response:", res.status, text);
-      let json: any;
-      try { json = JSON.parse(text); } catch { json = { error: text }; }
-      if (!res.ok || json.error) {
-        setBalanceError(json.error || `HTTP ${res.status}: ${text}`);
+      // Sign for the CLOB path (what upstream sees)
+      const clobPath = "/balance-allowance?asset_type=0";
+      const l2 = await generateL2Headers(clobCredentials, userAddress, "GET", clobPath);
+
+      // Route through edge function to avoid CORS issues with POLY-* headers
+      const { data, error } = await supabase.functions.invoke("clob-balance", {
+        headers: {
+          "x-poly-address": l2["POLY-ADDRESS"],
+          "x-poly-api-key": l2["POLY-API-KEY"],
+          "x-poly-signature": l2["POLY-SIGNATURE"],
+          "x-poly-timestamp": l2["POLY-TIMESTAMP"],
+          "x-poly-passphrase": l2["POLY-PASSPHRASE"],
+        },
+        body: { asset_type: "0" },
+      });
+
+      console.log("[Balance] Edge function response:", data);
+
+      if (error) {
+        setBalanceError(error.message);
+      } else if (data?.error) {
+        setBalanceError(data.error);
       } else {
         setBalanceData({
-          balance: json.balance ?? "0",
-          allowance: json.allowance ?? "0",
+          balance: data?.balance ?? "0",
+          allowance: data?.allowance ?? "0",
         });
       }
     } catch (e) {
