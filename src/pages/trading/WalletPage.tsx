@@ -7,6 +7,7 @@ import {
   generateL2Headers,
 } from "@/lib/polymarket-client";
 import { useOnChainBalances } from "@/hooks/useOnChainBalances";
+import { useTokenApprovals } from "@/hooks/useTokenApprovals";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ export default function WalletPage() {
 
   // On-chain balances
   const { eoaBalances, safeBalances, loading: onChainLoading, error: onChainError, fetchBalances } = useOnChainBalances();
+  const { approvalStatus, checking: approvalsChecking, approving, error: approvalError, checkApprovals, approveAll } = useTokenApprovals();
 
   // Balance / Allowance state (CLOB)
   const [balanceData, setBalanceData] = useState<{ balance: string; allowance: string } | null>(null);
@@ -114,6 +116,13 @@ export default function WalletPage() {
       fetchBalances(userAddress, safeAddress || undefined);
     }
   }, [userAddress, safeAddress, fetchBalances]);
+
+  // Auto-check token approvals when Safe is available
+  useEffect(() => {
+    if (safeAddress) {
+      checkApprovals(safeAddress);
+    }
+  }, [safeAddress, checkApprovals]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -458,7 +467,88 @@ export default function WalletPage() {
         </Section>
       )}
 
-      {/* CLOB Balance / Allowance */}
+      {/* Token Approvals */}
+      {safeAddress && (
+        <Section
+          title="Token Approvals"
+          icon={<Shield className="w-4 h-4 text-primary" />}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">
+              Required approvals for Polymarket trading
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => checkApprovals(safeAddress)}
+              disabled={approvalsChecking}
+              className="h-6 px-2"
+            >
+              {approvalsChecking ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            </Button>
+          </div>
+
+          {approvalError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-2.5 text-xs text-destructive mb-2">
+              {approvalError}
+            </div>
+          )}
+
+          {approvalStatus && (
+            <div className="space-y-1">
+              <ApprovalRow label="USDC → CTF Contract" approved={approvalStatus.usdcToCTF} />
+              <ApprovalRow label="USDC → CTF Exchange" approved={approvalStatus.usdcToExchange} />
+              <ApprovalRow label="USDC → NegRisk Exchange" approved={approvalStatus.usdcToNegRiskExchange} />
+              <ApprovalRow label="Tokens → CTF Exchange" approved={approvalStatus.ctfToExchange} />
+              <ApprovalRow label="Tokens → NegRisk Exchange" approved={approvalStatus.ctfToNegRiskExchange} />
+              <ApprovalRow label="Tokens → NegRisk Adapter" approved={approvalStatus.ctfToNegRiskAdapter} />
+            </div>
+          )}
+
+          {approvalStatus && !approvalStatus.allApproved && (
+            <Button
+              onClick={async () => {
+                if (!ethProvider) {
+                  toast.error("Wallet provider not ready");
+                  return;
+                }
+                let token = accessToken;
+                if (!token) token = await refreshToken();
+                if (!token) {
+                  toast.error("Could not get access token");
+                  return;
+                }
+                const freshProvider = await switchToPolygon();
+                const result = await approveAll(
+                  freshProvider,
+                  userAddress!,
+                  token,
+                  config?.signerUrl,
+                  approvalStatus
+                );
+                if (result.success) {
+                  toast.success("Token approvals set successfully!");
+                  checkApprovals(safeAddress);
+                } else {
+                  toast.error(result.message || "Approval failed");
+                }
+              }}
+              disabled={approving || !ethProvider}
+              className="w-full mt-3"
+            >
+              {approving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {approving ? "Setting Approvals..." : "Approve All Tokens"}
+            </Button>
+          )}
+
+          {approvalStatus?.allApproved && (
+            <Badge className="mt-3 bg-green-500/10 text-green-500 border-green-500/20">
+              ✅ All approvals set
+            </Badge>
+          )}
+        </Section>
+      )}
+
       {clobCredentials && (
         <Section
           title="Exchange Balance"
@@ -521,6 +611,7 @@ export default function WalletPage() {
           <ReadinessItem label="CLOB credentials" ready={!!clobCredentials} />
           <ReadinessItem label="Access token" ready={!!accessToken} />
           <ReadinessItem label="USDC in Safe" ready={!!safeBalances && parseFloat(safeBalances.usdc) > 0} />
+          <ReadinessItem label="Token approvals" ready={!!approvalStatus?.allApproved} />
           <ReadinessItem label="CLOB Balance" ready={!!balanceData && parseFloat(balanceData.balance) > 0} />
         </div>
         {isAuthenticated && walletReady && safeAddress && clobCredentials && accessToken && (
@@ -638,6 +729,19 @@ function StatusChip({ label, ok }: { label: string; ok: boolean }) {
       )}
       <span className="text-muted-foreground">{label}</span>
       <span>{ok ? "✅" : "❌"}</span>
+    </div>
+  );
+}
+
+function ApprovalRow({ label, approved }: { label: string; approved: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      {approved ? (
+        <CheckCircle2 className="w-4 h-4 text-green-500" />
+      ) : (
+        <XCircle className="w-4 h-4 text-muted-foreground/40" />
+      )}
     </div>
   );
 }
