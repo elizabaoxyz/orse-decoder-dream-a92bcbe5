@@ -553,57 +553,39 @@ export async function placeOrder(
   const method = "POST";
   const requestPath = "/order";
   const bodyStr = JSON.stringify(orderPayload);
-  const ts = Math.floor(Date.now() / 1000);
 
-  // 3. Compute HMAC over (timestamp + method + path + body) using user secret
-  const hmacMessage = String(ts) + method + requestPath + bodyStr;
-  const sig = await hmacSign(creds.secret, hmacMessage);
+  // 3. Use the official SDK's createL2Headers to guarantee HMAC consistency
+  const { createL2Headers: sdkCreateL2Headers } = await import("@polymarket/clob-client/dist/headers/index.js");
 
-  // 4. Build user L2 auth headers (all from same creds object)
-  const l2Headers: Record<string, string> = {
-    POLY_ADDRESS: signerAddress,
-    POLY_SIGNATURE: sig,
-    POLY_TIMESTAMP: String(ts),
-    POLY_API_KEY: creds.apiKey,
-    POLY_PASSPHRASE: creds.passphrase,
-  };
+  // Minimal signer adapter — createL2Headers only calls signer.getAddress()
+  const signerAdapter = { getAddress: async () => signerAddress } as any;
+  const sdkCreds = { key: creds.apiKey, secret: creds.secret, passphrase: creds.passphrase };
+  const l2HeaderArgs = { method, requestPath, body: bodyStr };
 
-  // 5. Get builder attribution headers (non-auth only)
-  let safeBuilderHeaders: Record<string, string> = {};
-  try {
-    const builderHeaders = await getBuilderHeaders(
-      privyAccessToken,
-      method,
-      requestPath,
-      bodyStr
-    );
-    for (const [key, value] of Object.entries(builderHeaders)) {
-      if (key.startsWith("POLY_BUILDER") || key.startsWith("POLY-BUILDER")) {
-        safeBuilderHeaders[key] = value;
-      }
-    }
-  } catch (err) {
-    console.warn("[placeOrder] Builder attribution failed:", err);
+  const sdkHeaders = await sdkCreateL2Headers(
+    signerAdapter,
+    sdkCreds,
+    l2HeaderArgs
+  );
+
+  // Convert SDK headers to plain Record<string, string>
+  const polyHeaders: Record<string, string> = {};
+  for (const [k, v] of Object.entries(sdkHeaders)) {
+    polyHeaders[k] = String(v);
   }
 
-  // 6. Add proxy address header
-  const polyHeaders: Record<string, string> = { ...l2Headers };
-  if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
-    polyHeaders["POLY_PROXY_ADDRESS"] = funderAddress;
-  }
-
-  // 7. Debug logging (no secrets)
+  // 4. Debug logging (no secrets)
   const akTail = creds.apiKey.slice(-6);
+  const ts = polyHeaders["POLY_TIMESTAMP"];
   console.log(`[placeOrder] path=${requestPath} method=${method} ts=${ts} bodyLen=${bodyStr.length} apiKey=…${akTail}`);
-  console.log("[placeOrder] POLY_ADDRESS:", polyHeaders["POLY_ADDRESS"], "POLY_PROXY_ADDRESS:", polyHeaders["POLY_PROXY_ADDRESS"] || "(none)");
+  console.log("[placeOrder] POLY_ADDRESS:", polyHeaders["POLY_ADDRESS"], "headers:", Object.keys(polyHeaders).join(","));
 
-  // 8. Submit via edge function — send pre-serialized body to preserve HMAC consistency
+  // 5. Submit via edge function — send pre-serialized body to preserve HMAC consistency
   const { supabase } = await import("@/integrations/supabase/client");
   const { data: edgeData, error: edgeError } = await supabase.functions.invoke("clob-order", {
     body: {
       bodyStr,
       polyHeaders,
-      builderHeaders: safeBuilderHeaders,
     },
   });
 
