@@ -426,9 +426,21 @@ export default function WalletPage() {
             <div className="space-y-1 mb-3">
               <p className="text-xs font-medium text-muted-foreground">Embedded Wallet (EOA)</p>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">USDC</span>
-                <span className="font-mono">{parseFloat(eoaBalances.usdc).toFixed(2)}</span>
+                <span className="text-muted-foreground">USDC (total)</span>
+                <span className="font-mono">{parseFloat(eoaBalances.usdcTotal).toFixed(2)}</span>
               </div>
+              {parseFloat(eoaBalances.usdcE) > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                  <span className="pl-2">└ USDC.e (bridged)</span>
+                  <span className="font-mono">{parseFloat(eoaBalances.usdcE).toFixed(2)}</span>
+                </div>
+              )}
+              {parseFloat(eoaBalances.usdcNative) > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                  <span className="pl-2">└ USDC (native)</span>
+                  <span className="font-mono">{parseFloat(eoaBalances.usdcNative).toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">POL</span>
                 <span className="font-mono">{parseFloat(eoaBalances.pol).toFixed(4)}</span>
@@ -441,11 +453,23 @@ export default function WalletPage() {
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground">Trading Wallet (Safe)</p>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">USDC</span>
-                <span className={`font-mono ${parseFloat(safeBalances.usdc) > 0 ? "text-green-500" : ""}`}>
-                  {parseFloat(safeBalances.usdc).toFixed(2)}
+                <span className="text-muted-foreground">USDC (total)</span>
+                <span className={`font-mono ${parseFloat(safeBalances.usdcTotal) > 0 ? "text-green-500" : ""}`}>
+                  {parseFloat(safeBalances.usdcTotal).toFixed(2)}
                 </span>
               </div>
+              {parseFloat(safeBalances.usdcE) > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                  <span className="pl-2">└ USDC.e (bridged) ✅ Polymarket</span>
+                  <span className="font-mono">{parseFloat(safeBalances.usdcE).toFixed(2)}</span>
+                </div>
+              )}
+              {parseFloat(safeBalances.usdcNative) > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                  <span className="pl-2">└ USDC (native) ⚠️ needs swap</span>
+                  <span className="font-mono">{parseFloat(safeBalances.usdcNative).toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">POL</span>
                 <span className="font-mono">{parseFloat(safeBalances.pol).toFixed(4)}</span>
@@ -580,10 +604,12 @@ export default function WalletPage() {
             </div>
           )}
 
-          {safeBalances && safeAddress && parseFloat(safeBalances.usdc) > 0 && balanceData && parseFloat(balanceData.balance) === 0 && (
+          {safeBalances && safeAddress && parseFloat(safeBalances.usdcTotal) > 0 && balanceData && parseFloat(balanceData.balance) === 0 && (
             <div className="mt-3 p-2.5 bg-accent/10 border border-accent/20 rounded-md">
               <p className="text-xs text-accent-foreground">
-                ⚠️ You have <strong>{parseFloat(safeBalances.usdc).toFixed(2)} USDC</strong> in your Safe wallet but it hasn't been deposited into the Polymarket exchange yet. You need to approve & deposit via the Polymarket interface to trade.
+                ⚠️ You have <strong>{parseFloat(safeBalances.usdcTotal).toFixed(2)} USDC</strong> in your Safe wallet but it hasn't been deposited into the Polymarket exchange yet.
+                {parseFloat(safeBalances.usdcNative) > 0 && " Note: You have native USDC which needs to be swapped to USDC.e (bridged) before Polymarket can use it."}
+                {parseFloat(safeBalances.usdcE) > 0 && " Use the Approve All Tokens button above, then deposit via the exchange."}
               </p>
             </div>
           )}
@@ -610,7 +636,7 @@ export default function WalletPage() {
           <ReadinessItem label="Safe deployed" ready={!!safeAddress} />
           <ReadinessItem label="CLOB credentials" ready={!!clobCredentials} />
           <ReadinessItem label="Access token" ready={!!accessToken} />
-          <ReadinessItem label="USDC in Safe" ready={!!safeBalances && parseFloat(safeBalances.usdc) > 0} />
+          <ReadinessItem label="USDC in Safe" ready={!!safeBalances && parseFloat(safeBalances.usdcTotal) > 0} />
           <ReadinessItem label="Token approvals" ready={!!approvalStatus?.allApproved} />
           <ReadinessItem label="CLOB Balance" ready={!!balanceData && parseFloat(balanceData.balance) > 0} />
         </div>

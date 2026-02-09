@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import { createPublicClient, http, formatUnits, parseAbi } from "viem";
 import { polygon } from "viem/chains";
 
-const USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" as const;
+const USDC_E_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" as const; // USDC.e (bridged) — used by Polymarket
+const USDC_NATIVE_ADDRESS = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" as const; // Native USDC
 const ERC20_ABI = parseAbi([
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address owner, address spender) view returns (uint256)",
@@ -16,7 +17,9 @@ const RPC_URLS = [
 
 export interface OnChainBalances {
   pol: string;
-  usdc: string;
+  usdcE: string;     // USDC.e (bridged) — Polymarket uses this
+  usdcNative: string; // Native USDC
+  usdcTotal: string;  // Combined for display
 }
 
 function getClient(rpcIndex = 0) {
@@ -42,18 +45,29 @@ export function useOnChainBalances() {
         const client = getClient(i);
 
         const fetchForAddress = async (addr: string): Promise<OnChainBalances> => {
-          const [polBal, usdcBal] = await Promise.all([
+          const [polBal, usdcEBal, usdcNativeBal] = await Promise.all([
             client.getBalance({ address: addr as `0x${string}` }),
             client.readContract({
-              address: USDC_ADDRESS,
+              address: USDC_E_ADDRESS,
+              abi: ERC20_ABI,
+              functionName: "balanceOf",
+              args: [addr as `0x${string}`],
+            } as any),
+            client.readContract({
+              address: USDC_NATIVE_ADDRESS,
               abi: ERC20_ABI,
               functionName: "balanceOf",
               args: [addr as `0x${string}`],
             } as any),
           ]);
+          const usdcE = formatUnits(usdcEBal as bigint, 6);
+          const usdcNative = formatUnits(usdcNativeBal as bigint, 6);
+          const usdcTotal = (parseFloat(usdcE) + parseFloat(usdcNative)).toString();
           return {
             pol: formatUnits(polBal, 18),
-            usdc: formatUnits(usdcBal as bigint, 6),
+            usdcE,
+            usdcNative,
+            usdcTotal,
           };
         };
 
