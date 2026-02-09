@@ -376,8 +376,15 @@ export async function placeOrder(
     console.warn("[placeOrder] Builder attribution failed:", err);
   }
 
-  // 4. Add proxy address for Safe wallet
-  const allHeaders = { ...l2Headers, ...builderHeaders };
+  // 4. Merge headers — builder headers must NOT overwrite user L2 auth
+  // Only keep builder-specific keys (POLY_BUILDER_*) from the signer response
+  const safeBuilderHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(builderHeaders)) {
+    if (key.startsWith("POLY_BUILDER") || key.startsWith("POLY-BUILDER")) {
+      safeBuilderHeaders[key] = value;
+    }
+  }
+  const allHeaders = { ...safeBuilderHeaders, ...l2Headers };
   if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
     allHeaders["POLY-PROXY-ADDRESS"] = funderAddress;
   }
@@ -385,6 +392,7 @@ export async function placeOrder(
   // 5. Submit order — log the actual URL for debugging
   const orderUrl = `${clobApiUrl}${requestPath}`;
   console.log("[placeOrder] Submitting to:", orderUrl);
+  console.log("[placeOrder] POLY-API-KEY:", allHeaders["POLY-API-KEY"]?.slice(0, 12) + "…");
   console.log("[placeOrder] Headers:", Object.keys(allHeaders).join(", "));
   const res = await fetch(orderUrl, {
     method: "POST",
