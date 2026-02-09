@@ -1,5 +1,5 @@
 // Polymarket CLOB Trading Client
-// Uses viem for EIP-712 signing, Web Crypto for HMAC
+// Uses official @polymarket/order-utils for EIP-712 signing
 // NO builder secrets in frontend — uses remote signing server
 
 import type { WalletClient } from "viem";
@@ -7,6 +7,7 @@ import { getCreate2Address, keccak256, encodeAbiParameters, zeroAddress } from "
 import { ethers } from "ethers";
 import { RelayClient, RelayerTxType } from "@polymarket/builder-relayer-client";
 import { BuilderConfig } from "@polymarket/builder-signing-sdk";
+import { ExchangeOrderBuilder, Side, SignatureType } from "@polymarket/order-utils";
 import { getBuilderHeaders } from "./elizabao-api";
 
 // CLOB_API is now passed as a parameter — no hardcoded URL
@@ -207,33 +208,31 @@ export async function createOrDeriveClobCredentials(
 }
 
 // =============================================================================
-// EIP-712 Order Signing for CTF Exchange
+// EIP-712 Order Signing — uses official @polymarket/order-utils SDK
 // =============================================================================
 
-const ORDER_TYPES = {
-  Order: [
-    { name: "salt", type: "uint256" },
-    { name: "maker", type: "address" },
-    { name: "signer", type: "address" },
-    { name: "taker", type: "address" },
-    { name: "tokenId", type: "uint256" },
-    { name: "makerAmount", type: "uint256" },
-    { name: "takerAmount", type: "uint256" },
-    { name: "expiration", type: "uint256" },
-    { name: "nonce", type: "uint256" },
-    { name: "feeRateBps", type: "uint256" },
-    { name: "side", type: "uint8" },
-    { name: "signatureType", type: "uint8" },
-  ],
-} as const;
-
-function getExchangeDomain(negRisk: boolean) {
+// Adapter: wraps viem WalletClient as ethers v5 Signer for ExchangeOrderBuilder
+// (same pattern as Polymarket's Turnkey example)
+function createViemSignerAdapter(walletClient: WalletClient, address: `0x${string}`) {
   return {
-    name: "Polymarket CTF Exchange" as const,
-    version: "1" as const,
-    chainId: CHAIN_ID,
-    verifyingContract: (negRisk ? NEG_RISK_CTF_EXCHANGE : CTF_EXCHANGE) as `0x${string}`,
-  };
+    getAddress: async () => address,
+    _signTypedData: async (domain: any, types: any, value: any): Promise<string> => {
+      // Remove EIP712Domain from types (viem handles it internally)
+      const { EIP712Domain, ...typesWithoutDomain } = types;
+      const signature = await walletClient.signTypedData({
+        account: address,
+        domain,
+        types: typesWithoutDomain,
+        primaryType: "Order",
+        message: value,
+      });
+      return signature;
+    },
+  } as any; // ExchangeOrderBuilder only uses getAddress + _signTypedData
+}
+
+function getExchangeAddress(negRisk: boolean): string {
+  return negRisk ? NEG_RISK_CTF_EXCHANGE : CTF_EXCHANGE;
 }
 
 function generateSalt(): number {
@@ -246,7 +245,7 @@ function calculateAmounts(
   size: number,
   price: number,
   tickSize: string
-): { makerAmount: bigint; takerAmount: bigint } {
+): { makerAmount: string; takerAmount: string } {
   const DECIMALS = 6;
   const tick = parseFloat(tickSize);
   const roundedPrice = Math.round(price / tick) * tick;
@@ -254,14 +253,14 @@ function calculateAmounts(
   if (side === "BUY") {
     const usdcAmount = size * roundedPrice;
     return {
-      makerAmount: BigInt(Math.round(usdcAmount * 10 ** DECIMALS)),
-      takerAmount: BigInt(Math.round(size * 10 ** DECIMALS)),
+      makerAmount: String(Math.round(usdcAmount * 10 ** DECIMALS)),
+      takerAmount: String(Math.round(size * 10 ** DECIMALS)),
     };
   } else {
     const usdcAmount = size * roundedPrice;
     return {
-      makerAmount: BigInt(Math.round(size * 10 ** DECIMALS)),
-      takerAmount: BigInt(Math.round(usdcAmount * 10 ** DECIMALS)),
+      makerAmount: String(Math.round(size * 10 ** DECIMALS)),
+      takerAmount: String(Math.round(usdcAmount * 10 ** DECIMALS)),
     };
   }
 }
@@ -293,7 +292,6 @@ export async function createAndSignOrder(
   params: OrderParams,
   clobApiUrl: string = "https://api.elizabao.xyz"
 ) {
-  const salt = generateSalt();
   const { makerAmount, takerAmount } = calculateAmounts(
     params.side,
     params.size,
@@ -301,65 +299,63 @@ export async function createAndSignOrder(
     params.tickSize
   );
 
-  // signatureType: 0=EOA, 1=Magic, 2=GNOSIS_SAFE
-  const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? 2 : 0;
+  // signatureType: 0=EOA, 2=GNOSIS_SAFE
+  const sigType = funderAddress.toLowerCase() !== signerAddress.toLowerCase()
+    ? SignatureType.POLY_GNOSIS_SAFE
+    : SignatureType.EOA;
 
-  // Use params.negRisk; if false, double-check with Gamma API
+  // Determine negRisk → contract address
   const negRisk = params.negRisk || await fetchNegRiskFromGamma(params.tokenId);
+  const contractAddress = getExchangeAddress(negRisk);
 
-  // Typed-data message for EIP-712 signing: side & signatureType as uint8 (numeric)
-  const sideUint8 = params.side === "BUY" ? 0 : 1;
-  const orderMessage = {
-    salt: BigInt(salt),
-    maker: funderAddress as `0x${string}`,
-    signer: signerAddress as `0x${string}`,
-    taker: "0x0000000000000000000000000000000000000000" as `0x${string}`,
-    tokenId: BigInt(params.tokenId),
+  // Create the adapter and builder using official SDK
+  const signerAdapter = createViemSignerAdapter(walletClient, signerAddress);
+  const builder = new ExchangeOrderBuilder(contractAddress, CHAIN_ID, signerAdapter);
+
+  const sideEnum = params.side === "BUY" ? Side.BUY : Side.SELL;
+
+  // Build and sign order using official SDK
+  const signedOrder = await builder.buildSignedOrder({
+    maker: funderAddress,
+    taker: "0x0000000000000000000000000000000000000000",
+    tokenId: params.tokenId,
     makerAmount,
     takerAmount,
-    expiration: 0n,
-    nonce: 0n,
-    feeRateBps: 0n,
-    side: sideUint8,
-    signatureType,
-  };
-
-  const domain = getExchangeDomain(negRisk);
-
-  // Debug: log typed-data fields used for signing (no secrets)
-  console.log("[createAndSignOrder] EIP-712 signing:", {
-    sideUint8,
-    signatureType,
-    verifyingContract: domain.verifyingContract,
-    negRisk,
-    salt,
-    makerAmount: makerAmount.toString(),
-    takerAmount: takerAmount.toString(),
+    side: sideEnum,
+    feeRateBps: "0",
+    nonce: "0",
+    signer: signerAddress,
+    expiration: "0",
+    signatureType: sigType,
   });
 
-  const signature = await walletClient.signTypedData({
-    account: signerAddress,
-    domain,
-    types: ORDER_TYPES,
-    primaryType: "Order",
-    message: orderMessage,
+  // Debug logging
+  console.log("[createAndSignOrder] Official SDK signed order:", {
+    salt: signedOrder.salt,
+    side: signedOrder.side,
+    signatureType: signedOrder.signatureType,
+    verifyingContract: contractAddress,
+    negRisk,
+    makerAmount,
+    takerAmount,
+    signature: signedOrder.signature.slice(0, 20) + "...",
   });
 
   return {
     order: {
-      salt,  // safe integer number
-      maker: funderAddress,
-      signer: signerAddress,
-      taker: "0x0000000000000000000000000000000000000000",
-      tokenId: params.tokenId,
-      makerAmount: makerAmount.toString(),
-      takerAmount: takerAmount.toString(),
-      expiration: "0",
-      nonce: "0",
-      feeRateBps: "0",
-      side: params.side,  // "BUY"/"SELL" string for JSON payload (signing uses numeric)
-      signatureType,
-      signature,
+      salt: signedOrder.salt,
+      maker: signedOrder.maker,
+      signer: signedOrder.signer,
+      taker: signedOrder.taker,
+      tokenId: signedOrder.tokenId,
+      makerAmount: signedOrder.makerAmount,
+      takerAmount: signedOrder.takerAmount,
+      expiration: signedOrder.expiration,
+      nonce: signedOrder.nonce,
+      feeRateBps: signedOrder.feeRateBps,
+      side: params.side,  // "BUY"/"SELL" string for JSON payload
+      signatureType: signedOrder.signatureType,
+      signature: signedOrder.signature,
     },
     orderType: "GTC",
   };
