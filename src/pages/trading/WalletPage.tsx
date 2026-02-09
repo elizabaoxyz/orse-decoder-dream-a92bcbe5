@@ -383,6 +383,9 @@ export default function WalletPage() {
                   nativeUsdcBalance={safeBalances.usdcNative}
                   safeAddress={safeAddress}
                   userAddress={userAddress}
+                  ethProvider={ethProvider}
+                  switchToPolygon={switchToPolygon}
+                  onSwapComplete={() => fetchBalances(userAddress, safeAddress)}
                 />
               )}
 
