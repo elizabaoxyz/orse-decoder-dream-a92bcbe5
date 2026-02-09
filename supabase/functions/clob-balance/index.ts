@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
   try {
     // Extract POLY headers from custom x-poly-* headers (browser-safe)
-    const polyAddress = req.headers.get("x-poly-address") || "";
+    const polyAddress = (req.headers.get("x-poly-address") || "").toLowerCase();
     const polyApiKey = req.headers.get("x-poly-api-key") || "";
     const polySignature = req.headers.get("x-poly-signature") || "";
     const polyTimestamp = req.headers.get("x-poly-timestamp") || "";
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const clobPath = `/balance-allowance?asset_type=${assetType}`;
     const clobUrl = `${CLOB_URL}${clobPath}`;
 
-    console.log("[clob-balance] Fetching:", clobUrl, "POLY-ADDRESS:", polyAddress, "API-KEY:", polyApiKey.slice(0, 8));
+    console.log("[clob-balance] Fetching:", clobUrl, "POLY-ADDRESS:", polyAddress, "API-KEY:", polyApiKey.slice(0, 8), "SIG:", polySignature.slice(0, 12), "TS:", polyTimestamp, "PP:", polyPassphrase.slice(0, 8));
 
     const resp = await fetch(clobUrl, {
       method: "GET",
