@@ -266,12 +266,16 @@ function calculateAmounts(
   }
 }
 
-async function checkNegRisk(tokenId: string, clobApiUrl: string): Promise<boolean> {
+// Fallback: query Gamma API for negRisk if not provided
+async function fetchNegRiskFromGamma(tokenId: string): Promise<boolean> {
   try {
-    const res = await fetch(`${clobApiUrl}/neg-risk?token_id=${tokenId}`);
+    const res = await fetch(`https://gamma-api.polymarket.com/markets?clob_token_ids=${tokenId}`);
     if (!res.ok) return false;
-    const data = await res.json();
-    return data.neg_risk === true || data.negRisk === true;
+    const markets = await res.json();
+    if (Array.isArray(markets) && markets.length > 0) {
+      return markets[0].neg_risk === true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -295,8 +299,8 @@ export async function createAndSignOrder(
   // signatureType: 0=EOA, 1=Magic, 2=GNOSIS_SAFE
   const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? 2 : 0;
 
-  // Determine negRisk from CLOB API if not already known
-  const negRisk = params.negRisk || await checkNegRisk(params.tokenId, clobApiUrl);
+  // Use params.negRisk; if false, double-check with Gamma API
+  const negRisk = params.negRisk || await fetchNegRiskFromGamma(params.tokenId);
 
   // Typed-data message for EIP-712 signing: side & signatureType as uint8 (numeric)
   const sideUint8 = params.side === "BUY" ? 0 : 1;
