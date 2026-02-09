@@ -4,8 +4,8 @@ const CLOB_URL = "https://clob.polymarket.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type, authorization, x-poly-address, x-poly-api-key, x-poly-signature, x-poly-timestamp, x-poly-passphrase",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-poly-address, x-poly-api-key, x-poly-signature, x-poly-timestamp, x-poly-passphrase",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -21,8 +21,17 @@ serve(async (req) => {
     const polyTimestamp = req.headers.get("x-poly-timestamp") || "";
     const polyPassphrase = req.headers.get("x-poly-passphrase") || "";
 
+    // Read asset_type from query params or POST body
+    let assetType = "0";
     const url = new URL(req.url);
-    const assetType = url.searchParams.get("asset_type") ?? "0";
+    if (url.searchParams.has("asset_type")) {
+      assetType = url.searchParams.get("asset_type")!;
+    } else if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        assetType = body.asset_type ?? "0";
+      } catch { /* empty body is fine */ }
+    }
 
     const clobPath = `/balance-allowance?asset_type=${assetType}`;
     const clobUrl = `${CLOB_URL}${clobPath}`;
