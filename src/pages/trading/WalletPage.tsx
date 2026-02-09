@@ -6,6 +6,7 @@ import {
   deploySafeWallet,
   generateL2Headers,
 } from "@/lib/polymarket-client";
+import { useOnChainBalances } from "@/hooks/useOnChainBalances";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ import {
   Check,
   RefreshCw,
   DollarSign,
+  ArrowDown,
+  Coins,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,7 +55,10 @@ export default function WalletPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const { config, error: configError } = useAppConfig();
 
-  // Balance / Allowance state
+  // On-chain balances
+  const { eoaBalances, safeBalances, loading: onChainLoading, error: onChainError, fetchBalances } = useOnChainBalances();
+
+  // Balance / Allowance state (CLOB)
   const [balanceData, setBalanceData] = useState<{ balance: string; allowance: string } | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
@@ -101,6 +107,13 @@ export default function WalletPage() {
       fetchBalanceAllowance();
     }
   }, [clobCredentials, userAddress, fetchBalanceAllowance]);
+
+  // Auto-fetch on-chain balances
+  useEffect(() => {
+    if (userAddress) {
+      fetchBalances(userAddress, safeAddress || undefined);
+    }
+  }, [userAddress, safeAddress, fetchBalances]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -374,14 +387,85 @@ export default function WalletPage() {
         )}
       </Section>
 
-      {/* Balance / Allowance */}
+      {/* On-Chain Balances */}
+      {(userAddress || safeAddress) && (
+        <Section
+          title="On-Chain Balances"
+          icon={<Coins className="w-4 h-4 text-primary" />}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Polygon Network</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchBalances(userAddress || undefined, safeAddress || undefined)}
+              disabled={onChainLoading}
+              className="h-6 px-2"
+            >
+              {onChainLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            </Button>
+          </div>
+
+          {onChainError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-2.5 text-xs text-destructive mb-2">
+              {onChainError}
+            </div>
+          )}
+
+          {/* EOA Wallet */}
+          {eoaBalances && userAddress && (
+            <div className="space-y-1 mb-3">
+              <p className="text-xs font-medium text-muted-foreground">Embedded Wallet (EOA)</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">USDC</span>
+                <span className="font-mono">{parseFloat(eoaBalances.usdc).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">POL</span>
+                <span className="font-mono">{parseFloat(eoaBalances.pol).toFixed(4)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Safe Wallet */}
+          {safeBalances && safeAddress && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Trading Wallet (Safe)</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">USDC</span>
+                <span className={`font-mono ${parseFloat(safeBalances.usdc) > 0 ? "text-green-500" : ""}`}>
+                  {parseFloat(safeBalances.usdc).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">POL</span>
+                <span className="font-mono">{parseFloat(safeBalances.pol).toFixed(4)}</span>
+              </div>
+            </div>
+          )}
+
+          {safeAddress && (
+            <div className="mt-3 p-2.5 bg-muted/30 rounded-md">
+              <p className="text-[10px] text-muted-foreground mb-1">
+                <ArrowDown className="w-3 h-3 inline mr-1" />
+                Deposit USDC to your Trading Wallet:
+              </p>
+              <code className="text-[10px] font-mono text-foreground break-all select-all">
+                {safeAddress}
+              </code>
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* CLOB Balance / Allowance */}
       {clobCredentials && (
         <Section
-          title="Balance / Allowance"
+          title="Exchange Balance"
           icon={<DollarSign className="w-4 h-4 text-primary" />}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">CLOB Collateral (USDC)</span>
+            <span className="text-xs text-muted-foreground">Polymarket CLOB (deposited USDC)</span>
             <Button variant="ghost" size="sm" onClick={fetchBalanceAllowance} disabled={balanceLoading} className="h-6 px-2">
               {balanceLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
             </Button>
@@ -390,24 +474,27 @@ export default function WalletPage() {
           {balanceError && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-2.5 text-xs text-destructive mb-2">
               {balanceError}
-              {safeAddress && (
-                <p className="mt-1.5 font-mono text-[10px] opacity-80">
-                  Deposit USDC ({USDC_CONTRACT.slice(0, 6)}…) to {safeAddress}
-                </p>
-              )}
             </div>
           )}
 
           {balanceData && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Balance</span>
+                <span className="text-muted-foreground">Deposited Balance</span>
                 <span className="font-mono">{parseFloat(balanceData.balance).toFixed(2)} USDC</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Allowance</span>
                 <span className="font-mono">{parseFloat(balanceData.allowance).toFixed(2)} USDC</span>
               </div>
+            </div>
+          )}
+
+          {safeBalances && safeAddress && parseFloat(safeBalances.usdc) > 0 && balanceData && parseFloat(balanceData.balance) === 0 && (
+            <div className="mt-3 p-2.5 bg-accent/10 border border-accent/20 rounded-md">
+              <p className="text-xs text-accent-foreground">
+                ⚠️ You have <strong>{parseFloat(safeBalances.usdc).toFixed(2)} USDC</strong> in your Safe wallet but it hasn't been deposited into the Polymarket exchange yet. You need to approve & deposit via the Polymarket interface to trade.
+              </p>
             </div>
           )}
 
@@ -419,10 +506,6 @@ export default function WalletPage() {
             <div className="flex justify-between">
               <span>Signer</span>
               <span className="font-mono">{(userAddress || "—").slice(0, 10)}…</span>
-            </div>
-            <div className="flex justify-between">
-              <span>USDC Token</span>
-              <span className="font-mono">{USDC_CONTRACT.slice(0, 10)}…</span>
             </div>
           </div>
         </Section>
@@ -437,6 +520,7 @@ export default function WalletPage() {
           <ReadinessItem label="Safe deployed" ready={!!safeAddress} />
           <ReadinessItem label="CLOB credentials" ready={!!clobCredentials} />
           <ReadinessItem label="Access token" ready={!!accessToken} />
+          <ReadinessItem label="USDC in Safe" ready={!!safeBalances && parseFloat(safeBalances.usdc) > 0} />
           <ReadinessItem label="CLOB Balance" ready={!!balanceData && parseFloat(balanceData.balance) > 0} />
         </div>
         {isAuthenticated && walletReady && safeAddress && clobCredentials && accessToken && (
