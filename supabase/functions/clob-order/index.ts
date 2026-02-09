@@ -9,26 +9,22 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-// ---------- HMAC-SHA256 helper (server-side, Deno crypto) ----------
-async function buildHmacSignature(
-  secret: string,
-  timestamp: number,
-  method: string,
-  requestPath: string,
-  body: string
-): Promise<string> {
-  const message = `${timestamp}${method}${requestPath}${body}`;
+// ---------- HMAC-SHA256 helper (matches clob-balance exactly) ----------
+async function hmacSign(secret: string, message: string): Promise<string> {
+  const normalized = secret.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
 
-  // Decode base64url secret
-  let normalized = secret.replace(/-/g, "+").replace(/_/g, "/");
-  while (normalized.length % 4 !== 0) normalized += "=";
-  const binary = atob(normalized);
-  const keyBytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) keyBytes[i] = binary.charCodeAt(i);
+  let keyData: Uint8Array;
+  try {
+    const binary = atob(padded);
+    keyData = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  } catch {
+    keyData = new TextEncoder().encode(secret);
+  }
 
   const key = await crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    keyData,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
@@ -40,17 +36,13 @@ async function buildHmacSignature(
     new TextEncoder().encode(message)
   );
 
-  // Convert to URL-safe base64 (preserve padding)
-  const arr = new Uint8Array(sig);
-  let b64 = "";
-  for (let i = 0; i < arr.length; i++) b64 += String.fromCharCode(arr[i]);
-  b64 = btoa(b64);
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
   return b64.replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 /**
  * Proxies order submission directly to clob.polymarket.com.
- * HMAC is computed server-side to avoid browser crypto inconsistencies.
+ * HMAC computed server-side with CLOB server time to match clob-balance pattern.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -59,7 +51,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { bodyStr, creds, signerAddress } = body;
+    const { bodyStr, creds, signerAddress, makerAddress } = body;
 
     if (!bodyStr || !creds || !signerAddress) {
       return new Response(
@@ -68,29 +60,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Compute HMAC server-side
-    const ts = Math.floor(Date.now() / 1000);
+    // Use CLOB server time to avoid clock skew (same as clob-balance)
+    let timestamp: string;
+    try {
+      const timeRes = await fetch(`${CLOB_URL}/time`);
+      const timeText = await timeRes.text();
+      timestamp = String(Math.floor(Number(timeText.trim())));
+    } catch {
+      timestamp = Math.floor(Date.now() / 1000).toString();
+    }
+
+    // Compute HMAC: timestamp + method + path + body
     const method = "POST";
     const requestPath = "/order";
-    const hmacSig = await buildHmacSignature(creds.secret, ts, method, requestPath, bodyStr);
+    const hmacMessage = timestamp + method + requestPath + bodyStr;
+    const hmacSig = await hmacSign(creds.secret, hmacMessage);
+
+    // Lowercase address — matches clob-balance pattern
+    const lowerAddress = signerAddress.toLowerCase();
 
     // Build headers for upstream CLOB request
     const upstreamHeaders: Record<string, string> = {
       "Content-Type": "application/json",
       "Accept": "application/json",
-      POLY_ADDRESS: signerAddress,
+      POLY_ADDRESS: lowerAddress,
       POLY_SIGNATURE: hmacSig,
-      POLY_TIMESTAMP: String(ts),
+      POLY_TIMESTAMP: timestamp,
       POLY_API_KEY: creds.apiKey,
       POLY_PASSPHRASE: creds.passphrase,
     };
 
+    // Add proxy address for Safe-based orders (maker ≠ signer)
+    if (makerAddress && makerAddress.toLowerCase() !== lowerAddress) {
+      upstreamHeaders["POLY_PROXY_ADDRESS"] = makerAddress;
+    }
+
     // Diagnostic logging
     console.log("[clob-order] Forwarding to:", `${CLOB_URL}/order`);
     console.log("[clob-order] Headers:", Object.keys(upstreamHeaders).join(", "));
-    console.log("[clob-order] POLY_ADDRESS:", signerAddress);
-    console.log("[clob-order] POLY_TIMESTAMP:", ts);
-    console.log("[clob-order] HMAC msg preview:", `${ts}${method}${requestPath}${bodyStr.slice(0, 40)}...`);
+    console.log("[clob-order] POLY_ADDRESS:", lowerAddress);
+    console.log("[clob-order] POLY_PROXY_ADDRESS:", upstreamHeaders["POLY_PROXY_ADDRESS"] || "(not set)");
+    console.log("[clob-order] POLY_TIMESTAMP:", timestamp);
+    console.log("[clob-order] HMAC msg:", JSON.stringify(hmacMessage.slice(0, 80) + "..."));
     console.log("[clob-order] Full body:", bodyStr);
 
     const resp = await fetch(`${CLOB_URL}/order`, {

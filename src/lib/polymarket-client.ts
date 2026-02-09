@@ -567,6 +567,7 @@ export async function placeOrder(
         passphrase: creds.passphrase,
       },
       signerAddress,
+      makerAddress: funderAddress,
     },
   });
 
