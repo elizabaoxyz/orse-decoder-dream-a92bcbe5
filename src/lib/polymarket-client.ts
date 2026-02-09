@@ -565,38 +565,50 @@ export async function placeOrder(
     console.warn("[placeOrder] Builder attribution failed:", err);
   }
 
-  // 6. Merge — builder headers first, user L2 headers override
-  const allHeaders = { ...safeBuilderHeaders, ...l2Headers };
+  // 6. Add proxy address header
+  const polyHeaders: Record<string, string> = { ...l2Headers };
   if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
-    allHeaders["POLY-PROXY-ADDRESS"] = funderAddress;
+    polyHeaders["POLY-PROXY-ADDRESS"] = funderAddress;
   }
 
   // 7. Debug logging (no secrets)
   const akTail = creds.apiKey.slice(-6);
   console.log(`[placeOrder] path=${requestPath} method=${method} ts=${ts} bodyLen=${bodyStr.length} apiKey=…${akTail}`);
-  console.log("[placeOrder] Headers:", Object.keys(allHeaders).join(", "));
+  console.log("[placeOrder] POLY-ADDRESS:", signerAddress, "POLY-PROXY-ADDRESS:", polyHeaders["POLY-PROXY-ADDRESS"] || "(none)");
 
-  // 8. Submit — use exact same bodyStr
-  const orderUrl = `${clobApiUrl}${requestPath}`;
-  const res = await fetch(orderUrl, {
-    method,
-    headers: allHeaders,
-    body: bodyStr,
+  // 8. Submit via edge function to bypass proxy header stripping
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data: edgeData, error: edgeError } = await supabase.functions.invoke("clob-order", {
+    body: {
+      orderPayload,
+      polyHeaders,
+      builderHeaders: safeBuilderHeaders,
+    },
   });
 
-  const responseText = await res.text();
-  console.log("[placeOrder] Response:", res.status, responseText);
-
-  if (!res.ok) {
+  if (edgeError) {
+    console.error("[placeOrder] Edge function error:", edgeError);
     return {
       success: false,
-      errorMsg: `Order failed (${res.status}): ${responseText}`,
+      errorMsg: `Edge function error: ${edgeError.message}`,
     };
   }
 
-  const data = JSON.parse(responseText);
+  const responseText = typeof edgeData === "string" ? edgeData : JSON.stringify(edgeData);
+  console.log("[placeOrder] Response:", responseText);
+
+  // Parse response — edgeData is already parsed JSON from supabase.functions.invoke
+  const data = typeof edgeData === "object" ? edgeData : JSON.parse(responseText);
+
+  if (data.error) {
+    return {
+      success: false,
+      errorMsg: `Order failed: ${data.error}`,
+    };
+  }
+
   return {
-    success: !data.error,
+    success: true,
     orderID: data.orderID || data.id,
     status: data.status,
     errorMsg: data.error || data.errorMsg,
