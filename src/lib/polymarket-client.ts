@@ -356,53 +356,63 @@ export async function placeOrder(
     side: order.side === 0 ? "BUY" : order.side === 1 ? "SELL" : order.side,
   };
   const orderPayload = { order: fixedOrder, orderType, owner: creds.apiKey };
+
+  // 2. Serialize once — this exact string is used for HMAC AND fetch body
+  const method = "POST";
   const requestPath = "/order";
-  const bodyString = JSON.stringify(orderPayload);
+  const bodyStr = JSON.stringify(orderPayload);
+  const ts = Math.floor(Date.now() / 1000);
 
-  // 2. Generate L2 auth headers
-  const l2Headers = await generateL2Headers(
-    creds,
-    signerAddress,
-    "POST",
-    requestPath,
-    bodyString
-  );
+  // 3. Compute HMAC over (timestamp + method + path + body) using user secret
+  const hmacMessage = String(ts) + method + requestPath + bodyStr;
+  const sig = await hmacSign(creds.secret, hmacMessage);
 
-  // 3. Get builder attribution headers from remote signer
-  let builderHeaders: Record<string, string> = {};
+  // 4. Build user L2 auth headers (all from same creds object)
+  const l2Headers: Record<string, string> = {
+    "POLY-ADDRESS": signerAddress,
+    "POLY-SIGNATURE": sig,
+    "POLY-TIMESTAMP": String(ts),
+    "POLY-API-KEY": creds.apiKey,
+    "POLY-PASSPHRASE": creds.passphrase,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  // 5. Get builder attribution headers (non-auth only)
+  let safeBuilderHeaders: Record<string, string> = {};
   try {
-    builderHeaders = await getBuilderHeaders(
+    const builderHeaders = await getBuilderHeaders(
       privyAccessToken,
-      "POST",
+      method,
       requestPath,
-      bodyString
+      bodyStr
     );
+    for (const [key, value] of Object.entries(builderHeaders)) {
+      if (key.startsWith("POLY_BUILDER") || key.startsWith("POLY-BUILDER")) {
+        safeBuilderHeaders[key] = value;
+      }
+    }
   } catch (err) {
     console.warn("[placeOrder] Builder attribution failed:", err);
   }
 
-  // 4. Merge headers — builder headers must NOT overwrite user L2 auth
-  // Only keep builder-specific keys (POLY_BUILDER_*) from the signer response
-  const safeBuilderHeaders: Record<string, string> = {};
-  for (const [key, value] of Object.entries(builderHeaders)) {
-    if (key.startsWith("POLY_BUILDER") || key.startsWith("POLY-BUILDER")) {
-      safeBuilderHeaders[key] = value;
-    }
-  }
+  // 6. Merge — builder headers first, user L2 headers override
   const allHeaders = { ...safeBuilderHeaders, ...l2Headers };
   if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
     allHeaders["POLY-PROXY-ADDRESS"] = funderAddress;
   }
 
-  // 5. Submit order — log the actual URL for debugging
-  const orderUrl = `${clobApiUrl}${requestPath}`;
-  console.log("[placeOrder] Submitting to:", orderUrl);
-  console.log("[placeOrder] POLY-API-KEY:", allHeaders["POLY-API-KEY"]?.slice(0, 12) + "…");
+  // 7. Debug logging (no secrets)
+  const akTail = creds.apiKey.slice(-6);
+  console.log(`[placeOrder] path=${requestPath} method=${method} ts=${ts} bodyLen=${bodyStr.length} apiKey=…${akTail}`);
   console.log("[placeOrder] Headers:", Object.keys(allHeaders).join(", "));
+
+  // 8. Submit — use exact same bodyStr
+  const orderUrl = `${clobApiUrl}${requestPath}`;
   const res = await fetch(orderUrl, {
-    method: "POST",
+    method,
     headers: allHeaders,
-    body: bodyString,
+    body: bodyStr,
   });
 
   const responseText = await res.text();
