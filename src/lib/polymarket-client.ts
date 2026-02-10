@@ -762,7 +762,14 @@ export async function placeOrder(
         serverTs ? { timestamp: serverTs } : undefined
       );
       const headers: Record<string, string> = { ...l2, ...builderHeaders };
-      console.log("[placeOrder] VPS submit:", url, "polyAddress=", polyAddress, "headers=", Object.keys(headers).join(", "));
+      console.log(
+        "[placeOrder] VPS submit:",
+        url,
+        "POLY-ADDRESS=",
+        headers["POLY-ADDRESS"],
+        "headers=",
+        Object.keys(headers).join(", ")
+      );
       const res = await fetch(url, { method, headers, body: bodyStrClean });
       const text = await res.text().catch(() => "");
       console.log("[placeOrder] VPS response:", res.status, text.slice(0, 300));
@@ -831,8 +838,25 @@ export async function fetchBalanceAllowanceViaVps(
     if (!res.ok) return null;
     const data = text ? JSON.parse(text) : {};
 
-    const bal = Number(data?.balance ?? 0);
-    const allow = Number(data?.allowance ?? 0);
+    // CLOB returns USDC amounts as strings; for collateral they are typically 6-decimal base units.
+    const toUsdc = (v: any): number => {
+      if (v == null) return 0;
+      const s = typeof v === "string" ? v : String(v);
+      if (s.includes(".")) {
+        const n = Number(s);
+        return Number.isFinite(n) ? n : 0;
+      }
+      try {
+        // Interpret as 6-decimal base units.
+        return Number(BigInt(s)) / 1e6;
+      } catch {
+        const n = Number(s);
+        return Number.isFinite(n) ? n : 0;
+      }
+    };
+
+    const bal = toUsdc(data?.balance);
+    const allow = toUsdc(data?.allowance);
     return {
       balance: Number.isFinite(bal) ? bal : 0,
       allowance: Number.isFinite(allow) ? allow : 0,
