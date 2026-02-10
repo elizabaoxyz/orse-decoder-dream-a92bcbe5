@@ -754,6 +754,32 @@ export async function placeOrder(
 
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
 
+    // Best-effort: refresh cached balance/allowance on the CLOB server.
+    // Some accounts/proxy-wallet flows can show stale cached balances until this is called.
+    try {
+      const sigType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? "2" : "0";
+      const updatePath = "/balance-allowance/update";
+      const updateUrl = `${clobApiUrl}${updatePath}?asset_type=COLLATERAL&signature_type=${sigType}`;
+      const updateHeaders = await generateL2Headers(
+        creds,
+        signerAddress,
+        "GET",
+        updatePath,
+        "",
+        funderAddress,
+        serverTs ? { timestamp: serverTs } : undefined
+      );
+      const updRes = await fetch(updateUrl, { method: "GET", headers: updateHeaders });
+      if (!updRes.ok) {
+        const t = await updRes.text().catch(() => "");
+        console.warn("[placeOrder] balance-allowance/update failed:", updRes.status, t.slice(0, 120));
+      } else {
+        console.log("[placeOrder] balance-allowance/update OK");
+      }
+    } catch (e: any) {
+      console.warn("[placeOrder] balance-allowance/update skipped:", e?.message || String(e));
+    }
+
     const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? "2" : "0";
     // Match clob-client style: include signature_type as query param (does not affect HMAC path).
     const url = `${clobApiUrl}${requestPath}?signature_type=${signatureType}`;
