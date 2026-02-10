@@ -109,17 +109,18 @@ export async function generateL2Headers(
   const timestamp = opts?.timestamp || Math.floor(Date.now() / 1000).toString();
   const message = timestamp + method.toUpperCase() + requestPath + body;
   const signature = await hmacSign(creds.secret, message);
-  // Polymarket docs:
-  // - POLY_ADDRESS is ALWAYS the Polygon signer address (EOA)
-  // - For Safe/proxy wallets, the funder is passed separately (POLY-PROXY-ADDRESS)
-  const polySigner = address.toLowerCase();
+  // IMPORTANT (real-world behavior):
+  // For proxy wallets (Magic / Gnosis Safe), Polymarket expects POLY-ADDRESS to match
+  // the *account* the API key is associated with (typically the funder/proxy address).
+  // This avoids 401 "Unauthorized/Invalid api key" (see Polymarket/clob-client issue #248).
+  const polyAddress = (funderAddress || address).toLowerCase();
   const proxy =
-    funderAddress && funderAddress.toLowerCase() !== polySigner
+    funderAddress && funderAddress.toLowerCase() !== address.toLowerCase()
       ? funderAddress.toLowerCase()
       : undefined;
 
   const headers: Record<string, string> = {
-    "POLY-ADDRESS": polySigner,
+    "POLY-ADDRESS": polyAddress,
     "POLY-SIGNATURE": signature,
     "POLY-TIMESTAMP": timestamp,
     "POLY-API-KEY": creds.apiKey,
@@ -199,10 +200,10 @@ export async function createOrDeriveClobCredentials(
   clobApiUrl: string = "https://api.elizabao.xyz",
   funderAddress?: `0x${string}`
 ): Promise<ClobCredentials> {
-  // Polymarket docs: L1 API key creation/derivation is for the SIGNER address.
-  // Funder/Safe is configured separately when trading.
-  const signingAddress = signerAddress;
-  console.log("[createOrDeriveClobCredentials] signer:", signerAddress, "funder:", funderAddress || "(none)");
+  // For proxy/Safe wallets we need API keys associated with the funder/proxy address,
+  // but the EIP-712 signature is produced by the signer EOA.
+  const credentialAddress = funderAddress || signerAddress;
+  console.log("[createOrDeriveClobCredentials] signer:", signerAddress, "credentialAddress:", credentialAddress);
   const timestamp = await getClobServerTime(clobApiUrl);
   const nonce = 0;
 
@@ -212,7 +213,7 @@ export async function createOrDeriveClobCredentials(
     types: CLOB_AUTH_TYPES,
     primaryType: "ClobAuth",
     message: {
-      address: signingAddress,
+      address: credentialAddress,
       timestamp: timestamp.toString(),
       nonce: BigInt(nonce),
       message: "This message attests that I control the given wallet",
@@ -223,12 +224,13 @@ export async function createOrDeriveClobCredentials(
   let data: any;
   try {
     data = await callClobAuth("create", {
-      poly_address: signingAddress.toLowerCase(),
+      // Header POLY_ADDRESS must be the signer EOA; the signed message includes credentialAddress.
+      poly_address: signerAddress.toLowerCase(),
       poly_signature: signature,
       poly_timestamp: timestamp.toString(),
       poly_nonce: nonce.toString(),
       payload: {
-        address: signingAddress.toLowerCase(),
+        address: credentialAddress.toLowerCase(),
         timestamp: timestamp.toString(),
         nonce: nonce.toString(),
         signature,
@@ -237,7 +239,7 @@ export async function createOrDeriveClobCredentials(
   } catch (e) {
     console.log("[CLOB] Create failed, trying derive...", e);
     data = await callClobAuth("derive", {
-      poly_address: signingAddress.toLowerCase(),
+      poly_address: signerAddress.toLowerCase(),
       poly_signature: signature,
       poly_timestamp: timestamp.toString(),
       poly_nonce: nonce.toString(),
@@ -250,7 +252,7 @@ export async function createOrDeriveClobCredentials(
     if (!data.apiKey) {
       console.log("[CLOB] Create returned error, trying derive...", data.error);
       data = await callClobAuth("derive", {
-        poly_address: signingAddress.toLowerCase(),
+        poly_address: signerAddress.toLowerCase(),
         poly_signature: signature,
         poly_timestamp: timestamp.toString(),
         poly_nonce: nonce.toString(),
@@ -262,7 +264,9 @@ export async function createOrDeriveClobCredentials(
     throw new Error(`CLOB auth response missing credentials: ${JSON.stringify(data)}`);
   }
 
-  console.log(`[createOrDeriveClobCredentials] signer=${signerAddress} apiKey=…${data.apiKey.slice(-6)}`);
+  console.log(
+    `[createOrDeriveClobCredentials] credentialAddress=${credentialAddress} apiKey=…${data.apiKey.slice(-6)}`
+  );
 
   return {
     apiKey: data.apiKey,
@@ -281,10 +285,10 @@ export async function resetClobCredentials(
   clobApiUrl: string = "https://api.elizabao.xyz",
   funderAddress?: `0x${string}`
 ): Promise<ClobCredentials> {
-  // Polymarket docs: L1 API key ops are for the SIGNER address.
-  // (funderAddress is not used for API key management)
-  const signingAddress = signerAddress;
-  console.log(`[resetClobCredentials] Resetting creds for signer=${signerAddress} (funder=${funderAddress || "(none)"})`);
+  const credentialAddress = funderAddress || signerAddress;
+  console.log(
+    `[resetClobCredentials] Resetting creds for credentialAddress=${credentialAddress} signer=${signerAddress}`
+  );
   const timestamp = await getClobServerTime(clobApiUrl);
 
   // Try to delete the existing API key first (best-effort, via edge function)
@@ -296,14 +300,14 @@ export async function resetClobCredentials(
       types: CLOB_AUTH_TYPES,
       primaryType: "ClobAuth",
       message: {
-        address: signingAddress,
+        address: credentialAddress,
         timestamp: timestamp.toString(),
         nonce: BigInt(delNonce),
         message: "This message attests that I control the given wallet",
       },
     });
     const delResult = await callClobAuth("delete", {
-      poly_address: signingAddress.toLowerCase(),
+      poly_address: signerAddress.toLowerCase(),
       poly_signature: delSig,
       poly_timestamp: timestamp.toString(),
       poly_nonce: delNonce.toString(),
@@ -323,7 +327,7 @@ export async function resetClobCredentials(
     types: CLOB_AUTH_TYPES,
     primaryType: "ClobAuth",
     message: {
-      address: signingAddress,
+      address: credentialAddress,
       timestamp: freshTimestamp.toString(),
       nonce: BigInt(newNonce),
       message: "This message attests that I control the given wallet",
@@ -331,12 +335,12 @@ export async function resetClobCredentials(
   });
 
   const data = await callClobAuth("create", {
-    poly_address: signingAddress.toLowerCase(),
+    poly_address: signerAddress.toLowerCase(),
     poly_signature: signature,
     poly_timestamp: freshTimestamp.toString(),
     poly_nonce: newNonce.toString(),
     payload: {
-      address: signingAddress.toLowerCase(),
+      address: credentialAddress.toLowerCase(),
       timestamp: freshTimestamp.toString(),
       nonce: newNonce.toString(),
       signature,
@@ -347,7 +351,9 @@ export async function resetClobCredentials(
     throw new Error(`CLOB reset response missing credentials: ${JSON.stringify(data)}`);
   }
 
-  console.log(`[resetClobCredentials] NEW creds: signer=${signerAddress} apiKey=…${data.apiKey.slice(-6)}`);
+  console.log(
+    `[resetClobCredentials] NEW creds: credentialAddress=${credentialAddress} apiKey=…${data.apiKey.slice(-6)}`
+  );
 
   return {
     apiKey: data.apiKey,
