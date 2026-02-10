@@ -8,7 +8,7 @@ import {
   type GammaMarket,
   type OrderBook,
 } from "@/lib/elizabao-api";
-import { placeOrder, generateL2Headers, resetClobCredentials } from "@/lib/polymarket-client";
+import { placeOrder, generateL2Headers, resetClobCredentials, fetchBalanceAllowanceViaVps } from "@/lib/polymarket-client";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnChainBalances } from "@/hooks/useOnChainBalances";
 import { useTokenApprovals } from "@/hooks/useTokenApprovals";
@@ -60,22 +60,21 @@ export default function TradePage() {
     if (!clobCredentials || !userAddress) return 0;
     setExchangeLoading(true);
     try {
-      const { data } = await supabase.functions.invoke("clob-balance", {
-        body: {
-          apiKey: clobCredentials.apiKey,
-          secret: clobCredentials.secret,
-          passphrase: clobCredentials.passphrase,
-          address: userAddress,
-          asset_type: "0",
-        },
-      });
-      const bal = parseFloat(data?.balance || "0");
+      const clobUrl = config?.clobApiUrl || "https://api.elizabao.xyz";
+      const funder = (safeAddress || userAddress) as `0x${string}`;
+      const resp = await fetchBalanceAllowanceViaVps(
+        clobCredentials,
+        userAddress as `0x${string}`,
+        clobUrl,
+        funder
+      );
+      const bal = resp?.balance ?? 0;
       setExchangeBalance(bal);
       return bal;
     } catch {}
     setExchangeLoading(false);
     return 0;
-  }, [clobCredentials, userAddress]);
+  }, [clobCredentials, userAddress, safeAddress, config?.clobApiUrl]);
 
   // Fetch balances on mount
   useEffect(() => {

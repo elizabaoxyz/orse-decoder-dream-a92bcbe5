@@ -738,17 +738,15 @@ export async function placeOrder(
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
 
     // IMPORTANT (Safe/proxy wallets):
-    // Empirically, the VPS proxy succeeds when:
-    // - POLY-ADDRESS = signer EOA
-    // - POLY-PROXY-ADDRESS = funder/safe
-    // If POLY-ADDRESS is set to the Safe, CLOB returns 401 "Unauthorized/Invalid api key".
+    // For Safe/proxy wallets, the API key is typically associated with the FUNDER (Safe) address.
+    // Set POLY-ADDRESS to the funder so upstream balance/allowance checks apply to the Safe.
     const l2 = await generateL2Headers(
       creds,
       signerAddress,
       method,
       requestPath,
       bodyStrClean,
-      /* funderAddress */ undefined,
+      /* funderAddress */ funderAddress,
       serverTs ? { timestamp: serverTs } : undefined
     );
 
@@ -784,6 +782,48 @@ export async function placeOrder(
     };
   } catch (e: any) {
     return { success: false, errorMsg: e?.message || String(e) };
+  }
+}
+
+// =============================================================================
+// CLOB balance/allowance via VPS proxy (no Supabase edge dependency)
+// =============================================================================
+
+export async function fetchBalanceAllowanceViaVps(
+  creds: ClobCredentials,
+  signerAddress: `0x${string}`,
+  clobApiUrl: string,
+  funderAddress?: `0x${string}`
+): Promise<{ balance: number; allowance: number } | null> {
+  try {
+    const signingPath = "/balance-allowance";
+    const url = new URL(`${clobApiUrl}${signingPath}`);
+    url.searchParams.set("asset_type", "COLLATERAL");
+
+    const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
+    const headers = await generateL2Headers(
+      creds,
+      signerAddress,
+      "GET",
+      signingPath,
+      "",
+      funderAddress,
+      serverTs ? { timestamp: serverTs } : undefined
+    );
+
+    const res = await fetch(url.toString(), { method: "GET", headers });
+    const text = await res.text().catch(() => "");
+    if (!res.ok) return null;
+    const data = text ? JSON.parse(text) : {};
+
+    const bal = Number(data?.balance ?? 0);
+    const allow = Number(data?.allowance ?? 0);
+    return {
+      balance: Number.isFinite(bal) ? bal : 0,
+      allowance: Number.isFinite(allow) ? allow : 0,
+    };
+  } catch {
+    return null;
   }
 }
 

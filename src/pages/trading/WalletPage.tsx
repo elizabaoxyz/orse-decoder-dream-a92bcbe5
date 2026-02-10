@@ -4,6 +4,7 @@ import {
   createOrDeriveClobCredentials,
   resetClobCredentials,
   deploySafeWallet,
+  fetchBalanceAllowanceViaVps,
 } from "@/lib/polymarket-client";
 import { useOnChainBalances } from "@/hooks/useOnChainBalances";
 import { useTokenApprovals } from "@/hooks/useTokenApprovals";
@@ -77,24 +78,24 @@ export default function WalletPage() {
     setBalanceLoading(true);
     setBalanceError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("clob-balance", {
-        body: {
-          apiKey: clobCredentials.apiKey,
-          secret: clobCredentials.secret,
-          passphrase: clobCredentials.passphrase,
-          address: userAddress,
-          asset_type: "0",
-        },
-      });
-      if (error) setBalanceError(error.message);
-      else if (data?.error) setBalanceError(data.error);
-      else setBalanceData({ balance: data?.balance ?? "0", allowance: data?.allowance ?? "0" });
+      const funder = (safeAddress || userAddress) as `0x${string}`;
+      const resp = await fetchBalanceAllowanceViaVps(
+        clobCredentials,
+        userAddress as `0x${string}`,
+        clobApiUrl,
+        funder
+      );
+      if (!resp) {
+        setBalanceError("Failed to fetch exchange balance");
+      } else {
+        setBalanceData({ balance: String(resp.balance ?? 0), allowance: String(resp.allowance ?? 0) });
+      }
     } catch (e) {
       setBalanceError(e instanceof Error ? e.message : "Failed to fetch");
     } finally {
       setBalanceLoading(false);
     }
-  }, [clobCredentials, userAddress, clobApiUrl]);
+  }, [clobCredentials, userAddress, clobApiUrl, safeAddress]);
 
   useEffect(() => {
     if (clobCredentials && userAddress) fetchBalanceAllowance();
