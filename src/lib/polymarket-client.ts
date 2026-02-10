@@ -112,6 +112,8 @@ export async function generateL2Headers(
   // Match `@polymarket/clob-client`: POLY-ADDRESS is the signer address.
   // (signatureType/funder is communicated via params like `signature_type` and in the order itself.)
   const polyAddress = address.toLowerCase();
+  const proxy =
+    funderAddress && funderAddress.toLowerCase() !== polyAddress ? funderAddress.toLowerCase() : undefined;
 
   const headers: Record<string, string> = {
     "POLY-ADDRESS": polyAddress,
@@ -122,6 +124,9 @@ export async function generateL2Headers(
     "Content-Type": "application/json",
     Accept: "application/json",
   };
+  // Empirical requirement for Safe/proxy wallets on some endpoints:
+  // include the funder/proxy wallet address explicitly so balance/allowance is evaluated correctly.
+  if (proxy) headers["POLY-PROXY-ADDRESS"] = proxy;
   return headers;
 }
 
