@@ -38,6 +38,7 @@ export interface ApprovalStatus {
   usdcToCTF: boolean;
   usdcToExchange: boolean;
   usdcToNegRiskExchange: boolean;
+  usdcToNegRiskAdapter: boolean;
   // ERC-1155 CTF token approvals
   ctfToExchange: boolean;
   ctfToNegRiskExchange: boolean;
@@ -69,7 +70,7 @@ export function useTokenApprovals() {
         const addr = safeAddress as `0x${string}`;
 
         // Check ERC-20 allowances (USDC → various spenders)
-        const [allowCTF, allowExchange, allowNegRisk] = await Promise.all([
+        const [allowCTF, allowExchange, allowNegRisk, allowNegRiskAdapter] = await Promise.all([
           client.readContract({
             address: ADDRESSES.USDC_E,
             abi: ERC20_ABI,
@@ -87,6 +88,12 @@ export function useTokenApprovals() {
             abi: ERC20_ABI,
             functionName: "allowance",
             args: [addr, ADDRESSES.NEG_RISK_CTF_EXCHANGE],
+          } as any),
+          client.readContract({
+            address: ADDRESSES.USDC_E,
+            abi: ERC20_ABI,
+            functionName: "allowance",
+            args: [addr, ADDRESSES.NEG_RISK_ADAPTER],
           } as any),
         ]);
 
@@ -116,11 +123,13 @@ export function useTokenApprovals() {
         const usdcToCTF = (allowCTF as bigint) > MIN_ALLOWANCE;
         const usdcToExchange = (allowExchange as bigint) > MIN_ALLOWANCE;
         const usdcToNegRiskExchange = (allowNegRisk as bigint) > MIN_ALLOWANCE;
+        const usdcToNegRiskAdapter = (allowNegRiskAdapter as bigint) > MIN_ALLOWANCE;
 
         const status: ApprovalStatus = {
           usdcToCTF,
           usdcToExchange,
           usdcToNegRiskExchange,
+          usdcToNegRiskAdapter,
           ctfToExchange: ctfExchange as boolean,
           ctfToNegRiskExchange: ctfNegRisk as boolean,
           ctfToNegRiskAdapter: ctfAdapter as boolean,
@@ -128,6 +137,7 @@ export function useTokenApprovals() {
             usdcToCTF &&
             usdcToExchange &&
             usdcToNegRiskExchange &&
+            usdcToNegRiskAdapter &&
             (ctfExchange as boolean) &&
             (ctfNegRisk as boolean) &&
             (ctfAdapter as boolean),
@@ -169,6 +179,7 @@ export function useTokenApprovals() {
           { spender: ADDRESSES.CTF, skip: status?.usdcToCTF, label: "USDC→CTF" },
           { spender: ADDRESSES.CTF_EXCHANGE, skip: status?.usdcToExchange, label: "USDC→Exchange" },
           { spender: ADDRESSES.NEG_RISK_CTF_EXCHANGE, skip: status?.usdcToNegRiskExchange, label: "USDC→NegRisk" },
+          { spender: ADDRESSES.NEG_RISK_ADAPTER, skip: status?.usdcToNegRiskAdapter, label: "USDC→NegRiskAdapter" },
         ];
 
         for (const { spender, skip, label } of erc20Approvals) {
