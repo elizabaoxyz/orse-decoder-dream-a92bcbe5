@@ -1,5 +1,5 @@
 import { encodeBase64 as base64Encode, decodeBase64 as base64Decode } from "jsr:@std/encoding@1/base64";
-import { ethers } from "npm:ethers@6.13.4";
+import { ethers } from "npm:ethers@^6.13.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
