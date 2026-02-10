@@ -419,8 +419,45 @@ async function fetchGammaMarketForToken(tokenId: string, clobApiUrl: string): Pr
   }
 }
 
+async function fetchNegRiskViaVps(tokenId: string, clobApiUrl: string): Promise<boolean | null> {
+  try {
+    const url = new URL(`${clobApiUrl}/neg-risk`);
+    url.searchParams.set("token_id", tokenId);
+    const res = await fetch(url.toString(), { method: "GET", headers: { accept: "application/json" } });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    const v = (data as any)?.neg_risk ?? (data as any)?.negRisk;
+    if (typeof v === "boolean") return v;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFeeRateViaVps(tokenId: string, clobApiUrl: string): Promise<number | null> {
+  try {
+    const url = new URL(`${clobApiUrl}/fee-rate`);
+    url.searchParams.set("token_id", tokenId);
+    const res = await fetch(url.toString(), { method: "GET", headers: { accept: "application/json" } });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    const n = Number((data as any)?.base_fee ?? (data as any)?.baseFee ?? (data as any)?.fee_rate_bps ?? NaN);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
 // Fetch negRisk primarily via VPS Gamma proxy (Supabase edge often 401s in prod).
 async function fetchNegRisk(tokenId: string, clobApiUrl: string = ""): Promise<boolean> {
+  if (clobApiUrl) {
+    const vps = await fetchNegRiskViaVps(tokenId, clobApiUrl);
+    if (typeof vps === "boolean") {
+      console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", vps, "(vps)");
+      return vps;
+    }
+  }
+
   const m = clobApiUrl ? await fetchGammaMarketForToken(tokenId, clobApiUrl) : null;
   if (m && m.neg_risk === true) {
     console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", true, "(gamma proxy)");
@@ -452,6 +489,14 @@ async function fetchNegRisk(tokenId: string, clobApiUrl: string = ""): Promise<b
 
 // Fetch fee rate bps primarily from Gamma (maker_base_fee), fallback to CLOB fee-rate via edge.
 async function fetchFeeRateBps(tokenId: string, clobApiUrl: string = ""): Promise<number> {
+  if (clobApiUrl) {
+    const vps = await fetchFeeRateViaVps(tokenId, clobApiUrl);
+    if (typeof vps === "number") {
+      console.log("[fetchFeeRateBps] tokenId:", tokenId, "fee_bps:", vps, "(vps)");
+      return vps;
+    }
+  }
+
   const m = clobApiUrl ? await fetchGammaMarketForToken(tokenId, clobApiUrl) : null;
   const gammaFee = Number(m?.maker_base_fee ?? m?.fee_rate_bps ?? m?.makerBaseFee ?? NaN);
   if (Number.isFinite(gammaFee) && gammaFee >= 0) {
