@@ -156,12 +156,22 @@ const CLOB_AUTH_TYPES = {
 } as const;
 
 async function callClobAuth(action: string, params: Record<string, unknown>): Promise<any> {
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data, error } = await supabase.functions.invoke("clob-auth", {
-    body: { action, ...params },
+  // Use VPS API for clob-auth to avoid Supabase auth/JWT requirements on live.
+  // `clobApiUrl` is not available here, so we rely on the default live VPS origin.
+  const res = await fetch("https://api.elizabao.xyz/clob-auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ action, ...params }),
   });
-  if (error) throw new Error(`clob-auth invoke error: ${error.message}`);
-  return data;
+  const text = await res.text().catch(() => "");
+  if (!res.ok) {
+    throw new Error(`clob-auth http ${res.status}: ${text || res.statusText}`);
+  }
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return text;
+  }
 }
 
 async function getClobServerTime(_clobApiUrl: string): Promise<number> {
