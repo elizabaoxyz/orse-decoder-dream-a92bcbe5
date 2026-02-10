@@ -103,9 +103,10 @@ export async function generateL2Headers(
   method: string,
   requestPath: string,
   body: string = "",
-  funderAddress?: string
+  funderAddress?: string,
+  opts?: { timestamp?: string }
 ): Promise<Record<string, string>> {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const timestamp = opts?.timestamp || Math.floor(Date.now() / 1000).toString();
   const message = timestamp + method.toUpperCase() + requestPath + body;
   const signature = await hmacSign(creds.secret, message);
   // For proxy/Safe wallets, use the funder address for POLY-ADDRESS
@@ -120,6 +121,19 @@ export async function generateL2Headers(
     "Content-Type": "application/json",
     Accept: "application/json",
   };
+}
+
+async function getClobServerTimeViaProxy(clobApiUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${clobApiUrl}/time`, { method: "GET" });
+    if (!res.ok) return null;
+    const text = (await res.text()).trim();
+    const n = Math.floor(Number(text));
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return String(n);
+  } catch {
+    return null;
+  }
 }
 
 // =============================================================================
@@ -634,13 +648,15 @@ export async function placeOrder(
       console.warn("[placeOrder] Builder headers unavailable (non-fatal):", e?.message || String(e));
     }
 
+    const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
     const l2 = await generateL2Headers(
       creds,
       signerAddress,
       method,
       requestPath,
       bodyStrClean,
-      funderAddress
+      funderAddress,
+      serverTs ? { timestamp: serverTs } : undefined
     );
 
     const headers: Record<string, string> = { ...l2, ...builderHeaders };
