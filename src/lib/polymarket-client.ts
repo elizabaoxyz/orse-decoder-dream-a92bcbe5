@@ -51,11 +51,12 @@ async function hmacSign(secret: string, message: string): Promise<string> {
   // Polymarket API secrets are typically base64, but some stacks store/return hex.
   // If we treat a hex string as base64, atob() will "succeed" and produce the wrong key,
   // causing 401 Unauthorized. Detect and decode hex explicitly.
-  const isHex = /^[0-9a-fA-F]{64}$/.test(secret.trim());
+  const trimmed = secret.trim();
+  const isHex = /^[0-9a-fA-F]+$/.test(trimmed) && trimmed.length % 2 === 0 && trimmed.length >= 32;
 
   let keyData: Uint8Array;
   if (isHex) {
-    const hex = secret.trim();
+    const hex = trimmed;
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < bytes.length; i++) {
       bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
