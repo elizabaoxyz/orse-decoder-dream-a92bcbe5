@@ -643,7 +643,7 @@ export async function createAndSignOrder(
       expiration: "0",
       nonce: "0",
       feeRateBps: String(feeRateBps),
-      side: params.side,
+      side: sideNum,
       signatureType: sigType,
       signature,
     },
@@ -680,11 +680,13 @@ export async function placeOrder(
   );
 
   // Include _debug hash ONLY for edge-function verification.
-  const orderPayloadWithDebug = { deferExec: false, order, owner: creds.apiKey, orderType, _debug };
+  // Polymarket expects `owner` to be the account address (funder for proxy wallets).
+  const ownerAddress = funderAddress || signerAddress;
+  const orderPayloadWithDebug = { deferExec: false, order, owner: ownerAddress, orderType, _debug };
   const bodyStrWithDebug = JSON.stringify(orderPayloadWithDebug);
 
   // Clean payload for direct CLOB/VPS submission (CLOB may reject unknown top-level fields like _debug).
-  const orderPayloadClean = { deferExec: false, order, owner: creds.apiKey, orderType };
+  const orderPayloadClean = { deferExec: false, order, owner: ownerAddress, orderType };
   const bodyStrClean = JSON.stringify(orderPayloadClean);
 
   // 3. Debug logging (no secrets)
