@@ -35,8 +35,12 @@ export function useOnChainBalances() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalances = useCallback(async (eoaAddress?: string, safeAddress?: string) => {
-    if (!eoaAddress && !safeAddress) return;
+  const fetchBalances = useCallback(
+    async (
+      eoaAddress?: string,
+      safeAddress?: string
+    ): Promise<{ eoa: OnChainBalances | null; safe: OnChainBalances | null } | null> => {
+    if (!eoaAddress && !safeAddress) return null;
     setLoading(true);
     setError(null);
 
@@ -79,7 +83,7 @@ export function useOnChainBalances() {
         if (eoa) setEoaBalances(eoa);
         if (safe) setSafeBalances(safe);
         setLoading(false);
-        return;
+        return { eoa, safe };
       } catch (e) {
         console.warn(`[OnChainBalances] RPC ${i} failed:`, e);
         if (i === RPC_URLS.length - 1) {
@@ -88,6 +92,7 @@ export function useOnChainBalances() {
       }
     }
     setLoading(false);
+    return null;
   }, []);
 
   return { eoaBalances, safeBalances, loading, error, fetchBalances };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTrading, useAppConfig } from "@/contexts/ElizaConfigProvider";
 import {
   fetchGammaMarkets,
@@ -11,6 +11,7 @@ import {
 import { placeOrder, generateL2Headers, resetClobCredentials } from "@/lib/polymarket-client";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnChainBalances } from "@/hooks/useOnChainBalances";
+import { useTokenApprovals } from "@/hooks/useTokenApprovals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ import { toast } from "sonner";
 
 export default function TradePage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const {
     isAuthenticated,
     login,
@@ -48,13 +50,14 @@ export default function TradePage() {
   } = useTrading();
   const { config } = useAppConfig();
   const { safeBalances, loading: balanceLoading, fetchBalances } = useOnChainBalances();
+  const { approvalStatus, checking: approvalsChecking, checkApprovals } = useTokenApprovals();
 
   // Exchange balance from CLOB
   const [exchangeBalance, setExchangeBalance] = useState(0);
   const [exchangeLoading, setExchangeLoading] = useState(false);
 
-  const fetchExchangeBalance = useCallback(async () => {
-    if (!clobCredentials || !userAddress) return;
+  const fetchExchangeBalance = useCallback(async (): Promise<number> => {
+    if (!clobCredentials || !userAddress) return 0;
     setExchangeLoading(true);
     try {
       const { data } = await supabase.functions.invoke("clob-balance", {
@@ -66,9 +69,12 @@ export default function TradePage() {
           asset_type: "0",
         },
       });
-      setExchangeBalance(parseFloat(data?.balance || "0"));
+      const bal = parseFloat(data?.balance || "0");
+      setExchangeBalance(bal);
+      return bal;
     } catch {}
     setExchangeLoading(false);
+    return 0;
   }, [clobCredentials, userAddress]);
 
   // Fetch balances on mount
@@ -79,6 +85,12 @@ export default function TradePage() {
   useEffect(() => {
     fetchExchangeBalance();
   }, [fetchExchangeBalance]);
+
+  // Refresh approvals when funder changes (Safe or EOA)
+  useEffect(() => {
+    const funder = safeAddress || userAddress;
+    if (funder) void checkApprovals(funder);
+  }, [safeAddress, userAddress, checkApprovals]);
 
   const walletBalance = safeBalances ? parseFloat(safeBalances.usdcE) : 0;
   const totalAvailableDisplay = walletBalance + exchangeBalance;
@@ -182,20 +194,64 @@ export default function TradePage() {
 
     // Preflight: check combined balance (wallet + exchange)
     try {
-      const makerAmount = priceNum * sizeNum;
-      // Refresh balances
-      if (safeAddress) await fetchBalances(undefined, safeAddress);
-      await fetchExchangeBalance();
-      
-      const totalAvailable = walletBalance + exchangeBalance;
-      if (totalAvailable < makerAmount) {
-        const msg = `Insufficient balance: $${totalAvailable.toFixed(2)} available (wallet: $${walletBalance.toFixed(2)}, exchange: $${exchangeBalance.toFixed(2)}), need $${makerAmount.toFixed(2)}.`;
+      const notionalUsd = priceNum * sizeNum;
+      if (side === "BUY" && notionalUsd < 1) {
+        const msg = `Order too small: $${notionalUsd.toFixed(2)}. Polymarket minimum is $1.00.`;
         toast.error(msg);
         setOrderResult({ success: false, message: msg });
         setSubmitting(false);
         return;
       }
-      console.log("[TradePage] Preflight OK — wallet:", walletBalance, "exchange:", exchangeBalance, "needed:", makerAmount);
+
+      // Refresh balances + approvals (best-effort)
+      const funder = safeAddress || userAddress;
+      const balRes = await fetchBalances(undefined, funder);
+      const latestWalletBal = balRes?.safe ? parseFloat(balRes.safe.usdcE) : walletBalance;
+      const latestExchangeBal = (await fetchExchangeBalance()) ?? exchangeBalance;
+      const latestApprovals = await checkApprovals(funder);
+
+      if (side === "BUY") {
+        // If exchange balance is enough, OK regardless of on-chain allowance.
+        const canPayFromExchange = latestExchangeBal >= notionalUsd;
+        // If paying from wallet, require approvals.
+        const canPayFromWallet = latestWalletBal >= notionalUsd;
+        const approvals = latestApprovals || approvalStatus;
+        const approvalsOk = !!(approvals?.usdcToExchange && approvals?.usdcToNegRiskExchange);
+
+        if (!canPayFromExchange && !canPayFromWallet) {
+          const msg = `Insufficient balance: wallet $${latestWalletBal.toFixed(2)} USDC.e + exchange $${latestExchangeBal.toFixed(
+            2
+          )} < need $${notionalUsd.toFixed(2)}.`;
+          toast.error(msg);
+          setOrderResult({ success: false, message: msg });
+          setSubmitting(false);
+          return;
+        }
+
+        if (!canPayFromExchange && canPayFromWallet && !approvalsOk) {
+          const msg = `Approval missing: you have enough USDC.e in your Trading Wallet ($${latestWalletBal.toFixed(
+            2
+          )}) but contracts are not approved yet. Go to Wallet → “Approve Token Contracts”.`;
+          toast.error(msg);
+          setOrderResult({ success: false, message: msg });
+          setSubmitting(false);
+          return;
+        }
+
+        console.log("[TradePage] Preflight OK — wallet:", latestWalletBal, "exchange:", latestExchangeBal, "needed:", notionalUsd);
+      }
+
+      // Legacy combined balance check (SELL is not covered here)
+      const totalAvailable = latestWalletBal + latestExchangeBal;
+      if (side === "BUY" && totalAvailable < notionalUsd) {
+        const msg = `Insufficient balance: $${totalAvailable.toFixed(2)} available, need $${notionalUsd.toFixed(2)}.`;
+        toast.error(msg);
+        setOrderResult({ success: false, message: msg });
+        setSubmitting(false);
+        return;
+      }
+      // eslint-disable-next-line no-console
+      console.log("[TradePage] Preflight OK — totalAvailable:", totalAvailable);
 
       // On-chain allowance diagnostic for the Safe
       if (safeAddress) {
@@ -328,6 +384,8 @@ export default function TradePage() {
 
   const outcomes = selectedMarket ? parseJsonField<string>(selectedMarket.outcomes) : [];
   const prices = selectedMarket ? parseJsonField<number>(selectedMarket.outcomePrices) : [];
+
+  const funderAddress = (safeAddress || userAddress || "—") as string;
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
@@ -466,6 +524,61 @@ export default function TradePage() {
               <span>
                 Your ${walletBalance.toFixed(2)} USDC.e is in your Trading Wallet but not deposited on the exchange yet. 
                 The exchange may pull funds directly from your wallet if approvals are set.
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Funding & approvals quick panel */}
+        <div className="border border-border rounded-lg p-4 space-y-2 bg-card/50">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-widest font-mono text-muted-foreground">
+              Funding & Approvals
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/app/wallet")}
+              className="h-7 px-2 text-[10px]"
+            >
+              Open Wallet
+            </Button>
+          </div>
+
+          <div className="text-[10px] font-mono text-muted-foreground space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <span>Funder</span>
+              <button
+                className="text-primary hover:underline truncate max-w-[220px]"
+                onClick={() => navigator.clipboard.writeText(funderAddress)}
+                title="Click to copy"
+              >
+                {funderAddress}
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span>Collateral</span>
+              <span title="USDC.e (Polygon) 0x2791...4174" className="truncate max-w-[220px]">
+                USDC.e `0x2791…4174`
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Approvals</span>
+              {approvalsChecking ? (
+                <span className="text-muted-foreground">checking…</span>
+              ) : approvalStatus?.allApproved ? (
+                <span className="text-primary">✅ ready</span>
+              ) : (
+                <span className="text-amber-400">⚠️ missing</span>
+              )}
+            </div>
+          </div>
+
+          {!approvalStatus?.allApproved && (
+            <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-[10px] text-amber-400 flex items-start gap-1.5">
+              <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+              <span>
+                If your USDC.e is in the Trading Wallet, you must approve Polymarket contracts before BUY orders can pull funds.
               </span>
             </div>
           )}
