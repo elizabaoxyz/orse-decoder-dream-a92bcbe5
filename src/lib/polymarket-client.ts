@@ -401,9 +401,19 @@ async function fetchGammaMarketForToken(tokenId: string, clobApiUrl: string): Pr
     const url = new URL(`${clobApiUrl}/gamma/markets`);
     url.searchParams.set("clob_token_ids", tokenId);
     const res = await fetch(url.toString(), { method: "GET", headers: { accept: "application/json" } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return Array.isArray(data) && data.length ? data[0] : null;
+    if (!res.ok) {
+      console.warn("[fetchGammaMarketForToken] HTTP", res.status);
+      return null;
+    }
+    const data = await res.json().catch(() => null);
+    // Gamma may return an array OR an object wrapper depending on proxy/version.
+    const arr =
+      Array.isArray(data) ? data :
+      Array.isArray((data as any)?.data) ? (data as any).data :
+      Array.isArray((data as any)?.markets) ? (data as any).markets :
+      Array.isArray((data as any)?.data?.markets) ? (data as any).data.markets :
+      null;
+    return Array.isArray(arr) && arr.length ? arr[0] : null;
   } catch {
     return null;
   }
