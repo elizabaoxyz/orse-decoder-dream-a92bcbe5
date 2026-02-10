@@ -109,15 +109,9 @@ export async function generateL2Headers(
   const timestamp = opts?.timestamp || Math.floor(Date.now() / 1000).toString();
   const message = timestamp + method.toUpperCase() + requestPath + body;
   const signature = await hmacSign(creds.secret, message);
-  // IMPORTANT (real-world behavior):
-  // For proxy wallets (Magic / Gnosis Safe), Polymarket expects POLY-ADDRESS to match
-  // the *account* the API key is associated with (typically the funder/proxy address).
-  // This avoids 401 "Unauthorized/Invalid api key" (see Polymarket/clob-client issue #248).
-  const polyAddress = (funderAddress || address).toLowerCase();
-  const proxy =
-    funderAddress && funderAddress.toLowerCase() !== address.toLowerCase()
-      ? funderAddress.toLowerCase()
-      : undefined;
+  // Match `@polymarket/clob-client`: POLY-ADDRESS is the signer address.
+  // (signatureType/funder is communicated via params like `signature_type` and in the order itself.)
+  const polyAddress = address.toLowerCase();
 
   const headers: Record<string, string> = {
     "POLY-ADDRESS": polyAddress,
@@ -128,7 +122,6 @@ export async function generateL2Headers(
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (proxy) headers["POLY-PROXY-ADDRESS"] = proxy;
   return headers;
 }
 
@@ -200,10 +193,9 @@ export async function createOrDeriveClobCredentials(
   clobApiUrl: string = "https://api.elizabao.xyz",
   funderAddress?: `0x${string}`
 ): Promise<ClobCredentials> {
-  // For proxy/Safe wallets we need API keys associated with the funder/proxy address,
-  // but the EIP-712 signature is produced by the signer EOA.
-  const credentialAddress = funderAddress || signerAddress;
-  console.log("[createOrDeriveClobCredentials] signer:", signerAddress, "credentialAddress:", credentialAddress);
+  // Match `@polymarket/clob-client`: API keys are created/derived for the signer address.
+  // (Do not attempt to create keys for the Safe/proxy address.)
+  console.log("[createOrDeriveClobCredentials] signer:", signerAddress, "funder:", funderAddress || "(none)");
   const timestamp = await getClobServerTime(clobApiUrl);
   const nonce = 0;
 
@@ -213,7 +205,7 @@ export async function createOrDeriveClobCredentials(
     types: CLOB_AUTH_TYPES,
     primaryType: "ClobAuth",
     message: {
-      address: credentialAddress,
+      address: signerAddress,
       timestamp: timestamp.toString(),
       nonce: BigInt(nonce),
       message: "This message attests that I control the given wallet",
@@ -224,13 +216,12 @@ export async function createOrDeriveClobCredentials(
   let data: any;
   try {
     data = await callClobAuth("create", {
-      // Header POLY_ADDRESS must be the signer EOA; the signed message includes credentialAddress.
       poly_address: signerAddress.toLowerCase(),
       poly_signature: signature,
       poly_timestamp: timestamp.toString(),
       poly_nonce: nonce.toString(),
       payload: {
-        address: credentialAddress.toLowerCase(),
+        address: signerAddress.toLowerCase(),
         timestamp: timestamp.toString(),
         nonce: nonce.toString(),
         signature,
@@ -264,9 +255,7 @@ export async function createOrDeriveClobCredentials(
     throw new Error(`CLOB auth response missing credentials: ${JSON.stringify(data)}`);
   }
 
-  console.log(
-    `[createOrDeriveClobCredentials] credentialAddress=${credentialAddress} apiKey=…${data.apiKey.slice(-6)}`
-  );
+  console.log(`[createOrDeriveClobCredentials] signer=${signerAddress} apiKey=…${data.apiKey.slice(-6)}`);
 
   return {
     apiKey: data.apiKey,
@@ -285,10 +274,7 @@ export async function resetClobCredentials(
   clobApiUrl: string = "https://api.elizabao.xyz",
   funderAddress?: `0x${string}`
 ): Promise<ClobCredentials> {
-  const credentialAddress = funderAddress || signerAddress;
-  console.log(
-    `[resetClobCredentials] Resetting creds for credentialAddress=${credentialAddress} signer=${signerAddress}`
-  );
+  console.log(`[resetClobCredentials] Resetting creds for signer=${signerAddress} (funder=${funderAddress || "(none)"})`);
   const timestamp = await getClobServerTime(clobApiUrl);
 
   // Try to delete the existing API key first (best-effort, via edge function)
@@ -300,7 +286,7 @@ export async function resetClobCredentials(
       types: CLOB_AUTH_TYPES,
       primaryType: "ClobAuth",
       message: {
-        address: credentialAddress,
+        address: signerAddress,
         timestamp: timestamp.toString(),
         nonce: BigInt(delNonce),
         message: "This message attests that I control the given wallet",
@@ -327,7 +313,7 @@ export async function resetClobCredentials(
     types: CLOB_AUTH_TYPES,
     primaryType: "ClobAuth",
     message: {
-      address: credentialAddress,
+      address: signerAddress,
       timestamp: freshTimestamp.toString(),
       nonce: BigInt(newNonce),
       message: "This message attests that I control the given wallet",
@@ -340,7 +326,7 @@ export async function resetClobCredentials(
     poly_timestamp: freshTimestamp.toString(),
     poly_nonce: newNonce.toString(),
     payload: {
-      address: credentialAddress.toLowerCase(),
+      address: signerAddress.toLowerCase(),
       timestamp: freshTimestamp.toString(),
       nonce: newNonce.toString(),
       signature,
@@ -351,9 +337,7 @@ export async function resetClobCredentials(
     throw new Error(`CLOB reset response missing credentials: ${JSON.stringify(data)}`);
   }
 
-  console.log(
-    `[resetClobCredentials] NEW creds: credentialAddress=${credentialAddress} apiKey=…${data.apiKey.slice(-6)}`
-  );
+  console.log(`[resetClobCredentials] NEW creds: signer=${signerAddress} apiKey=…${data.apiKey.slice(-6)}`);
 
   return {
     apiKey: data.apiKey,
@@ -659,7 +643,8 @@ export async function createAndSignOrder(
       expiration: "0",
       nonce: "0",
       feeRateBps: String(feeRateBps),
-      side: sideNum,
+      // Match clob-client JSON payload: side is "BUY" | "SELL"
+      side: params.side,
       signatureType: sigType,
       signature,
     },
@@ -696,13 +681,12 @@ export async function placeOrder(
   );
 
   // Include _debug hash ONLY for edge-function verification.
-  // Polymarket expects `owner` to be the account address (funder for proxy wallets).
-  const ownerAddress = funderAddress || signerAddress;
-  const orderPayloadWithDebug = { deferExec: false, order, owner: ownerAddress, orderType, _debug };
+  // Match clob-client: `owner` is the API key string.
+  const orderPayloadWithDebug = { deferExec: false, order, owner: creds.apiKey, orderType, _debug };
   const bodyStrWithDebug = JSON.stringify(orderPayloadWithDebug);
 
   // Clean payload for direct CLOB/VPS submission (CLOB may reject unknown top-level fields like _debug).
-  const orderPayloadClean = { deferExec: false, order, owner: ownerAddress, orderType };
+  const orderPayloadClean = { deferExec: false, order, owner: creds.apiKey, orderType };
   const bodyStrClean = JSON.stringify(orderPayloadClean);
 
   // 3. Debug logging (no secrets)
@@ -823,6 +807,11 @@ export async function fetchBalanceAllowanceViaVps(
     const signingPath = "/balance-allowance";
     const url = new URL(`${clobApiUrl}${signingPath}`);
     url.searchParams.set("asset_type", "COLLATERAL");
+    // Match clob-client: include signature_type so the server can resolve proxy wallet behavior.
+    url.searchParams.set(
+      "signature_type",
+      funderAddress && funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? "2" : "0"
+    );
 
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
     const method = "GET";
