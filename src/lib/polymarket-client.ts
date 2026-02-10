@@ -754,7 +754,9 @@ export async function placeOrder(
 
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
 
-    const url = `${clobApiUrl}${requestPath}`;
+    const signatureType = funderAddress.toLowerCase() !== signerAddress.toLowerCase() ? "2" : "0";
+    // Match clob-client style: include signature_type as query param (does not affect HMAC path).
+    const url = `${clobApiUrl}${requestPath}?signature_type=${signatureType}`;
 
     const trySubmit = async () => {
       const l2 = await generateL2Headers(
