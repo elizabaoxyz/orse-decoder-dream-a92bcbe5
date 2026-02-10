@@ -737,31 +737,37 @@ export async function placeOrder(
 
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
 
-    // IMPORTANT (Safe/proxy wallets):
-    // For Safe/proxy wallets, the API key is typically associated with the FUNDER (Safe) address.
-    // Set POLY-ADDRESS to the funder so upstream balance/allowance checks apply to the Safe.
-    const l2 = await generateL2Headers(
-      creds,
-      signerAddress,
-      method,
-      requestPath,
-      bodyStrClean,
-      /* funderAddress */ funderAddress,
-      serverTs ? { timestamp: serverTs } : undefined
-    );
-
-    const headers: Record<string, string> = { ...l2, ...builderHeaders };
-    if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
-      // Polymarket proxy wallets: include proxy header
-      headers["POLY-PROXY-ADDRESS"] = funderAddress.toLowerCase();
-    }
-
     const url = `${clobApiUrl}${requestPath}`;
-    console.log("[placeOrder] VPS submit:", url, "headers=", Object.keys(headers).join(", "));
 
-    const res = await fetch(url, { method, headers, body: bodyStrClean });
-    const text = await res.text().catch(() => "");
-    console.log("[placeOrder] VPS response:", res.status, text.slice(0, 300));
+    const trySubmit = async (polyAddress: `0x${string}`, includeProxy: boolean) => {
+      const l2 = await generateL2Headers(
+        creds,
+        signerAddress,
+        method,
+        requestPath,
+        bodyStrClean,
+        /* funderAddress (used for POLY-ADDRESS) */ polyAddress,
+        serverTs ? { timestamp: serverTs } : undefined
+      );
+      const headers: Record<string, string> = { ...l2, ...builderHeaders };
+      if (includeProxy && funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
+        headers["POLY-PROXY-ADDRESS"] = funderAddress.toLowerCase();
+      }
+      console.log("[placeOrder] VPS submit:", url, "polyAddress=", polyAddress, "headers=", Object.keys(headers).join(", "));
+      const res = await fetch(url, { method, headers, body: bodyStrClean });
+      const text = await res.text().catch(() => "");
+      console.log("[placeOrder] VPS response:", res.status, text.slice(0, 300));
+      return { res, text };
+    };
+
+    // Attempt 1: assume API key is bound to the funder (Safe)
+    let { res, text } = await trySubmit(funderAddress, /* includeProxy */ true);
+
+    // If API key is actually bound to the signer EOA, retry with POLY-ADDRESS=EOA and POLY-PROXY-ADDRESS=Safe.
+    if (!res.ok && res.status === 401 && text.includes("Unauthorized/Invalid api key")) {
+      console.warn("[placeOrder] VPS got 401 invalid key with funder POLY-ADDRESS; retrying with signer POLY-ADDRESS + proxy header");
+      ({ res, text } = await trySubmit(signerAddress, /* includeProxy */ true));
+    }
 
     let data: any = null;
     try {
@@ -801,19 +807,35 @@ export async function fetchBalanceAllowanceViaVps(
     url.searchParams.set("asset_type", "COLLATERAL");
 
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
-    const headers = await generateL2Headers(
-      creds,
-      signerAddress,
-      "GET",
-      signingPath,
-      "",
-      funderAddress,
-      serverTs ? { timestamp: serverTs } : undefined
-    );
+    const method = "GET";
 
-    const res = await fetch(url.toString(), { method: "GET", headers });
-    const text = await res.text().catch(() => "");
+    const tryFetch = async (polyAddress: `0x${string}`, includeProxy: boolean) => {
+      const headers = await generateL2Headers(
+        creds,
+        signerAddress,
+        method,
+        signingPath,
+        "",
+        /* funderAddress (used for POLY-ADDRESS) */ polyAddress,
+        serverTs ? { timestamp: serverTs } : undefined
+      );
+      const h: Record<string, string> = { ...headers };
+      if (includeProxy && funderAddress && funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
+        h["POLY-PROXY-ADDRESS"] = funderAddress.toLowerCase();
+      }
+      const res = await fetch(url.toString(), { method, headers: h });
+      const text = await res.text().catch(() => "");
+      return { res, text };
+    };
+
+    const preferred = (funderAddress || signerAddress) as `0x${string}`;
+    let { res, text } = await tryFetch(preferred, /* includeProxy */ true);
+    if (!res.ok && res.status === 401 && text.includes("Unauthorized/Invalid api key")) {
+      // Retry with signer-bound key
+      ({ res, text } = await tryFetch(signerAddress, /* includeProxy */ true));
+    }
     if (!res.ok) return null;
+
     const data = text ? JSON.parse(text) : {};
 
     const bal = Number(data?.balance ?? 0);
