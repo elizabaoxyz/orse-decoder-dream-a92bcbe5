@@ -553,58 +553,114 @@ export async function placeOrder(
     clobApiUrl
   );
 
-  // Include _debug hash in the body so edge function can verify server-side
-  const orderPayload = { deferExec: false, order, owner: creds.apiKey, orderType, _debug };
+  // Include _debug hash ONLY for edge-function verification.
+  const orderPayloadWithDebug = { deferExec: false, order, owner: creds.apiKey, orderType, _debug };
+  const bodyStrWithDebug = JSON.stringify(orderPayloadWithDebug);
 
-  // 2. Serialize once — this exact string is used for HMAC AND fetch body
-  const bodyStr = JSON.stringify(orderPayload);
+  // Clean payload for direct CLOB/VPS submission (CLOB may reject unknown top-level fields like _debug).
+  const orderPayloadClean = { deferExec: false, order, owner: creds.apiKey, orderType };
+  const bodyStrClean = JSON.stringify(orderPayloadClean);
 
   // 3. Debug logging (no secrets)
   const akTail = creds.apiKey.slice(-6);
-  console.log(`[placeOrder] bodyLen=${bodyStr.length} apiKey=…${akTail} signer=${signerAddress}`);
+  console.log(
+    `[placeOrder] cleanBodyLen=${bodyStrClean.length} debugBodyLen=${bodyStrWithDebug.length} apiKey=…${akTail} signer=${signerAddress}`
+  );
 
-  // 4. Submit via edge function — HMAC is computed server-side for reliability
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data: edgeData, error: edgeError } = await supabase.functions.invoke("clob-order", {
-    body: {
-      bodyStr,
-      creds: {
-        apiKey: creds.apiKey,
-        secret: creds.secret,
-        passphrase: creds.passphrase,
+  // 4) Preferred path: Supabase Edge Function (bypasses CORS/Cloudflare, server-side HMAC)
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: edgeData, error: edgeError } = await supabase.functions.invoke("clob-order", {
+      body: {
+        bodyStr: bodyStrWithDebug,
+        creds: {
+          apiKey: creds.apiKey,
+          secret: creds.secret,
+          passphrase: creds.passphrase,
+        },
+        signerAddress,
+        makerAddress: funderAddress,
       },
+    });
+
+    if (edgeError) {
+      throw edgeError;
+    }
+
+    const responseText = typeof edgeData === "string" ? edgeData : JSON.stringify(edgeData);
+    console.log("[placeOrder] Edge response:", responseText);
+
+    const data = typeof edgeData === "object" ? edgeData : JSON.parse(responseText);
+    if (data?.error) {
+      return { success: false, errorMsg: `Order failed: ${data.error}` };
+    }
+
+    return {
+      success: true,
+      orderID: data.orderID || data.id,
+      status: data.status,
+      errorMsg: data.error || data.errorMsg,
+    };
+  } catch (edgeErr: any) {
+    // Common on live if Supabase env vars are missing/misconfigured.
+    const msg = edgeErr?.message || String(edgeErr);
+    console.warn("[placeOrder] Edge function failed, falling back to VPS proxy:", msg);
+  }
+
+  // 5) Fallback path: call VPS proxy directly (browser HMAC + builder headers)
+  try {
+    const requestPath = "/order";
+    const method = "POST";
+
+    let builderHeaders: Record<string, string> = {};
+    try {
+      builderHeaders = await getBuilderHeaders(privyAccessToken, method, requestPath, bodyStrClean);
+    } catch (e: any) {
+      console.warn("[placeOrder] Builder headers unavailable (non-fatal):", e?.message || String(e));
+    }
+
+    const l2 = await generateL2Headers(
+      creds,
       signerAddress,
-      makerAddress: funderAddress,
-    },
-  });
+      method,
+      requestPath,
+      bodyStrClean,
+      funderAddress
+    );
 
-  if (edgeError) {
-    console.error("[placeOrder] Edge function error:", edgeError);
+    const headers: Record<string, string> = { ...l2, ...builderHeaders };
+    if (funderAddress.toLowerCase() !== signerAddress.toLowerCase()) {
+      // Polymarket proxy wallets: include proxy header
+      headers["POLY-PROXY-ADDRESS"] = funderAddress.toLowerCase();
+    }
+
+    const url = `${clobApiUrl}${requestPath}`;
+    console.log("[placeOrder] VPS submit:", url, "headers=", Object.keys(headers).join(", "));
+
+    const res = await fetch(url, { method, headers, body: bodyStrClean });
+    const text = await res.text().catch(() => "");
+    console.log("[placeOrder] VPS response:", res.status, text.slice(0, 300));
+
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { error: text || `HTTP ${res.status}` };
+    }
+
+    if (!res.ok || data?.error) {
+      return { success: false, errorMsg: `Order failed: ${data?.error || text || `HTTP ${res.status}`}` };
+    }
+
     return {
-      success: false,
-      errorMsg: `Edge function error: ${edgeError.message}`,
+      success: true,
+      orderID: data.orderID || data.id,
+      status: data.status,
+      errorMsg: data.error || data.errorMsg,
     };
+  } catch (e: any) {
+    return { success: false, errorMsg: e?.message || String(e) };
   }
-
-  const responseText = typeof edgeData === "string" ? edgeData : JSON.stringify(edgeData);
-  console.log("[placeOrder] Response:", responseText);
-
-  // Parse response — edgeData is already parsed JSON from supabase.functions.invoke
-  const data = typeof edgeData === "object" ? edgeData : JSON.parse(responseText);
-
-  if (data.error) {
-    return {
-      success: false,
-      errorMsg: `Order failed: ${data.error}`,
-    };
-  }
-
-  return {
-    success: true,
-    orderID: data.orderID || data.id,
-    status: data.status,
-    errorMsg: data.error || data.errorMsg,
-  };
 }
 
 // =============================================================================
