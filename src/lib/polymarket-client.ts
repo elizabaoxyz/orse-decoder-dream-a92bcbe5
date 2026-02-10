@@ -395,8 +395,33 @@ function calculateAmounts(
   }
 }
 
-// Fetch negRisk via edge function (VPS proxy is unreliable — 502s)
-async function fetchNegRisk(tokenId: string, _clobApiUrl: string = ""): Promise<boolean> {
+async function fetchGammaMarketForToken(tokenId: string, clobApiUrl: string): Promise<any | null> {
+  try {
+    // Use VPS proxy (same-origin) to avoid CORS and avoid Supabase edge 401s on live.
+    const url = new URL(`${clobApiUrl}/gamma/markets`);
+    url.searchParams.set("clob_token_ids", tokenId);
+    const res = await fetch(url.toString(), { method: "GET", headers: { accept: "application/json" } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) && data.length ? data[0] : null;
+  } catch {
+    return null;
+  }
+}
+
+// Fetch negRisk primarily via VPS Gamma proxy (Supabase edge often 401s in prod).
+async function fetchNegRisk(tokenId: string, clobApiUrl: string = ""): Promise<boolean> {
+  const m = clobApiUrl ? await fetchGammaMarketForToken(tokenId, clobApiUrl) : null;
+  if (m && m.neg_risk === true) {
+    console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", true, "(gamma proxy)");
+    return true;
+  }
+  if (m && m.neg_risk === false) {
+    console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", false, "(gamma proxy)");
+    return false;
+  }
+
+  // Fallback: Supabase edge function (works in local dev)
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase.functions.invoke("polymarket-clob", {
@@ -407,7 +432,7 @@ async function fetchNegRisk(tokenId: string, _clobApiUrl: string = ""): Promise<
       return false;
     }
     const negRisk = data?.data?.neg_risk === true;
-    console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", negRisk);
+    console.log("[fetchNegRisk] tokenId:", tokenId, "neg_risk:", negRisk, "(edge)");
     return negRisk;
   } catch (e) {
     console.warn("[fetchNegRisk] Failed:", e);
@@ -415,8 +440,15 @@ async function fetchNegRisk(tokenId: string, _clobApiUrl: string = ""): Promise<
   }
 }
 
-// Fetch fee rate from CLOB API (required for correct EIP-712 signature)
-async function fetchFeeRateBps(tokenId: string): Promise<number> {
+// Fetch fee rate bps primarily from Gamma (maker_base_fee), fallback to CLOB fee-rate via edge.
+async function fetchFeeRateBps(tokenId: string, clobApiUrl: string = ""): Promise<number> {
+  const m = clobApiUrl ? await fetchGammaMarketForToken(tokenId, clobApiUrl) : null;
+  const gammaFee = Number(m?.maker_base_fee ?? m?.fee_rate_bps ?? m?.makerBaseFee ?? NaN);
+  if (Number.isFinite(gammaFee) && gammaFee >= 0) {
+    console.log("[fetchFeeRateBps] tokenId:", tokenId, "fee_bps:", gammaFee, "(gamma proxy)");
+    return gammaFee;
+  }
+
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase.functions.invoke("polymarket-clob", {
@@ -426,9 +458,9 @@ async function fetchFeeRateBps(tokenId: string): Promise<number> {
       console.warn("[fetchFeeRateBps] Edge function error:", error);
       return 0;
     }
-    const baseFee = data?.data?.base_fee ?? 0;
-    console.log("[fetchFeeRateBps] tokenId:", tokenId, "base_fee:", baseFee);
-    return baseFee;
+    const baseFee = Number(data?.data?.base_fee ?? 0);
+    console.log("[fetchFeeRateBps] tokenId:", tokenId, "base_fee:", baseFee, "(edge)");
+    return Number.isFinite(baseFee) ? baseFee : 0;
   } catch (e) {
     console.warn("[fetchFeeRateBps] Failed:", e);
     return 0;
@@ -458,7 +490,7 @@ export async function createAndSignOrder(
   // Fetch negRisk from VPS /neg-risk endpoint
   const fetchedNegRisk = await fetchNegRisk(params.tokenId, clobApiUrl);
   const negRisk = params.negRisk || fetchedNegRisk;
-  const fetchedFeeRate = await fetchFeeRateBps(params.tokenId);
+  const fetchedFeeRate = await fetchFeeRateBps(params.tokenId, clobApiUrl);
   const feeRateBps = BigInt(fetchedFeeRate);
   const contractAddress = getExchangeAddress(negRisk) as `0x${string}`;
 
