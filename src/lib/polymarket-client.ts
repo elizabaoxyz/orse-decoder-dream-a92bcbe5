@@ -48,16 +48,30 @@ export interface OrderResult {
 // =============================================================================
 
 async function hmacSign(secret: string, message: string): Promise<string> {
-  // Decode base64 secret (handle URL-safe base64)
-  const normalized = secret.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  // Polymarket API secrets are typically base64, but some stacks store/return hex.
+  // If we treat a hex string as base64, atob() will "succeed" and produce the wrong key,
+  // causing 401 Unauthorized. Detect and decode hex explicitly.
+  const isHex = /^[0-9a-fA-F]{64}$/.test(secret.trim());
 
   let keyData: Uint8Array;
-  try {
-    const binary = atob(padded);
-    keyData = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
-    keyData = new TextEncoder().encode(secret);
+  if (isHex) {
+    const hex = secret.trim();
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    }
+    keyData = bytes;
+  } else {
+    // Decode base64 secret (handle URL-safe base64)
+    const normalized = secret.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    try {
+      const binary = atob(padded);
+      keyData = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    } catch {
+      // Fallback: treat as raw text (last resort)
+      keyData = new TextEncoder().encode(secret);
+    }
   }
 
   const keyBuffer = new ArrayBuffer(keyData.length);
