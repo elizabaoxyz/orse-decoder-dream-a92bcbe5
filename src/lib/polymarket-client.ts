@@ -649,13 +649,19 @@ export async function placeOrder(
     }
 
     const serverTs = await getClobServerTimeViaProxy(clobApiUrl);
+
+    // IMPORTANT (Safe/proxy wallets):
+    // Empirically, the VPS proxy succeeds when:
+    // - POLY-ADDRESS = signer EOA
+    // - POLY-PROXY-ADDRESS = funder/safe
+    // If POLY-ADDRESS is set to the Safe, CLOB returns 401 "Unauthorized/Invalid api key".
     const l2 = await generateL2Headers(
       creds,
       signerAddress,
       method,
       requestPath,
       bodyStrClean,
-      funderAddress,
+      /* funderAddress */ undefined,
       serverTs ? { timestamp: serverTs } : undefined
     );
 
